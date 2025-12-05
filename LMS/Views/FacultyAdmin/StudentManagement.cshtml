@@ -1,0 +1,309 @@
+@model IEnumerable<LMS.Models.User>
+
+@{
+    ViewData["Title"] = "Quản lý sinh viên";
+    Layout = "~/Views/Shared/_FacultyLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-user-graduate"></i> Quản lý sinh viên
+                    </h1>
+                    <p class="text-muted mb-0">Quản lý sinh viên trong khoa</p>
+                </div>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-success" onclick="importStudents()">
+                        <i class="fas fa-file-excel"></i> Import từ Excel
+                    </button>
+                    <a href="@Url.Action("Index", "FacultyAdmin")" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thông báo -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- Bộ lọc -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Bộ lọc tìm kiếm</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="classFilter">Lớp học:</label>
+                    <select class="form-control" id="classFilter">
+                        <option value="">Tất cả</option>
+                        @foreach (var cls in ViewBag.Classes)
+                        {
+                            <option value="@cls.ClassName">@cls.ClassName (@cls.Course.CourseName)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="statusFilter">Trạng thái:</label>
+                    <select class="form-control" id="statusFilter">
+                        <option value="">Tất cả</option>
+                        <option value="Active">Đang học</option>
+                        <option value="Inactive">Tạm nghỉ</option>
+                        <option value="Graduated">Đã tốt nghiệp</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="searchInput">Tìm kiếm:</label>
+                    <input type="text" class="form-control" id="searchInput" placeholder="MSSV, tên sinh viên...">
+                </div>
+                <div class="col-md-2">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-info btn-block" onclick="filterTable()">
+                        <i class="fas fa-search"></i> Lọc
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng dữ liệu -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                Danh sách sinh viên (@Model.Count() sinh viên)
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="studentTable">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>MSSV</th>
+                            <th>Họ tên</th>
+                            <th>Email</th>
+                            <th>Bộ môn</th>
+                            <th>Lớp học hiện tại</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày nhập học</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var student in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <strong class="text-primary">@student.MssvMgv</strong>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle mr-2">
+                                            @if (!string.IsNullOrEmpty(student.FullName))
+                                            {
+                                                @student.FullName.Split(' ').LastOrDefault()?.FirstOrDefault()
+                                            }
+                                        </div>
+                                        <span>@student.FullName</span>
+                                    </div>
+                                </td>
+                                <td>@student.Email</td>
+                                <td>@(student.Department?.Name ?? "Chưa phân")</td>
+                                <td>
+                                    @if (student.ClassStudents.Any())
+                                    {
+                                        var currentClass = student.ClassStudents.FirstOrDefault()?.Class;
+                                        if (currentClass != null)
+                                        {
+                                            <span class="badge badge-info">@currentClass.Name</span>
+                                            <br><small class="text-muted">@currentClass.Course?.Name</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Chưa có lớp</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Chưa có lớp</span>
+                                    }
+                                </td>
+                                <td>
+                                    @switch (student.Status)
+                                    {
+                                        case "Active":
+                                            <span class="badge badge-success">Đang học</span>
+                                            break;
+                                        case "Inactive":
+                                            <span class="badge badge-warning">Tạm nghỉ</span>
+                                            break;
+                                        case "Graduated":
+                                            <span class="badge badge-primary">Đã tốt nghiệp</span>
+                                            break;
+                                        default:
+                                            <span class="badge badge-secondary">@student.Status</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>@student.CreatedAt?.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                onclick="transferStudent(@student.UserId, '@student.FullName')">
+                                            <i class="fas fa-exchange-alt"></i> Chuyển lớp
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                onclick="viewProgress(@student.UserId)">
+                                            <i class="fas fa-chart-line"></i> Tiến độ
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal chuyển lớp -->
+<div class="modal fade" id="transferModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chuyển lớp sinh viên</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="transferForm" method="post" action="@Url.Action("TransferStudent", "FacultyAdmin")">
+                    <input type="hidden" id="studentId" name="studentId" />
+                    <div class="form-group">
+                        <label>Sinh viên:</label>
+                        <p id="studentName" class="font-weight-bold text-primary"></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="newClassId">Chọn lớp mới:</label>
+                        <select class="form-control" id="newClassId" name="newClassId" required>
+                            <option value="">-- Chọn lớp --</option>
+                            @foreach (var cls in ViewBag.Classes)
+                            {
+                                <option value="@cls.ClassId">@cls.ClassName - @cls.Course.CourseName</option>
+                            }
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitTransfer()">Xác nhận chuyển</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, #007bff, #28a745);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 12px;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+
+    .btn-group .btn {
+        margin-right: 5px;
+    }
+
+    .badge {
+        font-size: 0.75em;
+    }
+</style>
+
+<script>
+    function filterTable() {
+        var classFilter = document.getElementById('classFilter').value.toLowerCase();
+        var statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+        var searchInput = document.getElementById('searchInput').value.toLowerCase();
+        var table = document.getElementById('studentTable');
+        var rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var cells = row.getElementsByTagName('td');
+            
+            var mssv = cells[0].textContent.toLowerCase();
+            var fullName = cells[1].textContent.toLowerCase();
+            var className = cells[4].textContent.toLowerCase();
+            var status = cells[5].textContent.toLowerCase();
+
+            var matchClass = classFilter === '' || className.includes(classFilter);
+            var matchStatus = statusFilter === '' || status.includes(statusFilter);
+            var matchSearch = searchInput === '' || 
+                            mssv.includes(searchInput) || 
+                            fullName.includes(searchInput);
+
+            if (matchClass && matchStatus && matchSearch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    function transferStudent(studentId, studentName) {
+        document.getElementById('studentId').value = studentId;
+        document.getElementById('studentName').textContent = studentName;
+        $('#transferModal').modal('show');
+    }
+
+    function submitTransfer() {
+        document.getElementById('transferForm').submit();
+    }
+
+    function viewProgress(studentId) {
+        alert('Chức năng xem tiến độ học tập đang được phát triển. Student ID: ' + studentId);
+    }
+
+    function importStudents() {
+        alert('Chức năng import sinh viên từ Excel đang được phát triển');
+    }
+
+    // Auto filter on input change
+    document.getElementById('searchInput').addEventListener('keyup', filterTable);
+    document.getElementById('classFilter').addEventListener('change', filterTable);
+    document.getElementById('statusFilter').addEventListener('change', filterTable);
+</script>

@@ -1,0 +1,225 @@
+@model IEnumerable<LMS.Models.Course>
+
+@{
+    ViewData["Title"] = "Quản lý khóa học";
+    Layout = "~/Views/Shared/_FacultyLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-book"></i> Quản lý khóa học
+                    </h1>
+                    <p class="text-muted mb-0">Danh sách các khóa học trong khoa</p>
+                </div>
+                <div>
+                    <a href="@Url.Action("CreateCourse", "FacultyAdmin")" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Tạo khóa học mới
+                    </a>
+                    <a href="@Url.Action("Index", "FacultyAdmin")" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Tìm kiếm tên khóa học, mã khóa học..." id="searchInput">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <select class="form-select" id="filterSelect">
+                        <option value="all">Tất cả trạng thái</option>
+                        <option value="active">Đang hoạt động</option>
+                        <option value="inactive">Tạm ngưng</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Mã khóa học</th>
+                            <th>Tên khóa học</th>
+                            <th>Mô tả</th>
+                            <th>Tín chỉ</th>
+                            <th>Thời lượng (giờ)</th>
+                            <th>Giảng viên phụ trách</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coursesTableBody">
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var course in Model)
+                            {
+                                <tr class="course-row" data-name="@course.Name" data-status="@(course.IsActive == true ? "active" : "inactive")">
+                                    <td>
+                                        <span class="badge bg-primary">@course.Code</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">@course.Name</div>
+                                        <small class="text-muted">Tạo ngày: @course.CreatedAt?.ToString("dd/MM/yyyy")</small>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;" title="@course.Description">
+                                            @course.Description
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info">@course.Credits</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @course.Duration
+                                    </td>
+                                    <td>
+                                        @if (course.LeadInstructor != null)
+                                        {
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">@course.LeadInstructor.FullName</div>
+                                                    <small class="text-muted">@course.LeadInstructor.MssvMgv</small>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Chưa gán</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (course.IsActive == true)
+                                        {
+                                            <span class="badge bg-success">Hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">Tạm ngưng</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="@Url.Action("EditCourse", "FacultyAdmin", new { id = course.CourseId })" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteCourse(@course.CourseId, '@course.Name')" title="Xóa">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">Chưa có khóa học nào</p>
+                                    <a href="@Url.Action("CreateCourse", "FacultyAdmin")" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Tạo khóa học đầu tiên
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('keyup', function() {
+            const searchValue = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.course-row');
+            
+            rows.forEach(row => {
+                const courseName = row.getAttribute('data-name').toLowerCase();
+                if (courseName.includes(searchValue)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Filter functionality
+        document.getElementById('filterSelect').addEventListener('change', function() {
+            const filterValue = this.value;
+            const rows = document.querySelectorAll('.course-row');
+            
+            rows.forEach(row => {
+                const status = row.getAttribute('data-status');
+                if (filterValue === 'all' || status === filterValue) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Delete course function
+        function deleteCourse(courseId, courseName) {
+            if (confirm(`Bạn có chắc chắn muốn xóa khóa học "${courseName}"?`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '@Url.Action("DeleteCourse", "FacultyAdmin")';
+                
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'id';
+                idInput.value = courseId;
+                form.appendChild(idInput);
+                
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = $('[name=__RequestVerificationToken]').val();
+                form.appendChild(tokenInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+}

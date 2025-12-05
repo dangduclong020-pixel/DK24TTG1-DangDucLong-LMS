@@ -1,0 +1,993 @@
+﻿@model List<LMS.Models.Faculty>
+@{
+    ViewData["Title"] = "E-Learning - Trường Đại học Thủ Dầu Một";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background-color: white;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            color: #2c5aa0 !important;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .navbar-nav .nav-link {
+            color: #495057 !important;
+            margin: 0 10px;
+        }
+        
+        .navbar-nav .nav-link:hover {
+            color: #007bff !important;
+        }
+        
+        .btn-login {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        
+        .btn-login:hover {
+            background-color: #0056b3;
+            color: white;
+        }
+        
+        .language-selector {
+            color: #adb5bd;
+        }
+
+        /* Main Navigation Menu Styles */
+        .navbar-nav {
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .navbar-nav .nav-link {
+            color: #495057 !important;
+            margin: 0 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #007bff !important;
+            background-color: rgba(0, 123, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .admin-menu {
+            background: linear-gradient(135deg, #dc3545, #c82333) !important;
+            color: white !important;
+            border: 2px solid #dc3545;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        .admin-menu:hover {
+            background: linear-gradient(135deg, #c82333, #bd2130) !important;
+            color: white !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+
+        .admin-dropdown {
+            border: none;
+            box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.2);
+            border-radius: 0.75rem;
+            padding: 0.75rem 0;
+            min-width: 320px;
+            margin-top: 8px;
+        }
+
+        .admin-dropdown .dropdown-header {
+            color: #495057;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.75rem 1.25rem 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .admin-dropdown .dropdown-item {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.9rem;
+            color: #495057;
+            transition: all 0.2s ease;
+        }
+
+        .admin-dropdown .dropdown-item:hover {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            color: #007bff;
+            padding-left: 1.5rem;
+        }
+
+        .admin-dropdown .dropdown-item i {
+            width: 1.2rem;
+            margin-right: 0.75rem;
+            text-align: center;
+        }
+
+        .admin-dropdown .dropdown-divider {
+            margin: 0.5rem 0;
+            opacity: 0.3;
+        }
+        
+        .main-content {
+            padding: 20px 0;
+        }
+        
+        .sidebar {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .sidebar h5 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+        
+        .upcoming-events, .calendar-section {
+            margin-bottom: 20px;
+        }
+        
+        .calendar-table {
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .calendar-table th,
+        .calendar-table td {
+            padding: 5px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .calendar-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .today {
+            background-color: #007bff;
+            color: white;
+            border-radius: 50%;
+        }
+        
+        .course-grid-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin: 0 20px 20px 20px;
+            padding: 30px;
+        }
+        
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        @@media (max-width: 1200px) {
+            .course-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @@media (max-width: 900px) {
+            .course-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @@media (max-width: 600px) {
+            .course-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .course-card {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+        
+        .course-image {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            padding: 0;
+        }
+        
+        .course-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .course-image svg {
+            width: 120px;
+            height: 120px;
+        }
+        
+        .course-title {
+            display: none;
+        }
+        
+        .global-search {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .online-users {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .page-title {
+            color: #2c5aa0;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: left;
+            margin: 20px 0;
+        }
+        
+        .announcements-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .announcement-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .announcement-header h2 {
+            color: #dc3545;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .announcement-header i {
+            margin-right: 8px;
+        }
+        
+        .view-all-link {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .view-all-link:hover {
+            text-decoration: underline;
+        }
+        
+        .announcement-item {
+            display: flex;
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .announcement-item:last-child {
+            border-bottom: none;
+        }
+        
+        .announcement-icon {
+            margin-right: 15px;
+            margin-top: 5px;
+        }
+        
+        .announcement-icon i {
+            color: #007bff;
+            font-size: 1.2rem;
+        }
+        
+        .announcement-content {
+            flex: 1;
+        }
+        
+        .announcement-content h3 {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 8px;
+        }
+        
+        .announcement-meta {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .announcement-meta a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .announcement-text {
+            font-size: 0.9rem;
+            color: #495057;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        
+        .announcement-note {
+            font-size: 0.9rem;
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        
+        .schedule-list {
+            font-size: 0.9rem;
+            color: #495057;
+            margin: 10px 0;
+        }
+        
+        .schedule-list li {
+            margin-bottom: 5px;
+        }
+        
+        .announcement-actions {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .announcement-actions a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .announcement-actions .separator {
+            margin: 0 8px;
+        }
+        
+        .announcement-actions .replies {
+            margin-left: 5px;
+        }
+        
+        .server-item, .plo-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .server-item i, .plo-item i {
+            margin-right: 8px;
+        }
+        
+        .server-link, .plo-link {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .server-link:hover, .plo-link:hover {
+            text-decoration: underline;
+        }
+        
+        .user-list {
+            margin-top: 10px;
+        }
+        
+        .user-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .user-item i {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .other-users {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box input {
+            padding-right: 35px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: 200px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            cursor: pointer;
+        }
+        
+        /* Header Search Styles */
+        .header-search {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-icon-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #666;
+            cursor: pointer;
+            padding: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input-container {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            overflow: hidden;
+            transition: width 0.3s ease;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+        }
+        
+        .search-input-container.active {
+            width: 250px;
+        }
+        
+        .search-input-container input {
+            width: 100%;
+            padding: 8px 15px;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+        }
+        
+        .login-status {
+            margin-left: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .user-menu {
+            position: relative;
+            display: inline-block;
+            margin-left: 20px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 20px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .user-info:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .user-name {
+            color: #007bff;
+            font-weight: 500;
+            margin-right: 5px;
+        }
+        
+        .dropdown-arrow {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 200px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        .user-menu:hover .user-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-header {
+            background: #007bff;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .dropdown-header i {
+            margin-right: 8px;
+        }
+        
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            text-decoration: none;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s ease;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .dropdown-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .dropdown-item i {
+            margin-right: 10px;
+            width: 16px;
+            text-align: center;
+            color: #666;
+        }
+        
+        .login-link {
+            color: #007bff;
+            text-decoration: none;
+            margin-left: 5px;
+        }
+        
+        .login-link:hover {
+            text-decoration: underline;
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link text-dark me-3">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <a class="navbar-brand" href="#">E-Learning - Trường Đại học Thủ Dầu Một</a>
+            </div>
+
+
+            
+            <div class="d-flex align-items-center ml-auto">
+                <!-- Search Function -->
+                <div class="header-search">
+                    <div class="search-input-container" id="searchContainer">
+                        <input type="text" placeholder="Tìm kiếm" id="searchInput">
+                    </div>
+                    <button class="search-icon-btn" id="searchBtn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                
+                <!-- User Menu / Login Status -->
+                @{
+                    var isLoggedIn = ViewBag.IsLoggedIn ?? false;
+                    var userName = ViewBag.UserName ?? "";
+                }
+                
+                @if (isLoggedIn)
+                {
+                    <div class="user-menu">
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                @{
+                                    var nameParts = userName.ToString().Split(' ');
+                                    var lastPart = nameParts.Length > 0 ? nameParts[nameParts.Length - 1] : "U";
+                                    var initial = !string.IsNullOrEmpty(lastPart) ? lastPart.Substring(0, 1) : "U";
+                                }
+                                @initial
+                            </div>
+                            <span class="user-name">@userName</span>
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </div>
+                        <div class="user-dropdown">
+                            <div class="dropdown-header">
+                                <i class="fas fa-tachometer-alt"></i>
+                                Bảng điều khiển
+                            </div>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-user"></i>
+                                Hồ sơ
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-chart-bar"></i>
+                                Điểm
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-cog"></i>
+                                Tùy chọn
+                            </a>
+                            <a href="@Url.Action("Logout", "Home")" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Thoát
+                            </a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="login-status">
+                        Bạn chưa đăng nhập.
+                        <a href="@Url.Action("Login", "Home")" class="login-link">(Đăng nhập)</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid main-content">
+        <div class="row">
+            <!-- Main Content Area -->
+            <div class="col-lg-9">
+                <!-- Page Title -->
+
+
+                <!-- Department Grid -->
+                <div class="course-grid-container">
+                    <div class="course-grid">
+                    @if(Model != null && Model.Any())
+                    {
+                        @foreach(var faculty in Model)
+                        {
+                            <div class="course-card">
+                                <div class="course-image">
+                                    @if (!string.IsNullOrEmpty(faculty.ImagePath))
+                                    {
+                                        <img src="@faculty.ImagePath" alt="@faculty.Name" />
+                                    }
+                                    else
+                                    {
+                                        <svg viewBox="0 0 120 120" fill="none" style="color: #007bff;">
+                                            <!-- Generic Education Icon -->
+                                            <circle cx="60" cy="60" r="30" fill="currentColor" opacity="0.1"/>
+                                            <rect x="45" y="45" width="30" height="20" rx="3" fill="currentColor" opacity="0.3"/>
+                                            <circle cx="50" cy="55" r="3" fill="currentColor"/>
+                                            <rect x="58" y="52" width="15" height="2" fill="currentColor"/>
+                                            <rect x="58" y="58" width="10" height="2" fill="currentColor"/>
+                                            
+                                            <!-- Graduation cap -->
+                                            <rect x="55" y="35" width="10" height="8" fill="currentColor" opacity="0.7"/>
+                                            <rect x="50" y="35" width="20" height="2" fill="currentColor" opacity="0.7"/>
+                                        </svg>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12 text-center">
+                            <p>Không có dữ liệu khoa để hiển thị.</p>
+                        </div>
+                    }
+                    </div>
+                </div>
+
+                <!-- Announcements Section -->
+                <div class="announcements-section mb-4">
+                    <div class="announcement-header">
+                        <h2><i class="fas fa-bullhorn"></i> THÔNG BÁO</h2>
+                        <a href="#" class="view-all-link">Đăng ký tới diễn đàn này</a>
+                    </div>
+                    
+                    <div class="announcement-item">
+                        <div class="announcement-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="announcement-content">
+                            <h3>HỆ THỐNG THI TRỰC TUYẾN - TDMU EXAM</h3>
+                            <p class="announcement-meta">Bởi <a href="#">TDMU E-Learning</a> - 14:47, Monday, 9 tháng 12 năm 2024</p>
+                            <p class="announcement-text">
+                                Sinh viên thi kiểm tra Kết thúc Học phần, truy cập <strong>Hệ thống thi trực tuyến - TDMU Exam</strong> tại địa chỉ: 
+                                <a href="https://exam.tdmu.edu.vn">https://exam.tdmu.edu.vn</a>
+                            </p>
+                            <p class="announcement-note">
+                                <strong>Lưu ý:</strong> Sinh viên chỉ được phép truy cập hệ thống tại phòng máy tính của nhà trường trong thời gian tổ chức thi.
+                            </p>
+                            <div class="announcement-actions">
+                                <a href="#">Liên kết tình</a>
+                                <span class="separator">|</span>
+                                <a href="#">Thảo luận về chủ đề này</a>
+                                <span class="replies">(0 phúc đáp)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="announcement-item">
+                        <div class="announcement-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="announcement-content">
+                            <h3>THỜI GIAN CÁC TIẾT HỌC BẬC ĐẠI HỌC CHÍNH QUY</h3>
+                            <p class="announcement-meta">Bởi <a href="#">Nguyễn Tấn Lợi</a> - 15:43, Monday, 23 tháng 09 năm 2024</p>
+                            <p class="announcement-text">Thời gian các tiết học Bậc Đại học Chính quy được quy định như sau:</p>
+                            <ul class="schedule-list">
+                                <li>Buổi sáng 05 tiết: từ 07 giờ 00 phút; kết thúc vào 11 giờ 30 phút;</li>
+                                <li>Buổi chiều 05 tiết: từ 12 giờ 30 phút; kết thúc vào 17 giờ 00 phút;</li>
+                                <li>Buổi tối 04 tiết: từ 17 giờ 30 phút; kết thúc vào 21 giờ 10 phút.</li>
+                            </ul>
+                            <p><strong>Thời gian học 1 tiết: 50 phút.</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-3">
+                <!-- Upcoming Events -->
+                <div class="sidebar">
+                    <h5>Sự kiện sắp diễn ra</h5>
+                    <p class="text-muted">Không có sự kiện nào sắp diễn ra</p>
+                    <a href="#" class="text-primary">Xem lịch...</a>
+                </div>
+
+                <!-- Calendar -->
+                <div class="sidebar calendar-section">
+                    <h5>Lịch</h5>
+                    <div class="text-center mb-3">
+                        <strong>Tháng 11 2025</strong>
+                    </div>
+                    <table class="calendar-table">
+                        <tr>
+                            <th>T2</th>
+                            <th>T3</th>
+                            <th>T4</th>
+                            <th>T5</th>
+                            <th>T6</th>
+                            <th>T7</th>
+                            <th>CN</th>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td>1</td>
+                            <td>2</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>4</td>
+                            <td>5</td>
+                            <td>6</td>
+                            <td>7</td>
+                            <td>8</td>
+                            <td>9</td>
+                        </tr>
+                        <tr>
+                            <td>10</td>
+                            <td>11</td>
+                            <td>12</td>
+                            <td>13</td>
+                            <td>14</td>
+                            <td>15</td>
+                            <td>16</td>
+                        </tr>
+                        <tr>
+                            <td>17</td>
+                            <td>18</td>
+                            <td>19</td>
+                            <td>20</td>
+                            <td>21</td>
+                            <td>22</td>
+                            <td>23</td>
+                        </tr>
+                        <tr>
+                            <td>24</td>
+                            <td>25</td>
+                            <td>26</td>
+                            <td class="today">27</td>
+                            <td>28</td>
+                            <td>29</td>
+                            <td>30</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Online Users -->
+                <div class="sidebar">
+                    <h5>Thành viên đang hoạt động</h5>
+                    <div class="online-users">27 thành viên đang hoạt động (cách đây 5 phút)</div>
+                    <div class="user-list">
+                        <div class="user-item">
+                            <i class="fas fa-user-circle text-primary"></i>
+                            <span>Trần Quang Việt</span>
+                        </div>
+                        <div class="user-item">
+                            <i class="fas fa-user-circle text-primary"></i>
+                            <span>Đặng Ngọc Tân</span>
+                        </div>
+                        <div class="user-item">
+                            <i class="fas fa-user-circle text-primary"></i>
+                            <span>Chu Ngọc Long</span>
+                        </div>
+                        <div class="other-users">
+                            <span>Other users (24)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Search -->
+                <div class="global-search">
+                    <h5>Global search</h5>
+                    <input type="text" class="search-input" placeholder="Tìm kiếm...">
+                    <button class="btn btn-primary btn-sm mt-2">Tìm kiếm</button>
+                    <a href="#" class="d-block mt-1 text-primary small">Tìm nâng cao</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Course card hover effects
+            const courseCards = document.querySelectorAll('.course-card');
+            courseCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    alert('Chức năng này đang được phát triển!');
+                });
+            });
+            
+            // Search functionality
+            const searchBtn = document.getElementById('searchBtn');
+            const searchContainer = document.getElementById('searchContainer');
+            const searchInput = document.getElementById('searchInput');
+            let isSearchOpen = false;
+            
+            searchBtn.addEventListener('click', function() {
+                if (!isSearchOpen) {
+                    // Open search
+                    searchContainer.classList.add('active');
+                    setTimeout(() => {
+                        searchInput.focus();
+                    }, 300);
+                    isSearchOpen = true;
+                } else {
+                    // Perform search or close
+                    const searchTerm = searchInput.value.trim();
+                    if (searchTerm) {
+                        // Perform search
+                        alert('Tìm kiếm: ' + searchTerm);
+                    } else {
+                        // Close search
+                        searchContainer.classList.remove('active');
+                        isSearchOpen = false;
+                    }
+                }
+            });
+            
+            // Close search when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!searchBtn.contains(e.target) && !searchContainer.contains(e.target)) {
+                    searchContainer.classList.remove('active');
+                    isSearchOpen = false;
+                }
+            });
+            
+            // Handle Enter key in search
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const searchTerm = searchInput.value.trim();
+                    if (searchTerm) {
+                        alert('Tìm kiếm: ' + searchTerm);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

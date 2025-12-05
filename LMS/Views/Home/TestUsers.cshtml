@@ -1,0 +1,32 @@
+@model List<LMS.Models.User>
+
+<div class="container mt-4">
+    <h2>Debug - Danh sách Users và Roles</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username (MSSV/MGV)</th>
+                    <th>Full Name</th>
+                    <th>Role Name</th>
+                    <th>Faculty</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td>@user.UserId</td>
+                        <td>@user.MssvMgv</td>
+                        <td>@user.FullName</td>
+                        <td>@(user.Role?.RoleName ?? "N/A")</td>
+                        <td>@(user.Faculty?.Name ?? "N/A")</td>
+                        <td>@user.Status</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

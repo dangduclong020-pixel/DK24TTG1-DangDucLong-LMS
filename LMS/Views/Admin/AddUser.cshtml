@@ -1,0 +1,235 @@
+@model LMS.Models.User
+
+@{
+    ViewData["Title"] = "Thêm người dùng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-dark">
+                        <i class="fas fa-user-plus text-primary"></i> Thêm người dùng
+                    </h1>
+                    <p class="mb-0 text-muted">Tạo tài khoản cho tất cả loại người dùng trong hệ thống</p>
+                </div>
+                <a href="@Url.Action("UserManagement", "Admin")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-user-edit"></i> Thông tin người dùng
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+                </div>
+            }
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+                </div>
+            }
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> <strong>Lưu ý:</strong> 
+                Mã người dùng và mật khẩu mặc định sẽ được tạo tự động dựa trên vai trò.
+            </div>
+
+            <form asp-action="AddUser" method="post" id="createForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label asp-for="RoleId" class="form-label">Vai trò <span class="text-danger">*</span></label>
+                            <select asp-for="RoleId" class="form-control" required onchange="handleRoleChange()">
+                                <option value="">-- Chọn vai trò --</option>
+                                @if (ViewBag.Roles != null)
+                                {
+                                    @foreach (var role in ViewBag.Roles)
+                                    {
+                                        <option value="@role.RoleId">@role.RoleName</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="RoleId" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label asp-for="FullName" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                            <input asp-for="FullName" class="form-control" required>
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label asp-for="Email" class="form-label">Email <span class="text-danger">*</span></label>
+                            <input asp-for="Email" class="form-control" type="email" required>
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label asp-for="Phone" class="form-label">Số điện thoại</label>
+                            <input asp-for="Phone" class="form-control" type="tel">
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6" id="facultyField">
+                        <div class="form-group mb-3">
+                            <label asp-for="FacultyId" class="form-label">Khoa <span class="text-danger">*</span></label>
+                            <select asp-for="FacultyId" class="form-control" onchange="loadDepartments()">
+                                <option value="">-- Chọn khoa --</option>
+                                @if (ViewBag.Faculties != null)
+                                {
+                                    @foreach (var faculty in ViewBag.Faculties)
+                                    {
+                                        <option value="@faculty.FacultyId">@faculty.Name</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="FacultyId" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6" id="departmentField" style="display:none;">
+                        <div class="form-group mb-3">
+                            <label asp-for="DepartmentId" class="form-label">Bộ môn</label>
+                            <select asp-for="DepartmentId" class="form-control" id="departmentSelect">
+                                <option value="">-- Chọn bộ môn --</option>
+                            </select>
+                            <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6" id="studentClassField" style="display:none;">
+                        <div class="form-group mb-3">
+                            <label asp-for="StudentClass" class="form-label">Lớp học</label>
+                            <input asp-for="StudentClass" class="form-control" placeholder="Ví dụ: IT01K16">
+                            <span asp-validation-for="StudentClass" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-cogs"></i> Thông tin tự động tạo:</h6>
+                    <ul class="mb-0">
+                        <li><strong>Mã người dùng:</strong> Tự động theo vai trò (ADM/MGR/GV/SV + số thứ tự)</li>
+                        <li><strong>Mật khẩu mặc định:</strong> 123456</li>
+                        <li><strong>Trạng thái:</strong> Hoạt động</li>
+                    </ul>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Thêm người dùng
+                    </button>
+                    <a href="@Url.Action("UserManagement", "Admin")" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Hủy bỏ
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    var departments = @Html.Raw(Json.Serialize(ViewBag.Departments));
+
+    function handleRoleChange() {
+        var roleSelect = document.querySelector('[name="RoleId"]');
+        var roleId = parseInt(roleSelect.value);
+        
+        var facultyField = document.getElementById('facultyField');
+        var departmentField = document.getElementById('departmentField');
+        var studentClassField = document.getElementById('studentClassField');
+        
+        // Ẩn tất cả fields trước
+        facultyField.style.display = 'none';
+        departmentField.style.display = 'none';
+        studentClassField.style.display = 'none';
+        
+        // Hiện fields tùy theo role
+        if (roleId === 2 || roleId === 3 || roleId === 4) { // Admin Khoa, Giảng viên, Sinh viên
+            facultyField.style.display = 'block';
+        }
+        
+        if (roleId === 3 || roleId === 4) { // Giảng viên, Sinh viên
+            departmentField.style.display = 'block';
+        }
+        
+        if (roleId === 4) { // Sinh viên
+            studentClassField.style.display = 'block';
+        }
+        
+        // Set required attributes
+        var facultySelect = document.querySelector('[name="FacultyId"]');
+        var departmentSelect = document.querySelector('[name="DepartmentId"]');
+        
+        if (roleId === 2 || roleId === 3 || roleId === 4) {
+            facultySelect.required = true;
+        } else {
+            facultySelect.required = false;
+        }
+        
+        if (roleId === 3 || roleId === 4) {
+            departmentSelect.required = true;
+        } else {
+            departmentSelect.required = false;
+        }
+    }
+
+    function loadDepartments() {
+        var facultyId = document.querySelector('[name="FacultyId"]').value;
+        var departmentSelect = document.getElementById('departmentSelect');
+        
+        // Clear existing options
+        departmentSelect.innerHTML = '<option value="">-- Chọn bộ môn --</option>';
+        
+        if (facultyId && departments) {
+            var filteredDepartments = departments.filter(d => d.facultyId == facultyId);
+            filteredDepartments.forEach(function(dept) {
+                var option = document.createElement('option');
+                option.value = dept.departmentId;
+                option.textContent = dept.name;
+                departmentSelect.appendChild(option);
+            });
+        }
+    }
+
+    document.getElementById('createForm').addEventListener('submit', function(e) {
+        var roleId = parseInt(document.querySelector('[name="RoleId"]').value);
+        var fullName = document.querySelector('[name="FullName"]').value.trim();
+        var email = document.querySelector('[name="Email"]').value.trim();
+
+        if (!roleId || !fullName || !email) {
+            e.preventDefault();
+            alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+            return false;
+        }
+
+        var roleNames = {1: 'Admin Tổng', 2: 'Admin Khoa', 3: 'Giảng viên', 4: 'Sinh viên'};
+        var roleName = roleNames[roleId] || 'Người dùng';
+        
+        if (!confirm(`Bạn có chắc chắn muốn tạo tài khoản ${roleName}?`)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>

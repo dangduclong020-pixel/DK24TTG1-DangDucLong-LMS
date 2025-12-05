@@ -1,0 +1,401 @@
+@{
+    ViewData["Title"] = "Thống kê hệ thống";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-dark">
+                        <i class="fas fa-chart-bar"></i> Thống kê hệ thống
+                    </h1>
+                    <p class="mb-0 text-muted">Báo cáo tổng quan về tình trạng hoạt động của hệ thống LMS</p>
+                </div>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-success" onclick="exportExcel()">
+                        <i class="fas fa-file-excel"></i> Xuất Excel
+                    </button>
+                    <button class="btn btn-danger" onclick="exportPDF()">
+                        <i class="fas fa-file-pdf"></i> Xuất PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thống kê theo khoa -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-university"></i> Thống kê theo khoa
+                    </h6>
+                    <div class="dropdown no-arrow">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" 
+                                data-toggle="dropdown">
+                            <i class="fas fa-filter"></i> Bộ lọc
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item" href="#" onclick="sortTable('faculty', 'name')">
+                                <i class="fas fa-sort-alpha-down"></i> Sắp xếp theo tên
+                            </a>
+                            <a class="dropdown-item" href="#" onclick="sortTable('faculty', 'students')">
+                                <i class="fas fa-sort-numeric-down"></i> Sắp xếp theo sinh viên
+                            </a>
+                            <a class="dropdown-item" href="#" onclick="sortTable('faculty', 'teachers')">
+                                <i class="fas fa-sort-numeric-down"></i> Sắp xếp theo giảng viên
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="facultyStatsTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Tên khoa</th>
+                                    <th>Bộ môn</th>
+                                    <th>Giảng viên</th>
+                                    <th>Sinh viên</th>
+                                    <th>Tỷ lệ GV/SV</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    int index = 1;
+                                    var facultyStats = ViewBag.FacultyStats as List<dynamic> ?? new List<dynamic>();
+                                }
+                                @foreach (var faculty in facultyStats)
+                                {
+                                    var ratio = faculty.TotalStudents > 0 ? 
+                                        Math.Round((double)faculty.TotalTeachers / faculty.TotalStudents * 100, 1) : 0;
+                                    
+                                    <tr>
+                                        <td>@index</td>
+                                        <td>
+                                            <strong class="text-primary">@faculty.FacultyName</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">@faculty.TotalDepartments</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-success">@faculty.TotalTeachers</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-primary">@faculty.TotalStudents</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-@(ratio >= 5 ? "success" : ratio >= 2 ? "warning" : "danger")">
+                                                @ratio%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check-circle"></i> Hoạt động
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    index++;
+                                }
+                            </tbody>
+                            <tfoot class="thead-light">
+                                <tr>
+                                    <th colspan="2"><strong>TỔNG CỘNG</strong></th>
+                                    <th><strong>@(facultyStats.Sum(f => (int)f.TotalDepartments))</strong></th>
+                                    <th><strong>@(facultyStats.Sum(f => (int)f.TotalTeachers))</strong></th>
+                                    <th><strong>@(facultyStats.Sum(f => (int)f.TotalStudents))</strong></th>
+                                    <th>
+                                        @{
+                                            var totalStudents = facultyStats.Sum(f => (int)f.TotalStudents);
+                                            var totalTeachers = facultyStats.Sum(f => (int)f.TotalTeachers);
+                                            var totalRatio = totalStudents > 0 ? 
+                                                Math.Round((double)totalTeachers / totalStudents * 100, 1) : 0;
+                                        }
+                                        <strong>@totalRatio%</strong>
+                                    </th>
+                                    <th>-</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biểu đồ thống kê -->
+    <div class="row mb-4">
+        <!-- Biểu đồ cột -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar"></i> Số lượng theo khoa
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="facultyChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Biểu đồ tròn -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie"></i> Phân bố người dùng
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="userDistributionChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thống kê hoạt động -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Khoa hoạt động
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @facultyStats.Count
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-university fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Tỷ lệ hoạt động
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">100%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Bộ môn trung bình
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @(facultyStats.Count > 0 ? 
+                                  Math.Round((double)facultyStats.Sum(f => (int)f.TotalDepartments) / facultyStats.Count, 1) : 0)
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-building fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Cập nhật cuối
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @DateTime.Now.ToString("HH:mm")
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ghi chú và hướng dẫn -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-secondary">
+                        <i class="fas fa-info-circle"></i> Ghi chú và Hướng dẫn
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Ý nghĩa các chỉ số:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-circle text-success"></i> <strong>Tỷ lệ GV/SV >= 5%:</strong> Tốt</li>
+                                <li><i class="fas fa-circle text-warning"></i> <strong>Tỷ lệ GV/SV 2-5%:</strong> Trung bình</li>
+                                <li><i class="fas fa-circle text-danger"></i> <strong>Tỷ lệ GV/SV < 2%:</strong> Cần chú ý</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-info">Chức năng:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-download text-success"></i> Xuất báo cáo Excel/PDF</li>
+                                <li><i class="fas fa-sort text-info"></i> Sắp xếp dữ liệu theo tiêu chí</li>
+                                <li><i class="fas fa-chart-bar text-warning"></i> Xem biểu đồ trực quan</li>
+                                <li><i class="fas fa-sync text-primary"></i> Dữ liệu cập nhật real-time</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Faculty Chart Data
+    @{
+        var chartFacultyNames = string.Join(",", facultyStats.Select(f => $"'{f.FacultyName}'"));
+        var chartStudentCounts = string.Join(",", facultyStats.Select(f => f.TotalStudents.ToString()));
+        var chartTeacherCounts = string.Join(",", facultyStats.Select(f => f.TotalTeachers.ToString()));
+    }
+    var facultyNames = [@Html.Raw(chartFacultyNames)];
+    var studentCounts = [@Html.Raw(chartStudentCounts)];
+    var teacherCounts = [@Html.Raw(chartTeacherCounts)];    // Faculty Bar Chart
+    var facultyCtx = document.getElementById('facultyChart').getContext('2d');
+    var facultyChart = new Chart(facultyCtx, {
+        type: 'bar',
+        data: {
+            labels: facultyNames,
+            datasets: [{
+                label: 'Sinh viên',
+                data: studentCounts,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Giảng viên',
+                data: teacherCounts,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // User Distribution Pie Chart  
+    var totalStudents = @(facultyStats.Sum(f => (int)f.TotalStudents));
+    var totalTeachers = @(facultyStats.Sum(f => (int)f.TotalTeachers));
+    
+    var userCtx = document.getElementById('userDistributionChart').getContext('2d');
+    var userChart = new Chart(userCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Sinh viên', 'Giảng viên'],
+            datasets: [{
+                data: [totalStudents, totalTeachers],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(75, 192, 192, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(75, 192, 192, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+
+    // Export functions
+    function exportExcel() {
+        alert('Chức năng xuất Excel đang được phát triển');
+    }
+
+    function exportPDF() {
+        alert('Chức năng xuất PDF đang được phát triển');
+    }
+
+    // Sort table function
+    function sortTable(tableType, column) {
+        alert(`Sắp xếp bảng ${tableType} theo ${column} đang được phát triển`);
+    }
+</script>
+
+<style>
+    .border-left-primary {
+        border-left: 0.25rem solid #4e73df !important;
+    }
+    
+    .border-left-success {
+        border-left: 0.25rem solid #1cc88a !important;
+    }
+    
+    .border-left-info {
+        border-left: 0.25rem solid #36b9cc !important;
+    }
+    
+    .border-left-warning {
+        border-left: 0.25rem solid #f6c23e !important;
+    }
+
+    .text-gray-800 {
+        color: #5a5c69 !important;
+    }
+
+    .text-gray-300 {
+        color: #dddfeb !important;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+
+    .badge {
+        font-size: 0.75em;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
+    }
+</style>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

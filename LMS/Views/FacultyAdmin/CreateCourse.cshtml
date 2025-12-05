@@ -1,0 +1,239 @@
+@model LMS.Models.Course
+
+@{
+    ViewData["Title"] = "Tạo khóa học mới";
+    Layout = "~/Views/Shared/_FacultyLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-plus"></i> Tạo khóa học mới
+                    </h1>
+                    <p class="text-muted mb-0">Thêm khóa học mới vào khoa</p>
+                </div>
+                <div>
+                    <a href="@Url.Action("CourseManagement", "FacultyAdmin")" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Create Course Form -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-info-circle"></i> Thông tin khóa học</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="CreateCourse" method="post">
+                <input type="hidden" name="FacultyId" value="@ViewBag.CurrentFacultyId" />
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">Tên khóa học <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="Ví dụ: Lập trình Web với ASP.NET Core" required />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Code" class="form-label">Mã khóa học</label>
+                            <input asp-for="Code" class="form-control" placeholder="Sẽ tự động tạo" readonly />
+                            <small class="form-text text-muted">Mã sẽ được tạo tự động (VD: CRS001)</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Credits" class="form-label">Số tín chỉ <span class="text-danger">*</span></label>
+                            <input asp-for="Credits" class="form-control" type="number" min="1" max="10" required />
+                            <span asp-validation-for="Credits" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="DepartmentId" class="form-label">Bộ môn <span class="text-danger">*</span></label>
+                            <select name="DepartmentId" class="form-select" required>
+                                <option value="">-- Chọn bộ môn --</option>
+                                @foreach (var dept in ViewBag.Departments)
+                                {
+                                    <option value="@dept.DepartmentId">@dept.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Duration" class="form-label">Thời lượng (giờ)</label>
+                            <input asp-for="Duration" class="form-control" type="number" min="15" placeholder="Ví dụ: 45" />
+                            <span asp-validation-for="Duration" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">Mô tả khóa học</label>
+                            <textarea asp-for="Description" class="form-control" rows="4" 
+                                      placeholder="Mô tả chi tiết về khóa học, nội dung, yêu cầu..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label for="Objectives" class="form-label">Mục tiêu khóa học</label>
+                            <textarea name="Objectives" class="form-control" rows="3" 
+                                      placeholder="Mục tiêu học tập sau khi hoàn thành khóa học..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="InstructorId" class="form-label">Giảng viên phụ trách</label>
+                            <select name="InstructorId" class="form-select">
+                                <option value="">-- Chọn giảng viên --</option>
+                                @foreach (var teacher in ViewBag.Teachers)
+                                {
+                                    <option value="@teacher.UserId">@teacher.FullName (@teacher.MssvMgv)</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="Prerequisites" class="form-label">Môn học tiên quyết</label>
+                            <input name="Prerequisites" class="form-control" 
+                                   placeholder="Ví dụ: Toán cao cấp, Lập trình cơ bản" />
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">Tên khóa học <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="Ví dụ: Lập trình C# cơ bản" required />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="Credits" class="form-label">Số tín chỉ <span class="text-danger">*</span></label>
+                            <input asp-for="Credits" type="number" class="form-control" min="1" max="10" required />
+                            <span asp-validation-for="Credits" class="text-danger"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="Duration" class="form-label">Thời lượng (giờ)</label>
+                            <input asp-for="Duration" type="number" class="form-control" min="1" placeholder="Ví dụ: 45" />
+                            <span asp-validation-for="Duration" class="text-danger"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="LeadInstructorId" class="form-label">Giảng viên phụ trách</label>
+                            <select asp-for="LeadInstructorId" class="form-select" asp-items="ViewBag.Teachers">
+                                <option value="">-- Chọn giảng viên --</option>
+                            </select>
+                            <span asp-validation-for="LeadInstructorId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label">Mô tả khóa học</label>
+                    <textarea asp-for="Description" class="form-control" rows="4" placeholder="Mô tả chi tiết về nội dung, mục tiêu của khóa học..."></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+                                <label asp-for="IsActive" class="form-check-label">
+                                    Kích hoạt khóa học ngay
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="@Url.Action("CourseManagement", "FacultyAdmin")" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Hủy bỏ
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Tạo khóa học
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Course Structure Section -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-sitemap"></i> Cấu trúc khóa học (Tùy chọn)</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                Sau khi tạo khóa học, bạn có thể thêm cấu trúc chương - bài học chi tiết trong phần quản lý khóa học.
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                        <h6>Tạo chương học</h6>
+                        <p class="text-muted small">Chia khóa học thành các chương</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+                        <h6>Thêm bài học</h6>
+                        <p class="text-muted small">Upload video, tài liệu, slide</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <i class="fas fa-tasks fa-3x text-warning mb-3"></i>
+                        <h6>Tạo bài tập</h6>
+                        <p class="text-muted small">Thiết lập bài tập và kiểm tra</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

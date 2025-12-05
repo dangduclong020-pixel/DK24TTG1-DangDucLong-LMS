@@ -1,0 +1,276 @@
+@{
+    ViewData["Title"] = "Import sinh viên từ Excel";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="content-wrapper">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Import sinh viên từ Excel</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="@Url.Action("Index", "Admin")">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="@Url.Action("Students", "Admin")">Sinh viên</a></li>
+                        <li class="breadcrumb-item active">Import Excel</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["ImportResults"] != null)
+            {
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="bx bx-list-check"></i>
+                            Chi tiết kết quả Import
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary float-end" type="button" data-bs-toggle="collapse" data-bs-target="#importResults">
+                            <i class="bx bx-show"></i> Xem chi tiết
+                        </button>
+                    </div>
+                    <div class="collapse" id="importResults">
+                        <div class="card-body">
+                            <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">@TempData["ImportResults"]</pre>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="row">
+                <!-- Form Upload -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="bx bx-upload"></i>
+                                Upload file Excel
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data" asp-action="ImportStudents">
+                                <div class="mb-3">
+                                    <label for="excelFile" class="form-label">Chọn file Excel <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" id="excelFile" name="excelFile" 
+                                           accept=".xlsx,.xls" required>
+                                    <div class="form-text">
+                                        <i class="bx bx-info-circle"></i>
+                                        Chỉ chấp nhận file Excel (.xlsx, .xls). Tối đa 5MB.
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="defaultFacultyId" class="form-label">Khoa mặc định</label>
+                                    <select class="form-select" id="defaultFacultyId" name="defaultFacultyId" required>
+                                        <option value="">Chọn khoa mặc định...</option>
+                                        @foreach (var faculty in ViewBag.Faculties as List<LMS.Models.Faculty>)
+                                        {
+                                            <option value="@faculty.FacultyId">@faculty.Name</option>
+                                        }
+                                    </select>
+                                    <div class="form-text">
+                                        <i class="bx bx-info-circle"></i>
+                                        Khoa này sẽ được áp dụng cho những sinh viên không có thông tin khoa trong file Excel.
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="@Url.Action("Students")" class="btn btn-secondary me-md-2">
+                                        <i class="bx bx-arrow-back"></i> Quay lại
+                                    </a>
+                                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                                        <i class="bx bx-upload"></i> Upload và Import
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hướng dẫn -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="bx bx-help-circle"></i>
+                                Hướng dẫn
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <h6><i class="bx bx-download"></i> Bước 1: Tải file mẫu</h6>
+                            <p class="text-muted small mb-3">
+                                Tải xuống file Excel mẫu để biết định dạng cần thiết.
+                            </p>
+                            <div class="d-grid mb-4">
+                                <a href="@Url.Action("DownloadTemplate")" class="btn btn-outline-success btn-sm">
+                                    <i class="bx bx-download"></i> Tải file mẫu
+                                </a>
+                            </div>
+
+                            <h6><i class="bx bx-edit"></i> Bước 2: Chuẩn bị dữ liệu</h6>
+                            <ul class="text-muted small mb-3">
+                                <li>Mã sinh viên: Duy nhất, bắt buộc</li>
+                                <li>Họ tên: Bắt buộc</li>
+                                <li>Email: Duy nhất, bắt buộc</li>
+                                <li>Số điện thoại: Tùy chọn</li>
+                                <li>Khoa: Tùy chọn (dùng khoa mặc định nếu trống)</li>
+                            </ul>
+
+                            <h6><i class="bx bx-upload"></i> Bước 3: Upload file</h6>
+                            <ul class="text-muted small mb-3">
+                                <li>Chọn khoa mặc định</li>
+                                <li>Upload file Excel đã chuẩn bị</li>
+                                <li>Kiểm tra kết quả import</li>
+                            </ul>
+
+                            <div class="alert alert-warning alert-sm">
+                                <strong><i class="bx bx-error"></i> Lưu ý:</strong>
+                                <ul class="mb-0 small">
+                                    <li>Mật khẩu mặc định: <code>123456</code></li>
+                                    <li>Email và mã SV phải duy nhất</li>
+                                    <li>Dữ liệu trùng lặp sẽ bị bỏ qua</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thống kê nhanh -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="bx bx-bar-chart-alt"></i>
+                                Thống kê sinh viên
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-12 mb-2">
+                                    <h4 class="text-primary mb-0" id="totalStudents">-</h4>
+                                    <small class="text-muted">Tổng sinh viên</small>
+                                </div>
+                            </div>
+                            <hr>
+                            <div id="facultyStats" class="small text-muted">
+                                Đang tải...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        // Load thống kê
+        $(document).ready(function() {
+            loadStatistics();
+        });
+
+        function loadStatistics() {
+            // Có thể gọi AJAX để lấy thống kê realtime
+            // Ở đây tạm thời hiển thị static
+            $('#totalStudents').text('Đang tải...');
+            $('#facultyStats').html('<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div></div>');
+        }
+
+        // File upload validation
+        $('#excelFile').change(function() {
+            var file = this.files[0];
+            if (file) {
+                var fileSize = file.size / 1024 / 1024; // MB
+                if (fileSize > 5) {
+                    alert('File quá lớn! Vui lòng chọn file nhỏ hơn 5MB.');
+                    this.value = '';
+                    return;
+                }
+
+                var fileName = file.name;
+                var fileExt = fileName.split('.').pop().toLowerCase();
+                if (fileExt !== 'xlsx' && fileExt !== 'xls') {
+                    alert('Vui lòng chọn file Excel (.xlsx hoặc .xls)');
+                    this.value = '';
+                    return;
+                }
+            }
+        });
+
+        // Form submission with loading
+        $('form').submit(function() {
+            $('#submitBtn').prop('disabled', true).html('<div class="spinner-border spinner-border-sm me-2" role="status"></div>Đang xử lý...');
+        });
+
+        // Auto-hide alerts
+        setTimeout(function() {
+            $('.alert').alert('close');
+        }, 10000);
+    </script>
+}
+
+<style>
+    .content-wrapper {
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 60px);
+    }
+    
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border-radius: 0.5rem;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        transform: translateY(-1px);
+    }
+    
+    .alert-sm {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    code {
+        background-color: #f8f9fa;
+        color: #e83e8c;
+        padding: 0.2em 0.4em;
+        border-radius: 0.25rem;
+    }
+</style>

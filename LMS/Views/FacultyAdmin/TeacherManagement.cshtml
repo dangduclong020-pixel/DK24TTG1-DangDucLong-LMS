@@ -1,0 +1,296 @@
+@model IEnumerable<LMS.Models.User>
+
+@{
+    ViewData["Title"] = "Quản lý giảng viên";
+    Layout = "~/Views/Shared/_FacultyLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-success">
+                        <i class="fas fa-chalkboard-teacher"></i> Quản lý giảng viên
+                    </h1>
+                    <p class="text-muted mb-0">Danh sách giảng viên trong khoa</p>
+                </div>
+                <div>
+                    <a href="@Url.Action("AddTeacher", "FacultyAdmin")" class="btn btn-success">
+                        <i class="fas fa-user-plus"></i> Thêm giảng viên
+                    </a>
+                    <a href="@Url.Action("Index", "FacultyAdmin")" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">@Model.Count()</h3>
+                    <p class="mb-0">Tổng giảng viên</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">@Model.Count(u => u.Status == "Active")</h3>
+                    <p class="mb-0">Đang hoạt động</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">@Model.Count(u => u.Status != "Active")</h3>
+                    <p class="mb-0">Tạm nghỉ</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">@Model.GroupBy(u => u.DepartmentId).Count()</h3>
+                    <p class="mb-0">Bộ môn có GV</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Tìm kiếm tên, mã GV..." id="searchInput">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="departmentFilter">
+                        <option value="all">Tất cả bộ môn</option>
+                        @foreach(var dept in Model.Where(u => u.Department != null).GroupBy(u => u.Department).Select(g => g.Key).Distinct())
+                        {
+                            <option value="@dept.DepartmentId">@dept.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="statusFilter">
+                        <option value="all">Tất cả trạng thái</option>
+                        <option value="active">Đang hoạt động</option>
+                        <option value="inactive">Tạm nghỉ</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teachers Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Giảng viên</th>
+                            <th>Mã GV</th>
+                            <th>Email</th>
+                            <th>Bộ môn</th>
+                            <th>Ngày tham gia</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teachersTableBody">
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var teacher in Model)
+                            {
+                                <tr class="teacher-row" data-name="@teacher.FullName" data-username="@teacher.MssvMgv" data-department="@teacher.DepartmentId" data-status="@(teacher.Status == "Active" ? "active" : "inactive")">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-success d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-chalkboard-teacher text-white"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">@teacher.FullName</div>
+                                                <small class="text-muted">@teacher.Phone</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">@teacher.MssvMgv</span>
+                                    </td>
+                                    <td>
+                                        @teacher.Email
+                                    </td>
+                                    <td>
+                                        @if (teacher.Department != null)
+                                        {
+                                            <span class="badge bg-info">@teacher.Department.Name</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Chưa gán</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @teacher.CreatedAt?.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td>
+                                        @if (teacher.Status == "Active")
+                                        {
+                                            <span class="badge bg-success">Đang dạy</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">Tạm nghỉ</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info" title="Gán vào lớp/môn">
+                                                <i class="fas fa-tasks"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning" title="@(teacher.Status == "Active" ? "Tạm nghỉ" : "Kích hoạt")">
+                                                @if (teacher.Status == "Active")
+                                                {
+                                                    <i class="fas fa-pause"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="fas fa-play"></i>
+                                                }
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">Chưa có giảng viên nào trong khoa</p>
+                                    <a href="@Url.Action("AddTeacher", "FacultyAdmin")" class="btn btn-success">
+                                        <i class="fas fa-user-plus"></i> Thêm giảng viên đầu tiên
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-lightning-bolt"></i> Thao tác nhanh</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <button class="btn btn-outline-success w-100">
+                        <i class="fas fa-file-import"></i> Import từ Excel
+                    </button>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <button class="btn btn-outline-primary w-100">
+                        <i class="fas fa-tasks"></i> Gán hàng loạt
+                    </button>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <button class="btn btn-outline-warning w-100">
+                        <i class="fas fa-envelope"></i> Gửi thông báo
+                    </button>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <button class="btn btn-outline-info w-100">
+                        <i class="fas fa-file-excel"></i> Xuất Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('keyup', function() {
+            const searchValue = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.teacher-row');
+            
+            rows.forEach(row => {
+                const teacherName = row.getAttribute('data-name').toLowerCase();
+                const username = row.getAttribute('data-username').toLowerCase();
+                if (teacherName.includes(searchValue) || username.includes(searchValue)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Department filter
+        document.getElementById('departmentFilter').addEventListener('change', function() {
+            filterTable();
+        });
+
+        // Status filter
+        document.getElementById('statusFilter').addEventListener('change', function() {
+            filterTable();
+        });
+
+        function filterTable() {
+            const departmentValue = document.getElementById('departmentFilter').value;
+            const statusValue = document.getElementById('statusFilter').value;
+            const rows = document.querySelectorAll('.teacher-row');
+            
+            rows.forEach(row => {
+                const department = row.getAttribute('data-department');
+                const status = row.getAttribute('data-status');
+                
+                const departmentMatch = departmentValue === 'all' || department === departmentValue;
+                const statusMatch = statusValue === 'all' || status === statusValue;
+                
+                if (departmentMatch && statusMatch) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+}

@@ -1,0 +1,94 @@
+Admin Tổng – Quản trị toàn bộ hệ thống
+1.1. Quản lý người dùng cấp cao
+• Tạo tài khoản:
+Tạo quản trị khoa (Admin Khoa) - cấp mã riêng
+Tạo giảng viên (giảng viên được cấp Mã GV) hoặc import từ file cán bộ giảng dạy
+Import toàn trường sinh viên (chỉ khi trường cung cấp file tổng - hỗ trợ đặc biệt)
+• Reset mật khẩu cho người dùng cấp cao
+• Khóa / mở khóa tài khoản giảng viên & admin khoa
+
+Sinh viên & Giảng viên không tự tạo tài khoản, kích hoạt dựa trên MSSV/Mã GV đã có trong DB.
+1.2. Quản lý Khoa – Bộ môn
+• Tạo mới khoa
+• Tạo mới bộ môn thuộc khoa
+• Gán giảng viên vào khoa / bộ môn
+• Quản lý số lượng sinh viên – giảng viên theo khoa
+1.3. Quản lý khóa học toàn hệ thống 
+• Xem tất cả khóa học của các khoa
+• Xem thống kê số lượng giảng viên – sinh viên mỗi khoa
+• Xem và xuất báo cáo học tập toàn hệ thống
+• Kiểm soát các lớp học, cấu trúc bài học
+1.4. Cấu hình chung hệ thống
+• Cấu hình năm học – học kỳ
+• Cấu hình thang điểm, trọng số
+• Sao lưu – Phục hồi cơ sở dữ liệu
+• Cấu hình email server (gửi thông báo, reset password)
+Quản trị Khóa học (Quản trị Khoa)
+2.1. Quản lý khóa học
+• Tạo khóa học mới
+• Cập nhật mô tả, mục tiêu, tín chỉ, thời lượng
+• Tạo cấu trúc chương – bài học
+• Gán giảng viên phụ trách khóa học
+• Quản lý danh sách lớp trong khoa
+2.2. Quản lý giảng viên
+• Thêm giảng viên vào khoa
+• Gán giảng viên vào lớp / môn dạy
+• Theo dõi tình trạng giảng viên (đang dạy, tạm nghỉ…)
+2.3. Quản lý sinh viên
+• Import sinh viên vào lớp bằng file Excel
+• Điều chuyển sinh viên giữa các lớp
+• Theo dõi tiến độ học tập của sinh viên trong khoa
+2.4. Báo cáo – Thống kê
+• Báo cáo tình trạng lớp học
+• Báo cáo kết quả học tập theo lớp / khóa
+• Báo cáo tỷ lệ hoàn thành khóa học
+• Xuất Excel/PDF
+Giảng viên – Quản lý lớp học của chính mình
+3.1. Quản lý lớp học – môn học
+• Xem tất cả lớp được phân công
+• Quản lý nội dung giảng dạy (video, PDF, slide)
+• Tạo chủ đề/chương học theo tuần
+3.2. Tạo – Quản lý bài tập
+• Tạo bài tập và upload tài liệu
+• Thiết lập hạn nộp, số lần nộp
+• Chấm điểm bài tập & nhận xét
+• Xuất điểm ra file Excel
+3.3. Tạo đề thi – Thi online
+• Tạo ngân hàng câu hỏi
+• Tạo đề thi trộn câu
+• Thiết lập thời gian làm bài, số câu, điều kiện mở
+• Tự chấm trắc nghiệm
+• Chấm tự luận thủ công
+3.4. Theo dõi học viên
+• Xem danh sách sinh viên trong lớp
+• Theo dõi tiến độ làm bài, học chương
+• Gửi thông báo, nhắc hạn nộp
+Lịch giảng dạy của giảng viên
+Sinh viên (Học viên)
+4.1. Quản lý tài khoản
+• Đăng nhập bằng MSSV đã được cấp trước
+• Kích hoạt tài khoản lần đầu thông qua:
+MSSV
+Email khớp với DB
+Tạo mật khẩu mới
+• Đổi mật khẩu
+• Nhận thông báo từ giảng viên
+4.2. Tham gia học tập
+• Xem danh sách khóa học/lớp học đã được gán
+• Xem bài giảng (video, tài liệu PDF, slide…)
+• Xem thông báo & tham gia diễn đàn thảo luận
+4.3. Làm bài tập – Nộp bài
+• Tải bài tập về máy
+• Nộp bài trực tuyến (upload file)
+• Xem điểm bài tập & phản hồi giảng viên
+4.4. Thi kiểm tra
+• Làm bài thi trực tuyến (trắc nghiệm, tự luận)
+• Xem kết quả sau khi thi
+• Xem lịch thi được giảng viên công bố
+4.5. Theo dõi tiến độ học tập
+• Xem tiến độ học theo tuần/chương
+• Xem điểm tổng kết môn
+• Xem lịch sử học tập
+4.6. Thời khóa biểu học viên
+
+

@@ -1,0 +1,304 @@
+@model IEnumerable<LMS.Models.Faculty>
+
+@{
+    ViewData["Title"] = "Quản lý Đơn vị & Khoa";
+    var totalFaculties = Model?.Count() ?? 0;
+    var activeFaculties = Model?.Count(f => f.IsActive == true) ?? 0;
+    var totalDepartments = Model?.Sum(f => f.Departments?.Count ?? 0) ?? 0;
+    var totalUsers = Model?.Sum(f => f.Users?.Count ?? 0) ?? 0;
+}
+
+@section Styles {
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .faculty-management { 
+            background-color: #f8f9fa; 
+            min-height: 100vh; 
+            padding: 20px;
+        }
+        
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 1.5rem; 
+            margin-bottom: 2rem; 
+        }
+        
+        .stat-card { 
+            background: white; 
+            padding: 1.5rem; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+        }
+        
+        .stat-info h3 { 
+            color: #6c757d; 
+            font-size: 0.9rem; 
+            font-weight: 500; 
+            margin-bottom: 0.5rem; 
+            text-transform: uppercase; 
+        }
+        
+        .stat-info .number { 
+            color: #212529; 
+            font-size: 2rem; 
+            font-weight: 700; 
+            line-height: 1; 
+            margin-bottom: 0; 
+        }
+        
+        .stat-icon { 
+            position: relative; 
+            height: 60px; 
+            width: 60px; 
+            background: #667eea; 
+            opacity: 1; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        @@media (max-width: 768px) {
+            .stats-grid { 
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+                gap: 1rem; 
+            }
+        }
+    </style>
+}
+
+<div class="faculty-management">
+    <div class="container-fluid p-4">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Tổng số đơn vị</h3>
+                    <div class="number">@totalFaculties</div>
+                </div>
+                <div class="stat-icon" style="background: #667eea;">
+                    <i class="fas fa-building text-white" style="font-size: 1.5rem;"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Khoa đào tạo</h3>
+                    <div class="number">@activeFaculties</div>
+                </div>
+                <div class="stat-icon" style="background: #764ba2;">
+                    <i class="fas fa-graduation-cap text-white" style="font-size: 1.5rem;"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Tổng bộ môn</h3>
+                    <div class="number">@totalDepartments</div>
+                </div>
+                <div class="stat-icon" style="background: #f093fb;">
+                    <i class="fas fa-sitemap text-white" style="font-size: 1.5rem;"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Tổng nhân sự</h3>
+                    <div class="number">@totalUsers</div>
+                </div>
+                <div class="stat-icon" style="background: #4facfe;">
+                    <i class="fas fa-users text-white" style="font-size: 1.5rem;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faculty Management Section -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0"><i class="fas fa-university"></i> Quản lý Khoa - Bộ môn</h3>
+                    <p class="text-muted mb-0">Danh sách các khoa và bộ môn trong hệ thống</p>
+                </div>
+                <div>
+                    <a href="@Url.Action("CreateFaculty", "Admin")" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Tạo khoa mới
+                    </a>
+                    <a href="#" class="btn btn-info">
+                        <i class="fas fa-file-export"></i> Tạo bộ môn mới
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" placeholder="Tìm kiếm tên khoa, mã đơn vị..." id="searchInput">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <select class="form-select" id="filterSelect">
+                            <option value="all">Tất cả loại hình</option>
+                            <option value="active">Khoa hoạt động</option>
+                            <option value="inactive">Khoa tạm ngưng</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Stats Summary -->
+                <div class="alert alert-info">
+                    <strong>Tổng số khoa:</strong> @totalFaculties
+                    <span class="ms-3"><strong>Khoa đang hoạt động:</strong> @activeFaculties</span>
+                </div>
+
+                <!-- Faculty List Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Khoa</th>
+                                <th>Mã đơn vị</th>
+                                <th>Bộ môn</th>
+                                <th>Nhân sự</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="facultyTableBody">
+                            @if (Model != null && Model.Any())
+                            {
+                                @foreach (var faculty in Model)
+                                {
+                                    <tr class="faculty-row" data-name="@faculty.Name" data-status="@(faculty.IsActive == true ? "active" : "inactive")">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @if (!string.IsNullOrEmpty(faculty.ImagePath))
+                                                {
+                                                    <img src="@faculty.ImagePath" alt="@faculty.Name" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                                }
+                                                else
+                                                {
+                                                    <div class="rounded-circle me-3 bg-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-university text-white"></i>
+                                                    </div>
+                                                }
+                                                <div>
+                                                    <div class="fw-bold">@faculty.Name</div>
+                                                    <small class="text-muted">@faculty.Description</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">@faculty.Code</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">@(faculty.Departments?.Count ?? 0)</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">@(faculty.Users?.Count ?? 0)</span>
+                                        </td>
+                                        <td>
+                                            @if (faculty.IsActive == true)
+                                            {
+                                                <span class="badge bg-success">Hoạt động</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning">Tạm ngưng</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="@Url.Action("EditFaculty", "Admin", new { id = faculty.FacultyId })" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteFaculty(@faculty.FacultyId, '@faculty.Name')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Chưa có khoa nào được tạo</p>
+                                        <a href="@Url.Action("CreateFaculty", "Admin")" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i> Tạo khoa đầu tiên
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('keyup', function() {
+            const searchValue = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.faculty-row');
+            
+            rows.forEach(row => {
+                const facultyName = row.getAttribute('data-name').toLowerCase();
+                if (facultyName.includes(searchValue)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Filter functionality
+        document.getElementById('filterSelect').addEventListener('change', function() {
+            const filterValue = this.value;
+            const rows = document.querySelectorAll('.faculty-row');
+            
+            rows.forEach(row => {
+                const status = row.getAttribute('data-status');
+                if (filterValue === 'all' || status === filterValue) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Delete faculty function
+        function deleteFaculty(facultyId, facultyName) {
+            if (confirm(`Bạn có chắc chắn muốn xóa khoa "${facultyName}"?`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '@Url.Action("DeleteFaculty", "Admin")';
+                
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'id';
+                idInput.value = facultyId;
+                form.appendChild(idInput);
+                
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = $('[name=__RequestVerificationToken]').val();
+                form.appendChild(tokenInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+}

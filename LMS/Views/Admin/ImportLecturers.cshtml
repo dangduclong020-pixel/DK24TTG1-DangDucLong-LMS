@@ -1,0 +1,474 @@
+@{
+    ViewData["Title"] = "Import cán bộ giảng dạy";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --success-color: #52c41a;
+            --warning-color: #faad14;
+            --error-color: #ff4d4f;
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --border-color: #d9d9d9;
+            --card-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        }
+
+        .import-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .import-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-header h2 {
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .card-header p {
+            color: #8c8c8c;
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: #f0f8ff;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background-color: #e6f7ff;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 16px;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: #8c8c8c;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: #40a9ff;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #f5f5f5;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #e8e8e8;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            background-color: #73d13d;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background-color: #e6f7ff;
+            color: #0050b3;
+            border-left-color: var(--primary-color);
+        }
+
+        .alert-success {
+            background-color: #f6ffed;
+            color: #389e0d;
+            border-left-color: var(--success-color);
+        }
+
+        .alert-warning {
+            background-color: #fffbe6;
+            color: #d48806;
+            border-left-color: var(--warning-color);
+        }
+
+        .alert-error {
+            background-color: #fff1f0;
+            color: #cf1322;
+            border-left-color: var(--error-color);
+        }
+
+        .requirements {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .requirements h5 {
+            color: var(--warning-color);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .requirements ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .requirements li {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .template-download {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .selected-file {
+            background-color: #f0f8ff;
+            border: 1px solid var(--primary-color);
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin: 16px 0;
+            display: none;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-icon {
+            font-size: 24px;
+            color: var(--success-color);
+        }
+
+        .file-details h6 {
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .file-details p {
+            margin: 0;
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+
+        .actions {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .actions .btn {
+            margin: 0 8px;
+            min-width: 120px;
+        }
+    </style>
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-dark">
+                        <i class="fas fa-file-import text-info"></i> Import cán bộ giảng dạy
+                    </h1>
+                    <p class="mb-0 text-muted">Tải lên file Excel để tạo nhiều tài khoản giảng viên cùng lúc</p>
+                </div>
+                <a href="@Url.Action("UserManagement", "Admin")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="import-container">
+        <!-- Import Form -->
+        <div class="import-card">
+            <div class="card-header">
+                <h2><i class="fas fa-cloud-upload-alt"></i> Tải lên file Excel</h2>
+                <p>Chọn file Excel (.xlsx, .xls) chứa danh sách cán bộ giảng dạy để import vào hệ thống</p>
+            </div>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+                </div>
+            }
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+                </div>
+            }
+
+            @if (TempData["InfoMessage"] != null)
+            {
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i> @TempData["InfoMessage"]
+                </div>
+            }
+
+            <form asp-action="ImportLecturers" method="post" enctype="multipart/form-data">
+                <div class="upload-area" onclick="document.getElementById('excelFile').click()">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">Nhấp để chọn file hoặc kéo thả file vào đây</div>
+                    <div class="upload-hint">Hỗ trợ file Excel (.xlsx, .xls) - Tối đa 10MB</div>
+                    <input type="file" id="excelFile" name="excelFile" class="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+                </div>
+
+                <div class="selected-file" id="selectedFile">
+                    <div class="file-info">
+                        <div class="file-icon">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <div class="file-details">
+                            <h6 id="fileName">File đã chọn</h6>
+                            <p id="fileSize">Kích thước file</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn btn-success" id="importBtn" disabled>
+                        <i class="fas fa-upload"></i> Import Giảng viên
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearSelection()">
+                        <i class="fas fa-times"></i> Hủy chọn
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Template & Requirements -->
+        <div class="import-card">
+            <div class="requirements">
+                <h5><i class="fas fa-exclamation-triangle"></i> Yêu cầu định dạng file Excel:</h5>
+                <ol>
+                    <li><strong>Sheet đầu tiên</strong> phải chứa dữ liệu giảng viên</li>
+                    <li><strong>Dòng đầu tiên</strong> là tiêu đề cột (header)</li>
+                    <li><strong>Các cột bắt buộc:</strong>
+                        <ul style="margin-top: 8px;">
+                            <li>HoTen (Họ và tên) - Cột A</li>
+                            <li>Email (Email) - Cột B</li>
+                            <li>SoDienThoai (Số điện thoại) - Cột C</li>
+                            <li>MaKhoa (Mã khoa) - Cột D</li>
+                            <li>MaBomon (Mã bộ môn) - Cột E (tùy chọn)</li>
+                            <li>HocVi (Học vị) - Cột F (tùy chọn)</li>
+                            <li>ChuyenMon (Chuyên môn) - Cột G (tùy chọn)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Dữ liệu bắt đầu từ dòng 2</strong> trở đi</li>
+                    <li><strong>Email phải duy nhất</strong> và có định dạng hợp lệ</li>
+                </ol>
+            </div>
+
+            <div class="template-download">
+                <a href="/templates/template-giang-vien.xlsx" class="btn btn-primary" download>
+                    <i class="fas fa-download"></i> Tải xuống file mẫu
+                </a>
+                <p style="font-size: 12px; color: #8c8c8c; margin-top: 8px;">
+                    Sử dụng file mẫu để đảm bảo định dạng chính xác
+                </p>
+            </div>
+        </div>
+
+        <!-- Import Progress (Hidden by default) -->
+        <div class="import-card" id="progressCard" style="display: none;">
+            <div class="card-header">
+                <h5><i class="fas fa-spinner fa-spin"></i> Đang xử lý import...</h5>
+            </div>
+            <div class="progress" style="height: 20px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" 
+                     role="progressbar" style="width: 0%"></div>
+            </div>
+            <p style="text-align: center; margin-top: 12px; font-size: 14px;" id="progressText">
+                Đang chuẩn bị...
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Handle file selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Validate file type
+                const allowedTypes = [
+                    'application/vnd.ms-excel',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ];
+                
+                if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/i)) {
+                    alert('Vui lòng chọn file Excel (.xlsx hoặc .xls)');
+                    clearSelection();
+                    return;
+                }
+
+                // Validate file size (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File quá lớn! Vui lòng chọn file nhỏ hơn 10MB');
+                    clearSelection();
+                    return;
+                }
+
+                // Show selected file info
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileSize').textContent = formatFileSize(file.size);
+                document.getElementById('selectedFile').style.display = 'block';
+                document.getElementById('importBtn').disabled = false;
+            }
+        }
+
+        // Clear file selection
+        function clearSelection() {
+            document.getElementById('excelFile').value = '';
+            document.getElementById('selectedFile').style.display = 'none';
+            document.getElementById('importBtn').disabled = true;
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Handle drag and drop
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('excelFile').files = files;
+                handleFileSelect({ target: { files: files } });
+            }
+        });
+
+        // Handle form submission
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const fileInput = document.getElementById('excelFile');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                e.preventDefault();
+                alert('Vui lòng chọn file Excel để import!');
+                return false;
+            }
+
+            // Show progress
+            document.getElementById('progressCard').style.display = 'block';
+            simulateProgress();
+        });
+
+        // Simulate import progress
+        function simulateProgress() {
+            let progress = 0;
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 95) progress = 95;
+                
+                progressBar.style.width = progress + '%';
+                
+                if (progress < 30) {
+                    progressText.textContent = 'Đang đọc file Excel...';
+                } else if (progress < 60) {
+                    progressText.textContent = 'Đang xác thực dữ liệu...';
+                } else if (progress < 90) {
+                    progressText.textContent = 'Đang tạo tài khoản...';
+                } else {
+                    progressText.textContent = 'Hoàn tất quá trình import...';
+                    clearInterval(interval);
+                }
+            }, 200);
+        }
+    </script>
+}

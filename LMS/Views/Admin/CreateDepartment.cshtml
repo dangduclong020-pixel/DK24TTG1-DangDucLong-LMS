@@ -1,0 +1,199 @@
+@model LMS.Models.Department
+
+@{
+    ViewData["Title"] = "Tạo bộ môn mới";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-dark">
+                        <i class="fas fa-plus-circle"></i> Tạo bộ môn mới
+                    </h1>
+                    <p class="mb-0 text-muted">Thêm bộ môn mới vào khoa</p>
+                </div>
+                <a href="@Url.Action("FacultyManagement", "Admin")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form tạo bộ môn -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">Thông tin bộ môn</h6>
+                </div>
+                <div class="card-body">
+                    <form asp-action="CreateDepartment" method="post">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label asp-for="FacultyId">Thuộc khoa <span class="text-danger">*</span></label>
+                                    <select asp-for="FacultyId" class="form-control" required>
+                                        <option value="">-- Chọn khoa --</option>
+                                        @foreach (var faculty in ViewBag.Faculties)
+                                        {
+                                            <option value="@faculty.FacultyId">@faculty.Name</option>
+                                        }
+                                    </select>
+                                    <span asp-validation-for="FacultyId" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label asp-for="Name">Tên bộ môn <span class="text-danger">*</span></label>
+                                    <input asp-for="Name" class="form-control" required 
+                                           placeholder="VD: Bộ môn Khoa học Máy tính">
+                                    <span asp-validation-for="Name" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Code">Mã bộ môn</label>
+                                    <input asp-for="Code" class="form-control" 
+                                           placeholder="VD: KHMT">
+                                    <span asp-validation-for="Code" class="text-danger"></span>
+                                </div>
+                            </div>
+
+
+
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label asp-for="Description">Mô tả bộ môn</label>
+                                    <textarea asp-for="Description" class="form-control" rows="4" 
+                                              placeholder="Nhập mô tả về bộ môn, các chuyên ngành, lĩnh vực nghiên cứu..."></textarea>
+                                    <span asp-validation-for="Description" class="text-danger"></span>
+                                </div>
+                            </div>
+
+
+                        </div>
+
+                        <!-- Preview -->
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Thông tin sẽ được tạo:</h6>
+                            <ul class="mb-0">
+                                <li>Trạng thái: Hoạt động</li>
+                                <li>Ngày tạo: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</li>
+                                <li>Có thể gán giảng viên vào bộ môn</li>
+                                <li>Có thể quản lý các môn học thuộc bộ môn</li>
+                            </ul>
+                        </div>
+
+                        <!-- Nút thao tác -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-info btn-lg mr-3">
+                                <i class="fas fa-save"></i> Tạo bộ môn
+                            </button>
+                            <a href="@Url.Action("FacultyManagement", "Admin")" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> Hủy
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto generate code from name
+    document.querySelector('[name="Name"]').addEventListener('input', function() {
+        var name = this.value;
+        var codeField = document.querySelector('[name="Code"]');
+        
+        if (name && !codeField.value) {
+            // Extract initials from Vietnamese department names
+            var words = name.replace('Bộ môn', '').trim().split(' ');
+            var code = '';
+            
+            words.forEach(function(word) {
+                if (word.length > 0) {
+                    code += word.charAt(0).toUpperCase();
+                }
+            });
+            
+            codeField.value = code.substring(0, 8); // Limit to 8 characters
+        }
+    });
+
+    // Auto generate email from faculty and department
+    function updateEmail() {
+        var facultySelect = document.querySelector('[name="FacultyId"]');
+        var deptName = document.querySelector('[name="Name"]').value;
+        var emailField = document.querySelector('[name="Email"]');
+        
+        if (facultySelect.value && deptName && !emailField.value) {
+            var facultyName = facultySelect.options[facultySelect.selectedIndex].text;
+            var deptCode = document.querySelector('[name="Code"]').value || 'dept';
+            
+            var email = deptCode.toLowerCase() + '@@tdmu.edu.vn';
+            emailField.value = email;
+        }
+    }
+
+    document.querySelector('[name="FacultyId"]').addEventListener('change', updateEmail);
+    document.querySelector('[name="Code"]').addEventListener('input', updateEmail);
+
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        var name = document.querySelector('[name="Name"]').value.trim();
+        var facultyId = document.querySelector('[name="FacultyId"]').value;
+        
+        if (!facultyId) {
+            e.preventDefault();
+            alert('Vui lòng chọn khoa!');
+            return false;
+        }
+        
+        if (name.length < 5) {
+            e.preventDefault();
+            alert('Tên bộ môn phải có ít nhất 5 ký tự!');
+            return false;
+        }
+    });
+</script>
+
+<style>
+    .form-group label {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .text-danger {
+        font-weight: bold;
+    }
+
+    .card {
+        border: none;
+        border-radius: 10px;
+    }
+
+    .btn-lg {
+        padding: 10px 30px;
+        font-size: 16px;
+    }
+
+    .alert-info {
+        border-left: 4px solid #17a2b8;
+    }
+
+    .form-control:focus {
+        border-color: #17a2b8;
+        box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25);
+    }
+
+    textarea.form-control {
+        resize: vertical;
+    }
+</style>

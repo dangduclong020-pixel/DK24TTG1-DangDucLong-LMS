@@ -1,0 +1,311 @@
+@model List<LMS.Models.User>
+
+@{
+    ViewData["Title"] = "Quản lý tài khoản";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --bg-color: #f0f2f5;
+            --sidebar-width: 260px;
+            --text-color: #333;
+            --text-muted: #8c8c8c;
+            --border-color: #e8e8e8;
+            --card-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+            
+            /* Màu vai trò */
+            --role-khoa-bg: #f9f0ff;
+            --role-khoa-color: #531dab;
+            --role-gv-bg: #e6f7ff;
+            --role-gv-color: #096dd9;
+            --role-sv-bg: #f6ffed;
+            --role-sv-color: #389e0d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content { padding: 0; }
+
+        /* Header Page */
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+        }
+        .page-title { font-size: 24px; font-weight: 600; color: #262626; }
+        .btn-primary {
+            background-color: var(--primary-color); color: #fff; border: none;
+            padding: 10px 20px; border-radius: 6px; cursor: pointer;
+            font-weight: 500; display: flex; align-items: center; gap: 8px;
+            transition: background 0.3s;
+        }
+        .btn-primary:hover { background-color: #40a9ff; }
+
+        /* Filters Area */
+        .filter-container {
+            background: #fff; padding: 16px; border-radius: 8px;
+            box-shadow: var(--card-shadow); margin-bottom: 20px;
+            display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+        }
+        .search-box {
+            position: relative; flex: 1; min-width: 200px;
+        }
+        .search-box input {
+            width: 100%; padding: 10px 10px 10px 36px; border: 1px solid #d9d9d9;
+            border-radius: 6px; outline: none; transition: border 0.3s;
+        }
+        .search-box input:focus { border-color: var(--primary-color); }
+        .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #bfbfbf; }
+
+        .role-tabs { display: flex; gap: 10px; }
+        .role-tab {
+            padding: 8px 16px; border: 1px solid #d9d9d9; border-radius: 6px;
+            cursor: pointer; font-size: 14px; background: #fff; color: #666;
+            transition: all 0.3s;
+        }
+        .role-tab:hover { color: var(--primary-color); border-color: var(--primary-color); }
+        .role-tab.active {
+            background: var(--primary-color); color: #fff; border-color: var(--primary-color);
+        }
+
+        /* Table Styles */
+        .table-wrapper {
+            background: #fff; border-radius: 8px; box-shadow: var(--card-shadow); overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th {
+            background: #fafafa; padding: 16px; text-align: left;
+            font-weight: 600; color: #262626; border-bottom: 1px solid #f0f0f0;
+        }
+        td {
+            padding: 16px; border-bottom: 1px solid #f0f0f0; color: #595959; font-size: 14px;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #fafafa; }
+
+        /* Custom Badges */
+        .role-badge {
+            padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; border: 1px solid transparent;
+        }
+        .badge-khoa { background: var(--role-khoa-bg); color: var(--role-khoa-color); border-color: #d3adf7; }
+        .badge-gv { background: var(--role-gv-bg); color: var(--role-gv-color); border-color: #91d5ff; }
+        .badge-sv { background: var(--role-sv-bg); color: var(--role-sv-color); border-color: #b7eb8f; }
+
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .status-active { background-color: #52c41a; }
+        .status-inactive { background-color: #ff4d4f; }
+
+        /* Actions */
+        .action-btn {
+            background: none; border: none; cursor: pointer; padding: 6px;
+            border-radius: 4px; color: var(--text-muted); transition: 0.2s;
+        }
+        .edit-btn:hover { color: var(--primary-color); background: #e6f7ff; }
+        .delete-btn:hover { color: #ff4d4f; background: #fff1f0; }
+
+        /* Pagination */
+        .pagination { display: flex; justify-content: flex-end; padding: 20px; gap: 8px; }
+        .page-item {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer; font-size: 14px;
+        }
+        .page-item.active { border-color: var(--primary-color); color: var(--primary-color); font-weight: 600; }
+        .page-item:hover:not(.active) { border-color: var(--primary-color); }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .filter-container { flex-direction: column; align-items: stretch; }
+            .role-tabs { overflow-x: auto; padding-bottom: 5px; }
+            .table-wrapper { overflow-x: auto; }
+        }
+    </style>
+}
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Quản lý tài khoản cấp cao</h1>
+                <p style="color: #8c8c8c; font-size: 14px; margin-top: 5px;">Quản lý Admin, Admin Khoa và Giảng viên. Sinh viên do Admin Khoa quản lý. Tổng cộng: @Model.Where(u => u.RoleId <= 3).Count() người dùng cấp cao</p>
+            </div>
+            <a href="@Url.Action("CreateUser", "Admin")" class="btn-primary">
+                <i class="fa-solid fa-user-shield"></i> Tạo tài khoản cấp cao
+            </a>
+        </div>
+
+        <div class="filter-container">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Tìm kiếm theo tên, mã số hoặc email...">
+            </div>
+            
+            <div class="role-tabs">
+                <button class="role-tab active" onclick="filterTable('all')">Tất cả cấp cao (@Model.Where(u => u.RoleId <= 3).Count())</button>
+                <button class="role-tab" onclick="filterTable('1')">Admin Tổng (@Model.Count(u => u.RoleId == 1))</button>
+                <button class="role-tab" onclick="filterTable('2')">Admin Khoa (@Model.Count(u => u.RoleId == 2))</button>
+                <button class="role-tab" onclick="filterTable('3')">Giảng viên (@Model.Count(u => u.RoleId == 3))</button>
+                <div class="text-muted small" style="padding: 8px 16px; font-style: italic;">
+                    <i class="fas fa-info-circle"></i> Sinh viên được quản lý bởi Admin Khoa
+                </div>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="userTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;"><input type="checkbox"></th>
+                        <th>Mã số</th>
+                        <th>Họ và tên</th>
+                        <th>Email</th>
+                        <th>Vai trò</th>
+                        <th>Đơn vị / Khoa</th>
+                        <th>Trạng thái</th>
+                        <th style="text-align: right;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Where(u => u.RoleId <= 3))
+                    {
+                        <tr data-role="@user.RoleId">
+                            <td><input type="checkbox" value="@user.UserId"></td>
+                            <td><b>@user.MssvMgv</b></td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(user.FullName ?? user.MssvMgv)&background=random" style="width:32px; height:32px; border-radius:50%; margin-right:10px;">
+                                    @user.FullName
+                                </div>
+                            </td>
+                            <td>@user.Email</td>
+                            <td>
+                                @switch (user.RoleId)
+                                {
+                                    case 1:
+                                        <span class="role-badge" style="background: #fff2e8; color: #d46b08; border-color: #ffbb96;">Admin</span>
+                                        break;
+                                    case 2:
+                                        <span class="role-badge badge-khoa">Quản lý</span>
+                                        break;
+                                    case 3:
+                                        <span class="role-badge badge-gv">Giảng viên</span>
+                                        break;
+                                    case 4:
+                                        <span class="role-badge badge-sv">Sinh viên</span>
+                                        break;
+                                    default:
+                                        <span class="role-badge" style="background: #f6f6f6; color: #666;">@user.Role?.RoleName</span>
+                                        break;
+                                }
+                            </td>
+                            <td>@(user.Faculty?.Name ?? user.Department?.Name ?? "Chưa phân công")</td>
+                            <td>
+                                @if (user.Status == "Active")
+                                {
+                                    <span class="status-dot status-active"></span><span>Hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="status-dot status-inactive"></span><span>Đã khóa</span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="@Url.Action("EditUser", "Admin", new { id = user.UserId })" class="action-btn edit-btn" title="Chỉnh sửa">
+                                    <i class="fa-regular fa-pen-to-square"></i>
+                                </a>
+                                <button class="action-btn delete-btn" onclick="confirmDelete(@user.UserId, '@user.FullName')" title="Xóa">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination">
+            <div class="page-item"><i class="fa-solid fa-chevron-left"></i></div>
+            <div class="page-item active">1</div>
+            <div class="page-item">2</div>
+            <div class="page-item">3</div>
+            <div class="page-item"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+
+@section Scripts {
+    <script>
+        // Hàm lọc bảng dữ liệu theo Tabs
+        function filterTable(role) {
+            // 1. Cập nhật trạng thái nút bấm (Active state)
+            const buttons = document.querySelectorAll('.role-tab');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // Tìm nút được click và thêm class active
+            event.target.classList.add('active');
+
+            // 2. Lọc hàng trong bảng (chỉ hiển thị user cấp cao - RoleId <= 3)
+            const rows = document.querySelectorAll('#userTable tbody tr');
+            
+            rows.forEach(row => {
+                const rowRole = parseInt(row.getAttribute('data-role'));
+                
+                // Chỉ hiển thị user cấp cao (Admin, Admin Khoa, Giảng viên)
+                if (rowRole > 3) {
+                    row.style.display = 'none';
+                    return;
+                }
+                
+                if (role === 'all' || rowRole.toString() === role) {
+                    row.style.display = ''; // Hiện
+                } else {
+                    row.style.display = 'none'; // Ẩn
+                }
+            });
+        }
+
+        // Search đơn giản (Client side search)
+        document.getElementById('searchInput').addEventListener('keyup', function() {
+            let filter = this.value.toUpperCase();
+            let rows = document.querySelector("#userTable tbody").rows;
+
+            for (let i = 0; i < rows.length; i++) {
+                // Lấy cột Tên (index 2) và Mã số (index 1)
+                let colId = rows[i].cells[1].textContent;
+                let colName = rows[i].cells[2].textContent;
+                let colEmail = rows[i].cells[3].textContent;
+                
+                if (colId.toUpperCase().indexOf(filter) > -1 || 
+                    colName.toUpperCase().indexOf(filter) > -1 ||
+                    colEmail.toUpperCase().indexOf(filter) > -1) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        });
+
+        // Hàm xác nhận xóa người dùng
+        function confirmDelete(userId, userName) {
+            if (confirm(`Bạn có chắc chắn muốn xóa người dùng "${userName}"?`)) {
+                // Gửi request xóa
+                fetch('@Url.Action("DeleteUser", "Admin")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({ id: userId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Có lỗi xảy ra khi xóa người dùng.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi xóa người dùng.');
+                });
+            }
+        }
+    </script>
+}

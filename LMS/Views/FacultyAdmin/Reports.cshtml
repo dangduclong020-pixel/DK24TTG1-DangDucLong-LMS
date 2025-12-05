@@ -1,0 +1,416 @@
+@{
+    ViewData["Title"] = "Báo cáo - Thống kê";
+    Layout = "~/Views/Shared/_FacultyLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-chart-line"></i> Báo cáo - Thống kê
+                    </h1>
+                    <p class="text-muted mb-0">Báo cáo tổng quan về hoạt động giảng dạy và học tập</p>
+                </div>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-success" onclick="exportExcel()">
+                        <i class="fas fa-file-excel"></i> Xuất Excel
+                    </button>
+                    <button class="btn btn-danger" onclick="exportPDF()">
+                        <i class="fas fa-file-pdf"></i> Xuất PDF
+                    </button>
+                    <a href="@Url.Action("Index", "FacultyAdmin")" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Báo cáo tình trạng lớp học -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chalkboard"></i> Báo cáo tình trạng lớp học
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Tên lớp</th>
+                                    <th>Khóa học</th>
+                                    <th>Sĩ số hiện tại</th>
+                                    <th>Sức chứa</th>
+                                    <th>Tỷ lệ lấp đầy</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{int classIndex = 1;}
+                                @foreach (var classReport in ViewBag.ClassReports)
+                                {
+                                    var fillRate = classReport.Capacity > 0 ? 
+                                        Math.Round((double)classReport.TotalStudents / classReport.Capacity * 100, 1) : 0;
+                                    
+                                    <tr>
+                                        <td>@classIndex</td>
+                                        <td><strong class="text-primary">@classReport.ClassName</strong></td>
+                                        <td>@classReport.CourseName</td>
+                                        <td>
+                                            <span class="badge badge-info">@classReport.TotalStudents</span>
+                                        </td>
+                                        <td>@classReport.Capacity</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar progress-bar-@(fillRate >= 80 ? "success" : fillRate >= 50 ? "warning" : "danger")" 
+                                                     role="progressbar" style="width: @fillRate%;">
+                                                    @fillRate%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-@(classReport.Status == "Đang hoạt động" ? "success" : "secondary")">
+                                                @classReport.Status
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    classIndex++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Báo cáo kết quả học tập -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-graduation-cap"></i> Báo cáo kết quả học tập
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Khóa học</th>
+                                    <th>Số sinh viên</th>
+                                    <th>Điểm trung bình</th>
+                                    <th>Tỷ lệ đậu</th>
+                                    <th>Đánh giá</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{int gradeIndex = 1;}
+                                @foreach (var gradeReport in ViewBag.GradeReports)
+                                {
+                                    var courseAvgGrade = Math.Round(gradeReport.AverageGrade, 2);
+                                    var passRate = Math.Round(gradeReport.PassRate, 1);
+                                    
+                                    <tr>
+                                        <td>@gradeIndex</td>
+                                        <td><strong class="text-primary">@gradeReport.CourseName</strong></td>
+                                        <td>
+                                            <span class="badge badge-info">@gradeReport.TotalStudents</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-@(courseAvgGrade >= 8 ? "success" : courseAvgGrade >= 6.5 ? "warning" : "danger")">
+                                                @courseAvgGrade
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar progress-bar-@(passRate >= 80 ? "success" : passRate >= 60 ? "warning" : "danger")" 
+                                                     role="progressbar" style="width: @passRate%;">
+                                                    @passRate%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (passRate >= 80 && courseAvgGrade >= 7)
+                                            {
+                                                <span class="badge badge-success">Tốt</span>
+                                            }
+                                            else if (passRate >= 60 && courseAvgGrade >= 5.5)
+                                            {
+                                                <span class="badge badge-warning">Khá</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-danger">Cần cải thiện</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    gradeIndex++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biểu đồ thống kê -->
+    <div class="row mb-4">
+        <!-- Biểu đồ tỷ lệ đậu theo khóa học -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar"></i> Tỷ lệ đậu theo khóa học
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="passRateChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Biểu đồ điểm trung bình -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-chart-line"></i> Điểm trung bình khóa học
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="averageGradeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tổng kết -->
+    <div class="row">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Tổng lớp học
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.ClassReports.Count()</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chalkboard fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Tỷ lệ đậu trung bình
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @{
+                                    var gradeReportsList = ViewBag.GradeReports as System.Collections.IEnumerable;
+                                    double avgPassRate = 0;
+                                    if (gradeReportsList != null) {
+                                        var items = gradeReportsList.Cast<dynamic>().ToList();
+                                        if (items.Count > 0) {
+                                            avgPassRate = items.Average(g => (double)g.PassRate);
+                                        }
+                                    }
+                                }
+                                @Math.Round(avgPassRate, 1)%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Điểm TB chung
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @{
+                                    var gradeReportsList2 = ViewBag.GradeReports as System.Collections.IEnumerable;
+                                    double avgGrade = 0;
+                                    if (gradeReportsList2 != null) {
+                                        var items2 = gradeReportsList2.Cast<dynamic>().ToList();
+                                        if (items2.Count > 0) {
+                                            avgGrade = items2.Average(g => (double)g.AverageGrade);
+                                        }
+                                    }
+                                }
+                                @Math.Round(avgGrade, 2)
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-star fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Cập nhật cuối
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @DateTime.Now.ToString("dd/MM HH:mm")
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Dữ liệu cho biểu đồ
+    @{
+        var gradeReports = ViewBag.GradeReports as System.Collections.IEnumerable;
+        var courseNamesArray = new List<string>();
+        var passRatesArray = new List<double>();
+        var averageGradesArray = new List<double>();
+        
+        if (gradeReports != null) {
+            foreach (var report in gradeReports) {
+                var reportObj = report as dynamic;
+                courseNamesArray.Add($"'{reportObj.CourseName}'");
+                passRatesArray.Add((double)reportObj.PassRate);
+                averageGradesArray.Add((double)reportObj.AverageGrade);
+            }
+        }
+    }
+    
+    var courseNames = [@Html.Raw(string.Join(",", courseNamesArray))];
+    var passRates = [@Html.Raw(string.Join(",", passRatesArray))];
+    var averageGrades = [@Html.Raw(string.Join(",", averageGradesArray))];
+
+    // Biểu đồ tỷ lệ đậu
+    var passRateCtx = document.getElementById('passRateChart').getContext('2d');
+    var passRateChart = new Chart(passRateCtx, {
+        type: 'bar',
+        data: {
+            labels: courseNames,
+            datasets: [{
+                label: 'Tỷ lệ đậu (%)',
+                data: passRates,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    // Biểu đồ điểm trung bình
+    var avgGradeCtx = document.getElementById('averageGradeChart').getContext('2d');
+    var avgGradeChart = new Chart(avgGradeCtx, {
+        type: 'line',
+        data: {
+            labels: courseNames,
+            datasets: [{
+                label: 'Điểm trung bình',
+                data: averageGrades,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 10
+                }
+            }
+        }
+    });
+
+    function exportExcel() {
+        alert('Chức năng xuất Excel đang được phát triển');
+    }
+
+    function exportPDF() {
+        alert('Chức năng xuất PDF đang được phát triển');
+    }
+</script>
+
+<style>
+    .border-left-primary {
+        border-left: 0.25rem solid #4e73df !important;
+    }
+    
+    .border-left-success {
+        border-left: 0.25rem solid #1cc88a !important;
+    }
+    
+    .border-left-info {
+        border-left: 0.25rem solid #36b9cc !important;
+    }
+    
+    .border-left-warning {
+        border-left: 0.25rem solid #f6c23e !important;
+    }
+
+    .text-gray-800 {
+        color: #5a5c69 !important;
+    }
+
+    .text-gray-300 {
+        color: #dddfeb !important;
+    }
+
+    .progress {
+        background-color: #f1f1f1;
+    }
+
+    .progress-bar {
+        font-size: 12px;
+        font-weight: bold;
+    }
+</style>
