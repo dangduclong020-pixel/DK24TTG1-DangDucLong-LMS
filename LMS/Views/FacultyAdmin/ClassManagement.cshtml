@@ -1,0 +1,217 @@
+@model IEnumerable<LMS.Models.Class>
+@{
+    ViewData["Title"] = "Quản lý Lớp học";
+    Layout = "~/Views/Shared/_FacultyLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>
+                <i class="fas fa-users-class"></i> Quản lý Lớp học
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Index">Trang chủ</a></li>
+                    <li class="breadcrumb-item active">Quản lý Lớp học</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Danh sách Lớp học</h5>
+            <a asp-action="CreateClass" class="btn btn-light btn-sm">
+                <i class="fas fa-plus"></i> Tạo lớp học mới
+            </a>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Mã lớp</th>
+                                <th>Tên lớp học</th>
+                                <th>Khóa học</th>
+                                <th>Giảng viên</th>
+                                <th>Sĩ số</th>
+                                <th>Thời gian</th>
+                                <th>Trạng thái</th>
+                                <th>Tạo ngày</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">@item.Code</span>
+                                    </td>
+                                    <td><strong>@item.Name</strong></td>
+                                    <td>@item.Course?.Name</td>
+                                    <td>
+                                        <i class="fas fa-user text-info"></i> @item.Instructor?.FullName
+                                        <br />
+                                        <small class="text-muted">@item.Instructor?.Email</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            @(item.CurrentStudents ?? 0)/@(item.MaxStudents ?? 0)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            @(item.StartDate?.ToString("dd/MM/yyyy") ?? "N/A") - 
+                                            @(item.EndDate?.ToString("dd/MM/yyyy") ?? "N/A")
+                                        </small>
+                                    </td>
+                                    <td>
+                                        @if (item.IsActive == true)
+                                        {
+                                            <span class="badge bg-success">Hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Không hoạt động</span>
+                                        }
+                                    </td>
+                                    <td>@(item.CreatedAt?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="showImportModal(@item.ClassId, '@item.Name')" title="Import sinh viên">
+                                                <i class="fas fa-file-import"></i>
+                                            </button>
+                                            <a asp-action="EditClass" asp-route-id="@item.ClassId" 
+                                               class="btn btn-outline-primary" title="Chỉnh sửa">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a asp-action="ClassDetails" asp-route-id="@item.ClassId" 
+                                               class="btn btn-outline-info" title="Chi tiết">
+                                                <i class="fas fa-info-circle"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="deleteClass(@item.ClassId, '@item.Name')" title="Xóa">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Chưa có lớp học nào được tạo.
+                    <a asp-action="CreateClass" class="alert-link">Tạo lớp học đầu tiên</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal Import Sinh viên -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-import"></i> Import sinh viên vào lớp
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="importForm" method="post" enctype="multipart/form-data" asp-action="ImportStudentsToClass">
+                <div class="modal-body">
+                    <input type="hidden" id="importClassId" name="classId" />
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Lớp:</strong> <span id="importClassName"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><i class="fas fa-file-excel"></i> Chọn file Excel:</label>
+                        <input type="file" class="form-control" name="excelFile" accept=".xlsx,.xls" required />
+                        <div class="form-text">
+                            File Excel cần có cột đầu tiên là MSSV sinh viên. 
+                            <a href="@Url.Action("ExportStudentsToExcel")" class="text-primary">
+                                <i class="fas fa-download"></i> Tải file mẫu
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Lưu ý:</strong>
+                        <ul class="mb-0 ps-3">
+                            <li>Sinh viên đã có trong lớp sẽ bị bỏ qua</li>
+                            <li>Chỉ sinh viên có MSSV hợp lệ mới được thêm</li>
+                            <li>Kiểm tra sĩ số tối đa của lớp</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Hủy
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-upload"></i> Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showImportModal(classId, className) {
+    document.getElementById('importClassId').value = classId;
+    document.getElementById('importClassName').textContent = className;
+    var modal = new bootstrap.Modal(document.getElementById('importModal'));
+    modal.show();
+}
+
+function deleteClass(id, name) {
+    if (confirm(`Bạn có chắc chắn muốn xóa lớp học "${name}"?`)) {
+        window.location.href = `/FacultyAdmin/DeleteClass/${id}`;
+    }
+}
+</script>
+
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.table th {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>

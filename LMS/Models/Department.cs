@@ -25,6 +25,8 @@ public partial class Department
 
     public string? ImagePath { get; set; }
 
+    public virtual ICollection<AdministrativeClass> AdministrativeClasses { get; set; } = new List<AdministrativeClass>();
+
     public virtual Faculty Faculty { get; set; } = null!;
 
     public virtual ICollection<User> Users { get; set; } = new List<User>();

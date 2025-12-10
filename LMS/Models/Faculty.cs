@@ -23,6 +23,8 @@ public partial class Faculty
 
     public string? ImagePath { get; set; }
 
+    public virtual ICollection<AdministrativeClass> AdministrativeClasses { get; set; } = new List<AdministrativeClass>();
+
     public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
 
     public virtual ICollection<Department> Departments { get; set; } = new List<Department>();

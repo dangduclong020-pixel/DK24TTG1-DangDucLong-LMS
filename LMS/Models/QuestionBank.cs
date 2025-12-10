@@ -27,6 +27,8 @@ public partial class QuestionBank
 
     public DateTime? CreatedAt { get; set; }
 
+    public DateTime? DeletedAt { get; set; }
+
     public virtual Course Course { get; set; } = null!;
 
     public virtual User CreatedByNavigation { get; set; } = null!;

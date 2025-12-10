@@ -1,0 +1,240 @@
+@model LMS.Models.Course
+
+@{
+    ViewData["Title"] = "Chỉnh sửa khóa học";
+    Layout = "~/Views/Shared/_FacultyLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-edit"></i> Chỉnh sửa khóa học
+                    </h1>
+                    <p class="text-muted mb-0">Cập nhật thông tin khóa học: @Model.Name</p>
+                </div>
+                <div>
+                    <a href="@Url.Action("CourseManagement", "FacultyAdmin")" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Quay lại
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Edit Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Thông tin khóa học</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="EditCourse" asp-controller="FacultyAdmin">
+                        <input type="hidden" asp-for="CourseId" />
+                        <input type="hidden" asp-for="FacultyId" />
+                        <input type="hidden" asp-for="LeadInstructorId" />
+                        <input type="hidden" asp-for="CreatedAt" />
+                        <input type="hidden" asp-for="AcademicYear" />
+                        <input type="hidden" asp-for="Semester" />
+
+                        <div class="mb-3">
+                            <label asp-for="Code" class="form-label">
+                                Mã khóa học <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Code" class="form-control" placeholder="VD: CNPM001" required />
+                            <span asp-validation-for="Code" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">
+                                Tên khóa học <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Name" class="form-control" placeholder="VD: Lập trình căn bản" required />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">Mô tả</label>
+                            <textarea asp-for="Description" class="form-control" rows="4" 
+                                      placeholder="Nhập mô tả chi tiết về khóa học..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Credits" class="form-label">
+                                    Số tín chỉ <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Credits" type="number" class="form-control" min="1" max="10" required />
+                                <span asp-validation-for="Credits" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Duration" class="form-label">
+                                    Thời lượng (giờ) <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Duration" type="number" class="form-control" min="15" max="200" required />
+                                <span asp-validation-for="Duration" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Objectives" class="form-label">Mục tiêu khóa học</label>
+                            <textarea asp-for="Objectives" class="form-control" rows="3" 
+                                      placeholder="Nhập mục tiêu học tập của khóa học..."></textarea>
+                            <span asp-validation-for="Objectives" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Prerequisites" class="form-label">Điều kiện tiên quyết</label>
+                            <textarea asp-for="Prerequisites" class="form-control" rows="2" 
+                                      placeholder="VD: Đã hoàn thành khóa học ABC..."></textarea>
+                            <span asp-validation-for="Prerequisites" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="IsActive" name="IsActive" 
+                                       value="true" @(Model.IsActive == true ? "checked" : "") />
+                                <input type="hidden" name="IsActive" value="false" />
+                                <label for="IsActive" class="form-check-label">
+                                    Kích hoạt khóa học
+                                </label>
+                            </div>
+                            <small class="text-muted">Khóa học chỉ hiển thị khi được kích hoạt</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Lưu thay đổi
+                            </button>
+                            <a href="@Url.Action("CourseManagement", "FacultyAdmin")" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Hủy
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Course Info -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Thông tin
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Mã khóa học:</strong></td>
+                            <td>@Model.Code</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Trạng thái:</strong></td>
+                            <td>
+                                @if (Model.IsActive == true)
+                                {
+                                    <span class="badge bg-success">Hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Không hoạt động</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ngày tạo:</strong></td>
+                            <td>@Model.CreatedAt?.ToString("dd/MM/yyyy")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Năm học:</strong></td>
+                            <td>@Model.AcademicYear - @Model.Semester</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar"></i> Thống kê
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <h3 class="text-primary mb-0">@ViewBag.ClassCount</h3>
+                            <small class="text-muted">Lớp học</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h3 class="text-success mb-0">@ViewBag.StudentCount</h3>
+                            <small class="text-muted">Sinh viên</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt"></i> Thao tác nhanh
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="viewClasses()">
+                            <i class="fas fa-users"></i> Xem lớp học
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmDelete()">
+                            <i class="fas fa-trash"></i> Xóa khóa học
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        function viewClasses() {
+            window.location.href = '@Url.Action("CourseManagement", "FacultyAdmin")?courseId=@Model.CourseId';
+        }
+
+        function confirmDelete() {
+            if (confirm('Bạn có chắc chắn muốn xóa khóa học "@Model.Name"?\n\nLưu ý: Hành động này không thể hoàn tác!')) {
+                window.location.href = '@Url.Action("DeleteCourse", "FacultyAdmin", new { id = Model.CourseId })';
+            }
+        }
+
+        // Auto-hide alerts
+        setTimeout(function() {
+            $('.alert').fadeOut('slow');
+        }, 5000);
+    </script>
+}

@@ -1,0 +1,405 @@
+@{
+    Layout = "~/Views/Shared/_TeacherLayout.cshtml";
+    ViewBag.Title = "Tạo bài tập mới";
+}
+
+@model dynamic
+
+<div class="page-header">
+    <div>
+        <h1><i class="fas fa-plus me-2"></i>Tạo bài tập mới</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Teacher")">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Assignments", "Teacher")">Bài tập</a></li>
+                <li class="breadcrumb-item active">Tạo mới</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>@ViewBag.Error
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form method="POST" enctype="multipart/form-data" id="assignmentForm">
+    @Html.AntiForgeryToken()
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Thông tin cơ bản
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ClassId" class="form-label">Lớp học <span class="text-danger">*</span></label>
+                            <select class="form-select" id="ClassId" name="ClassId" required>
+                                <option value="">Chọn lớp học</option>
+                                @if (ViewBag.Classes != null)
+                                {
+                                    @foreach (var classItem in ViewBag.Classes)
+                                    {
+                                        <option value="@classItem.ClassId" selected="@(ViewBag.SelectedClassId?.ToString() == classItem.ClassId.ToString())">
+                                            @classItem.ClassName - @classItem.CourseName
+                                        </option>
+                                    }
+                                }
+                            </select>
+                            <div class="invalid-feedback">Vui lòng chọn lớp học</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="DifficultyLevel" class="form-label">Mức độ khó</label>
+                            <select class="form-select" id="DifficultyLevel" name="DifficultyLevel">
+                                <option value="1">Dễ</option>
+                                <option value="2" selected>Trung bình</option>
+                                <option value="3">Khó</option>
+                                <option value="4">Rất khó</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Title" class="form-label">Tiêu đề bài tập <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="Title" name="Title" 
+                               placeholder="Nhập tiêu đề bài tập..." required maxlength="200">
+                        <div class="invalid-feedback">Vui lòng nhập tiêu đề bài tập</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Description" class="form-label">Mô tả chi tiết <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="Description" name="Description" rows="6" 
+                                  placeholder="Nhập mô tả chi tiết về bài tập, yêu cầu, hướng dẫn thực hiện..." required></textarea>
+                        <div class="invalid-feedback">Vui lòng nhập mô tả bài tập</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="MaxScore" class="form-label">Điểm tối đa <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="MaxScore" name="MaxScore" 
+                                   min="0" max="100" step="0.5" value="10" required>
+                            <div class="invalid-feedback">Vui lòng nhập điểm tối đa hợp lệ</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="MaxAttempts" class="form-label">Số lần nộp tối đa</label>
+                            <select class="form-select" id="MaxAttempts" name="MaxAttempts">
+                                <option value="1" selected>1 lần</option>
+                                <option value="2">2 lần</option>
+                                <option value="3">3 lần</option>
+                                <option value="0">Không giới hạn</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="IsGroupWork" class="form-label">Loại bài tập</label>
+                            <select class="form-select" id="IsGroupWork" name="IsGroupWork">
+                                <option value="false" selected>Cá nhân</option>
+                                <option value="true">Nhóm</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Thời gian
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="DueDate" class="form-label">Hạn nộp <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="DueDate" name="DueDate" required
+                                   min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")">
+                            <div class="invalid-feedback">Vui lòng chọn hạn nộp</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="LateSubmissionDeadline" class="form-label">Hạn nộp muộn (tùy chọn)</label>
+                            <input type="datetime-local" class="form-control" id="LateSubmissionDeadline" 
+                                   name="LateSubmissionDeadline">
+                            <small class="form-text text-muted">Sinh viên có thể nộp muộn với điểm bị trừ</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="AllowLateSubmission" class="form-label">Cho phép nộp muộn</label>
+                            <select class="form-select" id="AllowLateSubmission" name="AllowLateSubmission">
+                                <option value="true" selected>Có</option>
+                                <option value="false">Không</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3" id="latePenaltyDiv">
+                            <label for="LatePenaltyPerDay" class="form-label">Trừ điểm mỗi ngày (%)</label>
+                            <input type="number" class="form-control" id="LatePenaltyPerDay" 
+                                   name="LatePenaltyPerDay" min="0" max="100" step="5" value="10">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Files and Resources -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-paperclip me-2"></i>File đính kèm & Tài liệu
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="AssignmentFiles" class="form-label">File đính kèm</label>
+                        <input type="file" class="form-control" id="AssignmentFiles" name="AssignmentFiles" 
+                               multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar">
+                        <div class="form-text">
+                            Hỗ trợ: PDF, Word, PowerPoint, ZIP, RAR. Tối đa 50MB mỗi file.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Instructions" class="form-label">Hướng dẫn thực hiện</label>
+                        <textarea class="form-control" id="Instructions" name="Instructions" rows="4" 
+                                  placeholder="Ghi rõ các bước thực hiện, yêu cầu định dạng file nộp, tiêu chí đánh giá..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="AllowedFileTypes" class="form-label">Loại file cho phép nộp</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="allowPdf" name="AllowedFileTypes" value="pdf" checked>
+                                    <label class="form-check-label" for="allowPdf">PDF</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="allowDoc" name="AllowedFileTypes" value="doc" checked>
+                                    <label class="form-check-label" for="allowDoc">Word (DOC, DOCX)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="allowPpt" name="AllowedFileTypes" value="ppt">
+                                    <label class="form-check-label" for="allowPpt">PowerPoint</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="allowImg" name="AllowedFileTypes" value="img">
+                                    <label class="form-check-label" for="allowImg">Hình ảnh (JPG, PNG)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="allowZip" name="AllowedFileTypes" value="zip">
+                                    <label class="form-check-label" for="allowZip">Nén (ZIP, RAR)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="allowCode" name="AllowedFileTypes" value="code">
+                                    <label class="form-check-label" for="allowCode">Code (TXT, các file lập trình)</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Preview -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-eye me-2"></i>Xem trước
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="preview-content">
+                        <h6 id="preview-title" class="text-muted">Nhập tiêu đề bài tập</h6>
+                        <p id="preview-class" class="text-muted small">Chưa chọn lớp học</p>
+                        <p id="preview-description" class="text-muted">Nhập mô tả bài tập...</p>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <strong id="preview-score">10</strong>
+                                <br><small class="text-muted">Điểm</small>
+                            </div>
+                            <div class="col-6">
+                                <strong id="preview-attempts">1</strong>
+                                <br><small class="text-muted">Lần nộp</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="text-center">
+                            <i class="fas fa-clock text-warning"></i>
+                            <span id="preview-due" class="text-muted">Chưa đặt hạn nộp</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cogs me-2"></i>Tùy chọn
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="SendNotification" 
+                               name="SendNotification" checked>
+                        <label class="form-check-label" for="SendNotification">
+                            Gửi thông báo cho sinh viên
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="AutoGrade" name="AutoGrade">
+                        <label class="form-check-label" for="AutoGrade">
+                            Tự động chấm điểm (nếu có)
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="SaveAsDraft" name="SaveAsDraft">
+                        <label class="form-check-label" for="SaveAsDraft">
+                            Lưu nháp (không công bố)
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Actions -->
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save me-2"></i>Tạo bài tập
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="saveDraft()">
+                    <i class="fas fa-file-alt me-2"></i>Lưu nháp
+                </button>
+                <a href="@Url.Action("Assignments", "Teacher")" class="btn btn-outline-danger">
+                    <i class="fas fa-times me-2"></i>Hủy bỏ
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        // Real-time preview
+        $('#Title').on('input', function() {
+            $('#preview-title').text($(this).val() || 'Nhập tiêu đề bài tập');
+        });
+
+        $('#Description').on('input', function() {
+            $('#preview-description').text($(this).val() || 'Nhập mô tả bài tập...');
+        });
+
+        $('#ClassId').on('change', function() {
+            var selectedText = $(this).find('option:selected').text();
+            $('#preview-class').text(selectedText !== 'Chọn lớp học' ? selectedText : 'Chưa chọn lớp học');
+        });
+
+        $('#MaxScore').on('input', function() {
+            $('#preview-score').text($(this).val());
+        });
+
+        $('#MaxAttempts').on('change', function() {
+            var attempts = $(this).val();
+            $('#preview-attempts').text(attempts == 0 ? '∞' : attempts);
+        });
+
+        $('#DueDate').on('change', function() {
+            if ($(this).val()) {
+                var date = new Date($(this).val());
+                $('#preview-due').text(date.toLocaleString('vi-VN'));
+            } else {
+                $('#preview-due').text('Chưa đặt hạn nộp');
+            }
+        });
+
+        // Toggle late penalty field
+        $('#AllowLateSubmission').on('change', function() {
+            if ($(this).val() === 'true') {
+                $('#latePenaltyDiv').show();
+            } else {
+                $('#latePenaltyDiv').hide();
+            }
+        });
+
+        // Set default due date (1 week from now)
+        var defaultDue = new Date();
+        defaultDue.setDate(defaultDue.getDate() + 7);
+        $('#DueDate').val(defaultDue.toISOString().slice(0, 16));
+        $('#preview-due').text(defaultDue.toLocaleString('vi-VN'));
+
+        // Form validation
+        $('#assignmentForm').on('submit', function(e) {
+            var isValid = true;
+            
+            // Check required fields
+            $(this).find('[required]').each(function() {
+                if (!$(this).val()) {
+                    $(this).addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+
+            // Check due date is in future
+            var dueDate = new Date($('#DueDate').val());
+            if (dueDate <= new Date()) {
+                $('#DueDate').addClass('is-invalid');
+                alert('Hạn nộp phải sau thời điểm hiện tại');
+                isValid = false;
+            }
+
+            // Check at least one allowed file type
+            if ($('input[name="AllowedFileTypes"]:checked').length === 0) {
+                alert('Vui lòng chọn ít nhất một loại file cho phép nộp');
+                isValid = false;
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                $('html, body').animate({
+                    scrollTop: $('.is-invalid').first().offset().top - 100
+                }, 500);
+            }
+        });
+
+        // File size validation
+        $('#AssignmentFiles').on('change', function() {
+            var files = this.files;
+            var maxSize = 50 * 1024 * 1024; // 50MB
+            
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].size > maxSize) {
+                    alert('File "' + files[i].name + '" quá lớn. Vui lòng chọn file nhỏ hơn 50MB.');
+                    $(this).val('');
+                    return;
+                }
+            }
+        });
+    });
+
+    // Save draft function
+    function saveDraft() {
+        $('#SaveAsDraft').prop('checked', true);
+        $('#assignmentForm').submit();
+    }
+</script>
+}

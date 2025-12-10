@@ -91,7 +91,8 @@
                                     </select>
                                     <div class="form-text">
                                         <i class="bx bx-info-circle"></i>
-                                        Khoa này sẽ được áp dụng cho những sinh viên không có thông tin khoa trong file Excel.
+                                        Khoa này sẽ được áp dụng cho những sinh viên không có thông tin khoa trong file Excel.<br>
+                                        <strong>Chú ý:</strong> Sinh viên không có chuyên ngành sẽ được tự động phân đều vào các chuyên ngành thuộc khoa.
                                     </div>
                                 </div>
 
@@ -134,7 +135,9 @@
                                 <li>Họ tên: Bắt buộc</li>
                                 <li>Email: Duy nhất, bắt buộc</li>
                                 <li>Số điện thoại: Tùy chọn</li>
+                                <li><strong>Lớp hành chính: Tùy chọn (VD: CNTT K22A)</strong></li>
                                 <li>Khoa: Tùy chọn (dùng khoa mặc định nếu trống)</li>
+                                <li>Chuyên ngành: Tùy chọn (tự động phân đều nếu trống)</li>
                             </ul>
 
                             <h6><i class="bx bx-upload"></i> Bước 3: Upload file</h6>
@@ -149,6 +152,8 @@
                                 <ul class="mb-0 small">
                                     <li>Mật khẩu mặc định: <code>123456</code></li>
                                     <li>Email và mã SV phải duy nhất</li>
+                                    <li>Chuyên ngành phải thuộc vào khoa tương ứng</li>
+                                    <li>Nếu không chỉ định chuyên ngành, hệ thống sẽ tự động phân đều</li>
                                     <li>Dữ liệu trùng lặp sẽ bị bỏ qua</li>
                                 </ul>
                             </div>
@@ -172,7 +177,17 @@
                             </div>
                             <hr>
                             <div id="facultyStats" class="small text-muted">
-                                Đang tải...
+                                <strong>Danh sách chuyên ngành:</strong>
+                                @if (ViewBag.Departments != null)
+                                {
+                                    @foreach (var dept in ViewBag.Departments as List<LMS.Models.Department>)
+                                    {
+                                        <div class="mt-1">
+                                            <span class="badge badge-outline-info">@dept.Faculty?.Name</span>
+                                            <small>@dept.Name</small>
+                                        </div>
+                                    }
+                                }
                             </div>
                         </div>
                     </div>

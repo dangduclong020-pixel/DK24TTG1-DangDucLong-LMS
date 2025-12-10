@@ -1,0 +1,477 @@
+@model LMS.Models.Class
+
+@{
+    Layout = "~/Views/Shared/_TeacherLayout.cshtml";
+    ViewBag.Title = $"Chi tiết lớp học - {Model.Name}";
+}
+
+<div class="page-header">
+    <div>
+        <h1><i class="fas fa-users me-2"></i>@Model.Name</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Teacher")">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("MyClasses", "Teacher")">Lớp học</a></li>
+                <li class="breadcrumb-item active">@Model.Name</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <a href="@Url.Action("ExportStudentsToExcel", "Teacher", new { classId = Model.ClassId })" 
+           class="btn btn-info me-2">
+            <i class="fas fa-file-excel me-2"></i>Xuất Excel
+        </a>
+        <a href="@Url.Action("ManageStudents", "Teacher", new { classId = Model.ClassId })" 
+           class="btn btn-success me-2">
+            <i class="fas fa-users-cog me-2"></i>Quản lý sinh viên
+        </a>
+        <a href="@Url.Action("SendNotification", "Teacher", new { classId = Model.ClassId })" 
+           class="btn btn-primary">
+            <i class="fas fa-bullhorn me-2"></i>Gửi thông báo
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Class Overview -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Thông tin lớp học
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Tên lớp:</strong></td>
+                                <td>@Model.Name</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Mã lớp:</strong></td>
+                                <td>@Model.Code</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Môn học:</strong></td>
+                                <td>@Model.Course?.Name</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Số tín chỉ:</strong></td>
+                                <td>@Model.Course?.Credits</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Số sinh viên:</strong></td>
+                                <td>@Model.ClassStudents.Count / @Model.MaxStudents</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Trạng thái:</strong></td>
+                                <td>
+                                    <span class="badge @((Model.IsActive ?? false) ? "bg-success" : "bg-secondary")">
+                                        @((Model.IsActive ?? false) ? "Đang hoạt động" : "Kết thúc")
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Thời gian:</strong></td>
+                                <td>@Model.StartDate?.ToString("dd/MM/yyyy") - @Model.EndDate?.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ngày tạo:</strong></td>
+                                <td>@Model.CreatedAt?.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Thống kê nhanh
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <h3 class="text-primary mb-0">@Model.Assignments.Count</h3>
+                        <small class="text-muted">Bài tập</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h3 class="text-warning mb-0">@Model.Exams.Count</h3>
+                        <small class="text-muted">Bài kiểm tra</small>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="text-success mb-0">@Model.Lessons.Count</h3>
+                        <small class="text-muted">Bài học</small>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="text-info mb-0">@Model.ClassStudents.Count</h3>
+                        <small class="text-muted">Sinh viên</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-tabs nav-fill mb-4" id="classDetailTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" 
+                type="button" role="tab">
+            <i class="fas fa-user-graduate me-2"></i>Danh sách sinh viên
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments" 
+                type="button" role="tab">
+            <i class="fas fa-tasks me-2"></i>Bài tập
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="exams-tab" data-bs-toggle="tab" data-bs-target="#exams" 
+                type="button" role="tab">
+            <i class="fas fa-file-alt me-2"></i>Bài kiểm tra
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" 
+                type="button" role="tab">
+            <i class="fas fa-calendar me-2"></i>Lịch học
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="classDetailTabContent">
+    <!-- Students Tab -->
+    <div class="tab-pane fade show active" id="students" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Danh sách sinh viên (@Model.ClassStudents.Count)</h5>
+                <div>
+                    <a href="@Url.Action("ExportStudentsToExcel", "Teacher", new { classId = Model.ClassId })" 
+                       class="btn btn-outline-success btn-sm me-2">
+                        <i class="fas fa-file-excel me-1"></i>Xuất Excel
+                    </a>
+                    <a href="@Url.Action("ManageStudents", "Teacher", new { classId = Model.ClassId })" 
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-users-cog me-1"></i>Quản lý
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="studentsTable">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>MSSV</th>
+                                <th>Họ và tên</th>
+                                <th>Email</th>
+                                <th>Ngày tham gia</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.ClassStudents != null && Model.ClassStudents.Any())
+                            {
+                                int index = 0;
+                                @foreach (var cs in Model.ClassStudents.Where(c => c.Status == "Approved"))
+                                {
+                                    index++;
+                                    <tr>
+                                        <td>@index</td>
+                                        <td><strong>@cs.Student?.MssvMgv</strong></td>
+                                        <td>@cs.Student?.FullName</td>
+                                        <td>@cs.Student?.Email</td>
+                                        <td>@cs.EnrollDate?.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            <span class="badge bg-success">@cs.Status</span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="fas fa-users fa-2x mb-3"></i>
+                                        <br>Chưa có sinh viên nào trong lớp
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignments Tab -->
+    <div class="tab-pane fade" id="assignments" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Bài tập (@ViewBag.AssignmentCount)</h5>
+                <a href="@Url.Action("CreateAssignment", "Teacher", new { classId = ViewBag.ClassId })" 
+                   class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Tạo bài tập mới
+                </a>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.Assignments != null && ViewBag.Assignments.Count > 0)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tên bài tập</th>
+                                    <th>Ngày giao</th>
+                                    <th>Hạn nộp</th>
+                                    <th>Đã nộp</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var assignment in ViewBag.Assignments)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@assignment.Title</strong>
+                                            <br><small class="text-muted">@assignment.Description</small>
+                                        </td>
+                                        <td>@assignment.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            <span class="@(assignment.DueDate < DateTime.Now ? "text-danger" : "")">
+                                                @assignment.DueDate.ToString("dd/MM/yyyy HH:mm")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                @assignment.SubmissionCount/@ViewBag.StudentCount
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (assignment.DueDate < DateTime.Now)
+                                            {
+                                                <span class="badge bg-danger">Hết hạn</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">Đang mở</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="@Url.Action("AssignmentSubmissions", "Teacher", new { id = assignment.AssignmentId })" 
+                                                   class="btn btn-outline-primary" title="Xem bài nộp">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="@Url.Action("EditAssignment", "Teacher", new { id = assignment.AssignmentId })" 
+                                                   class="btn btn-outline-warning" title="Sửa">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-tasks fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">Chưa có bài tập nào</h5>
+                        <a href="@Url.Action("CreateAssignment", "Teacher", new { classId = ViewBag.ClassId })" 
+                           class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Tạo bài tập đầu tiên
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Exams Tab -->
+    <div class="tab-pane fade" id="exams" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Bài kiểm tra (@ViewBag.ExamCount)</h5>
+                <a href="@Url.Action("CreateExam", "Teacher", new { classId = ViewBag.ClassId })" 
+                   class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Tạo bài kiểm tra
+                </a>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.Exams != null && ViewBag.Exams.Count > 0)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tên bài kiểm tra</th>
+                                    <th>Thời gian</th>
+                                    <th>Số câu</th>
+                                    <th>Đã làm</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var exam in ViewBag.Exams)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@exam.Title</strong>
+                                            <br><small class="text-muted">@exam.Description</small>
+                                        </td>
+                                        <td>
+                                            @exam.StartTime.ToString("dd/MM/yyyy HH:mm")
+                                            <br><small class="text-muted">@exam.Duration phút</small>
+                                        </td>
+                                        <td>@exam.QuestionCount</td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                @exam.CompletedCount/@ViewBag.StudentCount
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (DateTime.Now < exam.StartTime)
+                                            {
+                                                <span class="badge bg-warning">Chưa bắt đầu</span>
+                                            }
+                                            else if (DateTime.Now > exam.EndTime)
+                                            {
+                                                <span class="badge bg-danger">Đã kết thúc</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">Đang diễn ra</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="@Url.Action("ExamResults", "Teacher", new { id = exam.ExamId })" 
+                                                   class="btn btn-outline-primary" title="Xem kết quả">
+                                                    <i class="fas fa-chart-bar"></i>
+                                                </a>
+                                                <a href="@Url.Action("EditExam", "Teacher", new { id = exam.ExamId })" 
+                                                   class="btn btn-outline-warning" title="Sửa">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">Chưa có bài kiểm tra nào</h5>
+                        <a href="@Url.Action("CreateExam", "Teacher", new { classId = ViewBag.ClassId })" 
+                           class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Tạo bài kiểm tra đầu tiên
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Tab -->
+    <div class="tab-pane fade" id="schedule" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Lịch học</h5>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.Schedules != null && ViewBag.Schedules.Count > 0)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Thứ</th>
+                                    <th>Tiết học</th>
+                                    <th>Phòng học</th>
+                                    <th>Thời gian</th>
+                                    <th>Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var schedule in ViewBag.Schedules)
+                                {
+                                    <tr>
+                                        <td><strong>@schedule.DayOfWeek</strong></td>
+                                        <td>Tiết @schedule.Period</td>
+                                        <td>@schedule.Room</td>
+                                        <td>@schedule.StartTime - @schedule.EndTime</td>
+                                        <td>@schedule.Notes</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">Chưa có lịch học</h5>
+                        <p class="text-muted">Lịch học sẽ được cập nhật bởi phòng đào tạo</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Student search functionality
+    $('#studentSearch').on('keyup', function() {
+        var value = $(this).val().toLowerCase();
+        $('#studentsTable tbody tr').filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+
+    // Export student list
+    function exportStudentList() {
+        window.location.href = '@Url.Action("ExportStudents", "Teacher", new { classId = ViewBag.ClassId })';
+    }
+
+    // Send private message
+    function sendPrivateMessage(studentId, studentName) {
+        if (confirm('Gửi tin nhắn riêng tới ' + studentName + '?')) {
+            window.location.href = '@Url.Action("SendNotification", "Teacher")' + 
+                                   '?studentId=' + studentId + 
+                                   '&classId=@ViewBag.ClassId';
+        }
+    }
+</script>
+}

@@ -33,6 +33,8 @@ public partial class Exam
 
     public DateTime? DeletedAt { get; set; }
 
+    public int? CreatedBy { get; set; }
+
     public virtual Class Class { get; set; } = null!;
 
     public virtual ICollection<ExamQuestion> ExamQuestions { get; set; } = new List<ExamQuestion>();

@@ -25,6 +25,8 @@ public partial class User
 
     public string? StudentClass { get; set; }
 
+    public int? AdministrativeClassId { get; set; }
+
     public string? Phone { get; set; }
 
     public string? Avatar { get; set; }
@@ -62,6 +64,10 @@ public partial class User
     public virtual ICollection<QuestionBank> QuestionBanks { get; set; } = new List<QuestionBank>();
 
     public virtual Role? Role { get; set; }
+
+    public virtual AdministrativeClass? AdministrativeClass { get; set; }
+
+    public virtual ICollection<AdministrativeClass> AdvisedClasses { get; set; } = new List<AdministrativeClass>();
 
     public virtual ICollection<StudentGrade> StudentGrades { get; set; } = new List<StudentGrade>();
 

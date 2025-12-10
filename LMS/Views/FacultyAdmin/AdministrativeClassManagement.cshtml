@@ -1,0 +1,237 @@
+@model IEnumerable<LMS.Models.AdministrativeClass>
+
+@{
+    ViewData["Title"] = "Quản lý Lớp hành chính";
+    Layout = "~/Views/Shared/_FacultyLayout.cshtml";
+    var facultyName = ViewBag.FacultyName as string;
+    var userName = ViewBag.UserName as string;
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-users-class"></i> Quản lý Lớp hành chính</h2>
+            <p class="text-muted">Quản lý các lớp hành chính của @facultyName</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="@Url.Action("CreateAdministrativeClass", "FacultyAdmin")" class="btn btn-success">
+                <i class="fas fa-plus"></i> Tạo lớp hành chính mới
+            </a>
+            <a href="@Url.Action("Index", "FacultyAdmin")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Danh sách lớp hành chính (@Model.Count() lớp)</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Mã lớp</th>
+                                <th>Tên lớp</th>
+                                <th>Bộ môn</th>
+                                <th>Năm ra trường</th>
+                                <th>Khóa</th>
+                                <th>GVCN</th>
+                                <th>Sĩ số</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                // Tính năm ra trường: lấy năm bắt đầu từ AcademicYear và cộng 4 (chu kỳ đào tạo)
+                                var startYear = 0;
+                                if (!string.IsNullOrEmpty(item.AcademicYear) && item.AcademicYear.Contains("-"))
+                                {
+                                    int.TryParse(item.AcademicYear.Split('-')[0], out startYear);
+                                }
+                                var graduationYear = startYear > 0 ? startYear + 4 : 0;
+                                
+                                <tr>
+                                    <td><strong>@item.Code</strong></td>
+                                    <td>@item.Name</td>
+                                    <td>
+                                        @if (item.Department != null)
+                                        {
+                                            <span class="badge bg-info">@item.Department.Name</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Chưa phân công</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (graduationYear > 0)
+                                        {
+                                            <strong>@graduationYear</strong>
+                                            <small class="text-muted">(Nhập học: @item.AcademicYear)</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-secondary">@item.Intake</span></td>
+                                    <td>
+                                        @if (item.Advisor != null)
+                                        {
+                                            <span title="@item.Advisor.Email">@item.Advisor.FullName</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Chưa phân công</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @(item.CurrentStudents >= item.MaxStudents ? "bg-danger" : "bg-success")">
+                                            @item.CurrentStudents/@item.MaxStudents
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (item.IsActive == true)
+                                        {
+                                            <span class="badge bg-success">Hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Không hoạt động</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="@Url.Action("AdministrativeClassStudents", "FacultyAdmin", new { id = item.AdministrativeClassId })" 
+                                               class="btn btn-sm btn-info" title="Xem sinh viên">
+                                                <i class="fas fa-users"></i>
+                                            </a>
+                                            <a href="@Url.Action("EditAdministrativeClass", "FacultyAdmin", new { id = item.AdministrativeClassId })" 
+                                               class="btn btn-sm btn-warning" title="Chỉnh sửa">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            @if (item.CurrentStudents == 0)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-danger" 
+                                                        onclick="deleteClass(@item.AdministrativeClassId, '@item.Name')" 
+                                                        title="Xóa">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-sm btn-secondary" disabled title="Không thể xóa (có sinh viên)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Chưa có lớp hành chính nào. 
+                    <a href="@Url.Action("CreateAdministrativeClass", "FacultyAdmin")">Tạo lớp mới</a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Thống kê -->
+    @if (Model.Any())
+    {
+        var totalStudents = Model.Sum(m => m.CurrentStudents ?? 0);
+        var totalCapacity = Model.Sum(m => m.MaxStudents ?? 0);
+        var activeClasses = Model.Count(m => m.IsActive == true);
+        
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5>Tổng lớp</h5>
+                        <h2>@Model.Count()</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5>Lớp hoạt động</h5>
+                        <h2>@activeClasses</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h5>Tổng sinh viên</h5>
+                        <h2>@totalStudents</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h5>Sức chứa</h5>
+                        <h2>@totalCapacity</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function deleteClass(id, name) {
+            if (confirm(`Bạn có chắc chắn muốn xóa lớp "${name}"?`)) {
+                $.ajax({
+                    url: '@Url.Action("DeleteAdministrativeClass", "FacultyAdmin")',
+                    type: 'POST',
+                    data: { id: id },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.message);
+                            location.reload();
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Có lỗi xảy ra khi xóa lớp!');
+                    }
+                });
+            }
+        }
+    </script>
+}

@@ -59,7 +59,7 @@
         .search-box input:focus { border-color: var(--primary-color); }
         .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #bfbfbf; }
 
-        .role-tabs { display: flex; gap: 10px; }
+        .role-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
         .role-tab {
             padding: 8px 16px; border: 1px solid #d9d9d9; border-radius: 6px;
             cursor: pointer; font-size: 14px; background: #fff; color: #666;
@@ -69,6 +69,13 @@
         .role-tab.active {
             background: var(--primary-color); color: #fff; border-color: var(--primary-color);
         }
+
+        /* Faculty Filter */
+        .form-select {
+            padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px;
+            outline: none; transition: border 0.3s; font-size: 14px;
+        }
+        .form-select:focus { border-color: var(--primary-color); }
 
         /* Table Styles */
         .table-wrapper {
@@ -124,11 +131,11 @@
 }
         <div class="page-header">
             <div>
-                <h1 class="page-title">Quản lý tài khoản cấp cao</h1>
-                <p style="color: #8c8c8c; font-size: 14px; margin-top: 5px;">Quản lý Admin, Admin Khoa và Giảng viên. Sinh viên do Admin Khoa quản lý. Tổng cộng: @Model.Where(u => u.RoleId <= 3).Count() người dùng cấp cao</p>
+                <h1 class="page-title">Quản lý tài khoản</h1>
+                <p style="color: #8c8c8c; font-size: 14px; margin-top: 5px;">Quản lý Admin, Admin Khoa, Giảng viên và Sinh viên. Tổng cộng: @Model.Count người dùng</p>
             </div>
             <a href="@Url.Action("CreateUser", "Admin")" class="btn-primary">
-                <i class="fa-solid fa-user-shield"></i> Tạo tài khoản cấp cao
+                <i class="fa-solid fa-user-plus"></i> Tạo tài khoản cấp cao
             </a>
         </div>
 
@@ -139,13 +146,24 @@
             </div>
             
             <div class="role-tabs">
-                <button class="role-tab active" onclick="filterTable('all')">Tất cả cấp cao (@Model.Where(u => u.RoleId <= 3).Count())</button>
+                <button class="role-tab active" onclick="filterTable('all')">Tất cả (@Model.Count)</button>
                 <button class="role-tab" onclick="filterTable('1')">Admin Tổng (@Model.Count(u => u.RoleId == 1))</button>
                 <button class="role-tab" onclick="filterTable('2')">Admin Khoa (@Model.Count(u => u.RoleId == 2))</button>
                 <button class="role-tab" onclick="filterTable('3')">Giảng viên (@Model.Count(u => u.RoleId == 3))</button>
-                <div class="text-muted small" style="padding: 8px 16px; font-style: italic;">
-                    <i class="fas fa-info-circle"></i> Sinh viên được quản lý bởi Admin Khoa
-                </div>
+                <button class="role-tab" onclick="filterTable('4')">Sinh viên (@Model.Count(u => u.RoleId == 4))</button>
+            </div>
+            
+            <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px;">
+                <label for="facultyFilter" style="font-weight: 500; color: #595959; white-space: nowrap;">
+                    <i class="fa-solid fa-building-columns"></i> Lọc theo Khoa:
+                </label>
+                <select id="facultyFilter" class="form-select" style="max-width: 300px;" onchange="filterByFaculty()">
+                    <option value="">Tất cả các khoa</option>
+                    @foreach (var faculty in Model.Where(u => u.Faculty != null).Select(u => u.Faculty).Distinct().OrderBy(f => f.Name))
+                    {
+                        <option value="@faculty.Name">@faculty.Name</option>
+                    }
+                </select>
             </div>
         </div>
 
@@ -164,9 +182,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var user in Model.Where(u => u.RoleId <= 3))
+                    @foreach (var user in Model)
                     {
-                        <tr data-role="@user.RoleId">
+                        <tr data-role="@user.RoleId" data-faculty="@(user.Faculty?.Name ?? "")">
                             <td><input type="checkbox" value="@user.UserId"></td>
                             <td><b>@user.MssvMgv</b></td>
                             <td>
@@ -231,6 +249,10 @@
 
 @section Scripts {
     <script>
+        // Biến lưu filter hiện tại
+        let currentRoleFilter = 'all';
+        let currentFacultyFilter = '';
+
         // Hàm lọc bảng dữ liệu theo Tabs
         function filterTable(role) {
             // 1. Cập nhật trạng thái nút bấm (Active state)
@@ -240,22 +262,38 @@
             // Tìm nút được click và thêm class active
             event.target.classList.add('active');
 
-            // 2. Lọc hàng trong bảng (chỉ hiển thị user cấp cao - RoleId <= 3)
+            // Lưu filter hiện tại
+            currentRoleFilter = role;
+            
+            // Áp dụng cả 2 filter
+            applyFilters();
+        }
+
+        // Lọc theo Khoa
+        function filterByFaculty() {
+            currentFacultyFilter = document.getElementById('facultyFilter').value;
+            applyFilters();
+        }
+
+        // Áp dụng tất cả filter
+        function applyFilters() {
             const rows = document.querySelectorAll('#userTable tbody tr');
             
             rows.forEach(row => {
                 const rowRole = parseInt(row.getAttribute('data-role'));
+                const rowFaculty = row.getAttribute('data-faculty');
                 
-                // Chỉ hiển thị user cấp cao (Admin, Admin Khoa, Giảng viên)
-                if (rowRole > 3) {
-                    row.style.display = 'none';
-                    return;
-                }
+                // Check role filter
+                let roleMatch = currentRoleFilter === 'all' || rowRole.toString() === currentRoleFilter;
                 
-                if (role === 'all' || rowRole.toString() === role) {
-                    row.style.display = ''; // Hiện
+                // Check faculty filter
+                let facultyMatch = currentFacultyFilter === '' || rowFaculty === currentFacultyFilter;
+                
+                // Hiển thị nếu cả 2 điều kiện đều thỏa mãn
+                if (roleMatch && facultyMatch) {
+                    row.style.display = '';
                 } else {
-                    row.style.display = 'none'; // Ẩn
+                    row.style.display = 'none';
                 }
             });
         }

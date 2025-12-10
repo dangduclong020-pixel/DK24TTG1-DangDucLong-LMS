@@ -1,0 +1,209 @@
+@{
+    Layout = "~/Views/Shared/_TeacherLayout.cshtml";
+    ViewBag.Title = "Import Sinh viên";
+}
+
+<div class="page-header">
+    <div>
+        <h1><i class="fas fa-file-import me-2"></i>Import Sinh viên</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Teacher")">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("MyClasses", "Teacher")">Lớp học</a></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("ManageStudents", new { classId = ViewBag.ClassInfo.ClassId })">Quản lý sinh viên</a></li>
+                <li class="breadcrumb-item active">Import</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Class Info -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5><i class="fas fa-info-circle me-2"></i>Lớp học: <strong>@ViewBag.ClassInfo.Name</strong></h5>
+        <p class="mb-0">
+            <span class="badge bg-primary">@ViewBag.ClassInfo.Code</span>
+            <span class="ms-2">Khóa học: @ViewBag.ClassInfo.Course?.Name</span>
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Upload Form -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Tải lên File Danh sách</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="ImportStudents" asp-route-classId="@ViewBag.ClassInfo.ClassId" method="post" enctype="multipart/form-data" id="uploadForm">
+                    @Html.AntiForgeryToken()
+                    
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Chọn file Excel</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls" required>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Chấp nhận file: Excel (.xlsx, .xls)
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-lightbulb me-2"></i>Hướng dẫn:</h6>
+                        <ol class="mb-0">
+                            <li>File phải có định dạng Excel (.xlsx hoặc .xls)</li>
+                            <li>Dòng đầu tiên là tiêu đề "MssvMgv"</li>
+                            <li>Cột đầu tiên (cột A) phải là <strong>Mã sinh viên (MssvMgv)</strong></li>
+                            <li>Mỗi dòng tương ứng với một sinh viên</li>
+                            <li>Ví dụ: 2251170001, 2251170002, ...</li>
+                        </ol>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="@Url.Action("ManageStudents", new { classId = ViewBag.ClassInfo.ClassId })" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Quay lại
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="btnUpload">
+                            <i class="fas fa-upload me-1"></i>Tải lên & Import
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions & Template -->
+    <div class="col-md-4">
+        <!-- Download Template -->
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-download me-2"></i>Tải File Mẫu</h6>
+            </div>
+            <div class="card-body">
+                <p class="small">Tải xuống file mẫu để xem cấu trúc đúng</p>
+                <button class="btn btn-success btn-sm w-100" onclick="downloadTemplate()">
+                    <i class="fas fa-file-download me-1"></i>Tải File Excel Mẫu
+                </button>
+            </div>
+        </div>
+
+        <!-- Format Guide -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-question-circle me-2"></i>Định dạng File</h6>
+            </div>
+            <div class="card-body">
+                <p class="small mb-2"><strong>Cấu trúc file Excel:</strong></p>
+                <table class="table table-sm table-bordered">
+                    <thead>
+                        <tr>
+                            <th>MssvMgv</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>2251170001</td></tr>
+                        <tr><td>2251170002</td></tr>
+                        <tr><td>2251170003</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Show file name when selected
+    $('#file').on('change', function() {
+        var fileName = $(this).val().split('\\').pop();
+        if (fileName) {
+            $(this).next('.form-text').html('<i class="fas fa-check-circle text-success"></i> Đã chọn: ' + fileName);
+        }
+    });
+
+    // Form validation
+    $('#uploadForm').on('submit', function() {
+        var file = $('#file')[0].files[0];
+        if (!file) {
+            alert('Vui lòng chọn file!');
+            return false;
+        }
+
+        // Check file extension
+        var ext = file.name.split('.').pop().toLowerCase();
+        if (!['xlsx', 'xls'].includes(ext)) {
+            alert('File phải có định dạng Excel (.xlsx hoặc .xls)!');
+            return false;
+        }
+
+        // Disable button and show loading
+        $('#btnUpload').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Đang xử lý...');
+    });
+
+    // Download Excel template
+    function downloadTemplate() {
+        // Create a simple HTML table that Excel can open
+        var excelContent = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+            <head>
+                <meta charset="UTF-8">
+                <!--[if gte mso 9]>
+                <xml>
+                    <x:ExcelWorkbook>
+                        <x:ExcelWorksheets>
+                            <x:ExcelWorksheet>
+                                <x:Name>Students</x:Name>
+                                <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+                            </x:ExcelWorksheet>
+                        </x:ExcelWorksheets>
+                    </x:ExcelWorkbook>
+                </xml>
+                <![endif]-->
+            </head>
+            <body>
+                <table>
+                    <tr><th>MssvMgv</th></tr>
+                    <tr><td>2251170001</td></tr>
+                    <tr><td>2251170002</td></tr>
+                    <tr><td>2251170003</td></tr>
+                </table>
+            </body>
+            </html>
+        `;
+        
+        var blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+        var link = document.createElement('a');
+        var url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'template_import_students.xls');
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+}
+
+<style>
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    pre {
+        font-size: 0.85rem;
+        margin-bottom: 0;
+    }
+
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    }
+</style>

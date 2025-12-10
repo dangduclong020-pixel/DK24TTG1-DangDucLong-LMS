@@ -33,6 +33,14 @@ public partial class Assignment
 
     public DateTime? DeletedAt { get; set; }
 
+    public int? CreatedBy { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
+    public string? AttachmentPath { get; set; }
+
+    public string? AttachmentName { get; set; }
+
     public virtual Class Class { get; set; } = null!;
 
     public virtual ICollection<Submission> Submissions { get; set; } = new List<Submission>();

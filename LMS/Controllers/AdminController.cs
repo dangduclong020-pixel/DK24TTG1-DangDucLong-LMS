@@ -540,6 +540,35 @@ namespace LMS.Controllers
                 model.Status = "Active";
                 model.CreatedAt = DateTime.Now;
 
+                // Tự động phân chuyên ngành cho sinh viên nếu chưa được chọn
+                if (model.RoleId == 4 && model.DepartmentId == null && model.FacultyId.HasValue)
+                {
+                    var departments = await _context.Departments
+                        .Where(d => d.FacultyId == model.FacultyId.Value && d.IsActive == true && d.DeletedAt == null)
+                        .ToListAsync();
+                    
+                    if (departments.Count > 0)
+                    {
+                        // Lấy số sinh viên hiện tại trong mỗi chuyên ngành để phân đều
+                        var deptStudentCounts = await _context.Users
+                            .Where(u => u.RoleId == 4 && u.FacultyId == model.FacultyId.Value && u.DepartmentId.HasValue)
+                            .GroupBy(u => u.DepartmentId)
+                            .Select(g => new { DeptId = g.Key, Count = g.Count() })
+                            .ToListAsync();
+
+                        // Tìm chuyên ngành có ít sinh viên nhất
+                        var targetDept = departments
+                            .Select(d => new { 
+                                Dept = d, 
+                                StudentCount = deptStudentCounts.FirstOrDefault(c => c.DeptId == d.DepartmentId)?.Count ?? 0 
+                            })
+                            .OrderBy(x => x.StudentCount)
+                            .First().Dept;
+
+                        model.DepartmentId = targetDept.DepartmentId;
+                    }
+                }
+
                 _context.Users.Add(model);
                 await _context.SaveChangesAsync();
 
@@ -687,6 +716,12 @@ namespace LMS.Controllers
             ViewBag.Faculties = await _context.Faculties
                 .Where(f => f.IsActive == true && f.DeletedAt == null)
                 .ToListAsync();
+            
+            ViewBag.Departments = await _context.Departments
+                .Include(d => d.Faculty)
+                .Where(d => d.IsActive == true && d.DeletedAt == null)
+                .ToListAsync();
+            
             return View();
         }
 
@@ -718,7 +753,7 @@ namespace LMS.Controllers
                         var rowCount = worksheet.Dimension?.Rows ?? 0;
 
                         // Kiểm tra định dạng file (header)
-                        var expectedHeaders = new[] { "Mã sinh viên", "Họ tên", "Email", "Số điện thoại", "Khoa" };
+                        var expectedHeaders = new[] { "Mã sinh viên", "Họ tên", "Email", "Số điện thoại", "Lớp hành chính", "Khoa", "Chuyên ngành" };
                         for (int col = 1; col <= expectedHeaders.Length; col++)
                         {
                             var headerCell = worksheet.Cells[1, col].Value?.ToString();
@@ -729,9 +764,14 @@ namespace LMS.Controllers
                             }
                         }
 
-                        // Lấy danh sách khoa để mapping
+                        // Lấy danh sách khoa và bộ môn để mapping
                         var faculties = await _context.Faculties
                             .Where(f => f.IsActive == true && f.DeletedAt == null)
+                            .ToListAsync();
+                        
+                        var departments = await _context.Departments
+                            .Include(d => d.Faculty)
+                            .Where(d => d.IsActive == true && d.DeletedAt == null)
                             .ToListAsync();
 
                         // Xử lý từng dòng dữ liệu
@@ -743,7 +783,9 @@ namespace LMS.Controllers
                                 var fullName = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
                                 var email = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
                                 var phone = worksheet.Cells[row, 4].Value?.ToString()?.Trim();
-                                var facultyName = worksheet.Cells[row, 5].Value?.ToString()?.Trim();
+                                var studentClass = worksheet.Cells[row, 5].Value?.ToString()?.Trim();
+                                var facultyName = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
+                                var departmentName = worksheet.Cells[row, 7].Value?.ToString()?.Trim();
 
                                 // Validate dữ liệu bắt buộc
                                 if (string.IsNullOrEmpty(studentId) || string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email))
@@ -778,6 +820,49 @@ namespace LMS.Controllers
                                     }
                                 }
 
+                                // Tìm chuyên ngành - ưu tiên tìm theo tên/mã code trước
+                                int? departmentId = null;
+                                if (!string.IsNullOrEmpty(departmentName))
+                                {
+                                    // Tìm chuyên ngành theo tên hoặc mã code (không phụ thuộc vào khoa)
+                                    var department = departments.FirstOrDefault(d => 
+                                        d.Name.Equals(departmentName, StringComparison.OrdinalIgnoreCase) ||
+                                        d.Code.Equals(departmentName, StringComparison.OrdinalIgnoreCase));
+                                    
+                                    if (department != null)
+                                    {
+                                        departmentId = department.DepartmentId;
+                                        // Nếu tìm thấy chuyên ngành, cập nhật luôn khoa tương ứng
+                                        facultyId = department.FacultyId;
+                                    }
+                                }
+
+                                // Nếu không có chuyên ngành được chỉ định, tự động phân đều
+                                if (!departmentId.HasValue)
+                                {
+                                    var facultyDepartments = departments.Where(d => d.FacultyId == facultyId).ToList();
+                                    if (facultyDepartments.Count > 0)
+                                    {
+                                        // Lấy số sinh viên hiện tại trong mỗi chuyên ngành để phân đều
+                                        var deptStudentCounts = await _context.Users
+                                            .Where(u => u.RoleId == 4 && u.FacultyId == facultyId && u.DepartmentId.HasValue)
+                                            .GroupBy(u => u.DepartmentId)
+                                            .Select(g => new { DeptId = g.Key, Count = g.Count() })
+                                            .ToListAsync();
+
+                                        // Tìm chuyên ngành có ít sinh viên nhất
+                                        var targetDept = facultyDepartments
+                                            .Select(d => new { 
+                                                Dept = d, 
+                                                StudentCount = deptStudentCounts.FirstOrDefault(c => c.DeptId == d.DepartmentId)?.Count ?? 0 
+                                            })
+                                            .OrderBy(x => x.StudentCount)
+                                            .First().Dept;
+
+                                        departmentId = targetDept.DepartmentId;
+                                    }
+                                }
+
                                 // Tạo user mới
                                 var newUser = new User
                                 {
@@ -785,8 +870,10 @@ namespace LMS.Controllers
                                     FullName = fullName,
                                     Email = email,
                                     Phone = phone,
+                                    StudentClass = studentClass,
                                     RoleId = 4, // Sinh viên
                                     FacultyId = facultyId,
+                                    DepartmentId = departmentId,
                                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456"), // Mật khẩu mặc định
                                     Status = "active",
                                     CreatedAt = DateTime.Now,
@@ -796,7 +883,13 @@ namespace LMS.Controllers
                                 _context.Users.Add(newUser);
                                 await _context.SaveChangesAsync();
 
-                                importResults.Add($"Dòng {row}: Thành công - {fullName} ({studentId})");
+                                // Tạo thông báo chi tiết
+                                var facultyInfo = faculties.FirstOrDefault(f => f.FacultyId == facultyId)?.Name ?? "Không xác định";
+                                var deptInfo = departmentId.HasValue ? 
+                                    departments.FirstOrDefault(d => d.DepartmentId == departmentId)?.Name ?? "Tự động phân" : 
+                                    "Tự động phân";
+                                
+                                importResults.Add($"Dòng {row}: Thành công - {fullName} ({studentId}) - Khoa: {facultyInfo}, Chuyên ngành: {deptInfo}");
                                 successCount++;
                             }
                             catch (Exception ex)
@@ -875,10 +968,12 @@ namespace LMS.Controllers
                     worksheet.Cells[1, 2].Value = "Họ tên";
                     worksheet.Cells[1, 3].Value = "Email";
                     worksheet.Cells[1, 4].Value = "Số điện thoại";
-                    worksheet.Cells[1, 5].Value = "Khoa";
+                    worksheet.Cells[1, 5].Value = "Lớp hành chính";
+                    worksheet.Cells[1, 6].Value = "Khoa";
+                    worksheet.Cells[1, 7].Value = "Chuyên ngành";
 
                     // Định dạng header
-                    using (var range = worksheet.Cells[1, 1, 1, 5])
+                    using (var range = worksheet.Cells[1, 1, 1, 7])
                     {
                         range.Style.Font.Bold = true;
                         range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
@@ -890,13 +985,25 @@ namespace LMS.Controllers
                     worksheet.Cells[2, 2].Value = "Nguyễn Văn A";
                     worksheet.Cells[2, 3].Value = "nguyenvana@email.com";
                     worksheet.Cells[2, 4].Value = "0123456789";
-                    worksheet.Cells[2, 5].Value = "CNTT";
+                    worksheet.Cells[2, 5].Value = "CNTT K22A";
+                    worksheet.Cells[2, 6].Value = "CNTT";
+                    worksheet.Cells[2, 7].Value = "Công nghệ Phần mềm";
 
                     worksheet.Cells[3, 1].Value = "SV002";
                     worksheet.Cells[3, 2].Value = "Trần Thị B";
                     worksheet.Cells[3, 3].Value = "tranthib@email.com";
                     worksheet.Cells[3, 4].Value = "0987654321";
-                    worksheet.Cells[3, 5].Value = "Kinh tế";
+                    worksheet.Cells[3, 5].Value = "CNTT K22A";
+                    worksheet.Cells[3, 6].Value = "CNTT";
+                    worksheet.Cells[3, 7].Value = "Hệ thống Thông tin";
+
+                    worksheet.Cells[4, 1].Value = "SV003";
+                    worksheet.Cells[4, 2].Value = "Lê Văn C";
+                    worksheet.Cells[4, 3].Value = "levanc@email.com";
+                    worksheet.Cells[4, 4].Value = "0912345678";
+                    worksheet.Cells[4, 5].Value = "CNTT K22B";
+                    worksheet.Cells[4, 6].Value = "CNTT";
+                    worksheet.Cells[4, 7].Value = ""; // Để trống để demo tự động phân
 
                     // Auto fit columns
                     worksheet.Cells.AutoFitColumns();
@@ -915,6 +1022,90 @@ namespace LMS.Controllers
             {
                 TempData["ErrorMessage"] = $"Lỗi khi tạo file mẫu: {ex.Message}";
                 return RedirectToAction("ImportStudents");
+            }
+        }
+
+        // API: Get Faculty Code
+        [HttpGet]
+        public async Task<IActionResult> GetFacultyCode(int facultyId)
+        {
+            try
+            {
+                var faculty = await _context.Faculties.FindAsync(facultyId);
+                if (faculty == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy khoa" });
+                }
+
+                return Json(new { success = true, facultyCode = faculty.Code });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // API: Get Next User Code (Sequential number)
+        [HttpGet]
+        public async Task<IActionResult> GetNextUserCode(int facultyId, int? roleId)
+        {
+            try
+            {
+                var faculty = await _context.Faculties.FindAsync(facultyId);
+                if (faculty == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy khoa" });
+                }
+
+                var currentYear = DateTime.Now.Year.ToString().Substring(2, 2); // "25" for 2025
+                var facultyCode = faculty.Code;
+                var prefix = $"{currentYear}{facultyCode}"; // VD: "2522"
+
+                // Tìm mã cao nhất có prefix này
+                var lastUser = await _context.Users
+                    .Where(u => u.MssvMgv.StartsWith(prefix))
+                    .OrderByDescending(u => u.MssvMgv)
+                    .FirstOrDefaultAsync();
+
+                int nextNumber = 1;
+                if (lastUser != null && lastUser.MssvMgv.Length >= prefix.Length + 3)
+                {
+                    // Lấy 3 số cuối
+                    var lastNumberStr = lastUser.MssvMgv.Substring(prefix.Length, 3);
+                    if (int.TryParse(lastNumberStr, out int lastNumber))
+                    {
+                        nextNumber = lastNumber + 1;
+                    }
+                }
+
+                return Json(new { success = true, nextNumber = nextNumber });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // API: Get Departments by Faculty
+        [HttpGet]
+        public async Task<IActionResult> GetDepartments(int facultyId)
+        {
+            try
+            {
+                var departments = await _context.Departments
+                    .Where(d => d.FacultyId == facultyId && d.IsActive == true && d.DeletedAt == null)
+                    .Select(d => new
+                    {
+                        departmentId = d.DepartmentId,
+                        name = d.Name
+                    })
+                    .ToListAsync();
+
+                return Json(departments);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
             }
         }
 

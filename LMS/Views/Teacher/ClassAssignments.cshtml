@@ -1,0 +1,160 @@
+@model List<LMS.Models.Assignment>
+@{
+    ViewData["Title"] = "Quản lý bài tập";
+    var classInfo = ViewBag.ClassInfo as LMS.Models.Class;
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="fas fa-tasks"></i> Quản lý bài tập</h4>
+                </div>
+                <div class="card-body">
+                    <h5><strong>Môn học:</strong> @classInfo?.Course?.Name</h5>
+                    <p class="mb-0">
+                        <strong>Lớp:</strong> @classInfo?.Name (@classInfo?.Code) | 
+                        <strong>Số bài tập:</strong> @Model.Count
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <a href="@Url.Action("CreateAssignment")" class="btn btn-success">
+                <i class="fas fa-plus"></i> Tạo bài tập mới
+            </a>
+            <a href="@Url.Action("ClassDetails", new { id = classInfo?.ClassId })" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            @if (Model.Any())
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tiêu đề</th>
+                                        <th>Hạn nộp</th>
+                                        <th>Điểm tối đa</th>
+                                        <th>Số lần nộp</th>
+                                        <th>Đã nộp</th>
+                                        <th>Đã chấm</th>
+                                        <th>Trạng thái</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var assignment in Model)
+                                    {
+                                        var submittedCount = assignment.Submissions.Count;
+                                        var gradedCount = assignment.Submissions.Count(s => s.Status == "Graded");
+                                        var isOverdue = assignment.DueDate < DateTime.Now;
+
+                                        <tr class="@(isOverdue ? "table-warning" : "")">
+                                            <td>
+                                                <strong>@assignment.Title</strong>
+                                                @if (!string.IsNullOrEmpty(assignment.AttachmentName))
+                                                {
+                                                    <br />
+                                                    <small>
+                                                        <i class="fas fa-paperclip"></i> @assignment.AttachmentName
+                                                    </small>
+                                                }
+                                            </td>
+                                            <td>
+                                                @assignment.DueDate.ToString("dd/MM/yyyy HH:mm")
+                                                @if (isOverdue)
+                                                {
+                                                    <br /><span class="badge bg-danger">Đã hết hạn</span>
+                                                }
+                                            </td>
+                                            <td>@assignment.MaxScore điểm</td>
+                                            <td>@(assignment.MaxAttempts ?? 0) lần</td>
+                                            <td>
+                                                <span class="badge bg-info">@submittedCount bài</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success">@gradedCount bài</span>
+                                            </td>
+                                            <td>
+                                                @if (assignment.IsPublished == true)
+                                                {
+                                                    <span class="badge bg-success">Đã xuất bản</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Nháp</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="@Url.Action("AssignmentSubmissions", new { id = assignment.AssignmentId })" 
+                                                       class="btn btn-sm btn-primary" title="Xem bài nộp">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("EditAssignment", new { id = assignment.AssignmentId })" 
+                                                       class="btn btn-sm btn-warning" title="Chỉnh sửa">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("ExportAssignmentGrades", new { assignmentId = assignment.AssignmentId })" 
+                                                       class="btn btn-sm btn-success" title="Xuất Excel">
+                                                        <i class="fas fa-file-excel"></i>
+                                                    </a>
+                                                    <button onclick="deleteAssignment(@assignment.AssignmentId)" 
+                                                            class="btn btn-sm btn-danger" title="Xóa">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Chưa có bài tập nào. Hãy tạo bài tập đầu tiên!
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function deleteAssignment(assignmentId) {
+            if (confirm('Bạn có chắc muốn xóa bài tập này? Tất cả bài nộp sẽ không bị xóa.')) {
+                $.ajax({
+                    url: '@Url.Action("DeleteAssignment")',
+                    type: 'POST',
+                    data: { id: assignmentId },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.message);
+                            location.reload();
+                        } else {
+                            alert('Lỗi: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Có lỗi xảy ra!');
+                    }
+                });
+            }
+        }
+    </script>
+}

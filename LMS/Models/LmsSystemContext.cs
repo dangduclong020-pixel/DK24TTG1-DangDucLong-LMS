@@ -17,6 +17,8 @@ public partial class LmsSystemContext : DbContext
 
     public virtual DbSet<ActivityLog> ActivityLogs { get; set; }
 
+    public virtual DbSet<AdministrativeClass> AdministrativeClasses { get; set; }
+
     public virtual DbSet<Assignment> Assignments { get; set; }
 
     public virtual DbSet<Class> Classes { get; set; }
@@ -713,6 +715,52 @@ public partial class LmsSystemContext : DbContext
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
                 .HasConstraintName("FK__Users__RoleID__5165187F");
+        });
+
+        modelBuilder.Entity<AdministrativeClass>(entity =>
+        {
+            entity.HasKey(e => e.AdministrativeClassId).HasName("PK__Administ__ClassID");
+
+            entity.ToTable("AdministrativeClasses");
+
+            entity.HasIndex(e => e.Code, "UQ__AdmClass__Code").IsUnique();
+
+            entity.Property(e => e.AdministrativeClassId).HasColumnName("AdministrativeClassID");
+            entity.Property(e => e.Code).HasMaxLength(20);
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.FacultyId).HasColumnName("FacultyID");
+            entity.Property(e => e.DepartmentId).HasColumnName("DepartmentID");
+            entity.Property(e => e.AcademicYear).HasMaxLength(20);
+            entity.Property(e => e.Intake).HasMaxLength(20);
+            entity.Property(e => e.MaxStudents).HasDefaultValue(40);
+            entity.Property(e => e.CurrentStudents).HasDefaultValue(0);
+            entity.Property(e => e.AdvisorId).HasColumnName("AdvisorID");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasColumnName("CreatedBy");
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Faculty).WithMany(p => p.AdministrativeClasses)
+                .HasForeignKey(d => d.FacultyId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__AdmClass__Faculty");
+
+            entity.HasOne(d => d.Department).WithMany(p => p.AdministrativeClasses)
+                .HasForeignKey(d => d.DepartmentId)
+                .HasConstraintName("FK__AdmClass__Department");
+
+            entity.HasOne(d => d.Advisor).WithMany(p => p.AdvisedClasses)
+                .HasForeignKey(d => d.AdvisorId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__AdmClass__Advisor");
+
+            entity.HasMany(d => d.Students).WithOne(p => p.AdministrativeClass)
+                .HasForeignKey(p => p.AdministrativeClassId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Users__AdmClass");
         });
 
         OnModelCreatingPartial(modelBuilder);

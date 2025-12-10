@@ -1,0 +1,105 @@
+@model LMS.Models.Lesson
+@{
+    ViewData["Title"] = "Tạo bài học mới";
+    var classInfo = ViewBag.ClassInfo as LMS.Models.Class;
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Tạo chủ đề/chương học mới</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Môn học:</strong> @classInfo?.Course?.Name | 
+                        <strong>Lớp:</strong> @classInfo?.Name (@classInfo?.Code)
+                    </div>
+
+                    <form asp-action="CreateLesson" method="post" enctype="multipart/form-data">
+                        <input type="hidden" asp-for="ClassId" value="@classInfo?.ClassId" />
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Week" class="form-label">Tuần học <span class="text-danger">*</span></label>
+                                    <input asp-for="Week" class="form-control" type="number" min="1" value="@ViewBag.SuggestedWeek" required />
+                                    <small class="text-muted">Gợi ý: Tuần @ViewBag.SuggestedWeek</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="OrderNumber" class="form-label">Thứ tự <span class="text-danger">*</span></label>
+                                    <input asp-for="OrderNumber" class="form-control" type="number" min="1" value="1" required />
+                                    <small class="text-muted">Thứ tự bài học trong tuần</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Title" class="form-label">Tiêu đề bài học <span class="text-danger">*</span></label>
+                            <input asp-for="Title" class="form-control" placeholder="Ví dụ: Giới thiệu về lập trình hướng đối tượng" required />
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Content" class="form-label">Nội dung bài học</label>
+                            <textarea asp-for="Content" class="form-control" rows="6" 
+                                      placeholder="Mô tả chi tiết nội dung bài học, mục tiêu, yêu cầu..."></textarea>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Duration" class="form-label">Thời lượng (phút)</label>
+                            <input asp-for="Duration" class="form-control" type="number" min="1" value="60" />
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-upload"></i> Upload tài liệu (Video, PDF, Slide, ...)
+                            </label>
+                            <input type="file" name="lessonFiles" class="form-control" multiple 
+                                   accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.avi,.mkv,.zip,.rar" />
+                            <small class="text-muted">
+                                Có thể chọn nhiều file. Hỗ trợ: PDF, PowerPoint, Word, Video, ZIP
+                            </small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="IsPublished" class="form-check-input" type="checkbox" checked />
+                            <label asp-for="IsPublished" class="form-check-label">
+                                Xuất bản ngay (Sinh viên có thể xem)
+                            </label>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex justify-content-between">
+                            <a href="@Url.Action("ClassLessons", new { classId = classInfo?.ClassId })" 
+                               class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Hủy
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Tạo bài học
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Preview file names
+            $('input[type="file"]').change(function() {
+                var fileCount = this.files.length;
+                if (fileCount > 0) {
+                    var fileNames = Array.from(this.files).map(f => f.name).join(', ');
+                    console.log('Selected files: ' + fileNames);
+                }
+            });
+        });
+    </script>
+}

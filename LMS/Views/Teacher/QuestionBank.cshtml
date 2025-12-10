@@ -1,0 +1,167 @@
+@model List<LMS.Models.QuestionBank>
+@{
+    ViewData["Title"] = "Ngân hàng câu hỏi";
+    var selectedCourseId = ViewBag.SelectedCourseId;
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-question-circle"></i> Ngân hàng câu hỏi</h4>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">
+                        Quản lý câu hỏi thi theo môn học. Câu hỏi có thể tái sử dụng cho nhiều đề thi khác nhau.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="get" asp-action="QuestionBank" class="d-flex">
+                <select name="courseId" class="form-select me-2" onchange="this.form.submit()">
+                    <option value="">-- Tất cả môn học --</option>
+                    @foreach (var course in (ViewBag.MyCourses as SelectList)?.Items.Cast<SelectListItem>() ?? Enumerable.Empty<SelectListItem>())
+                    {
+                        <option value="@course.Value" selected="@(course.Value == selectedCourseId?.ToString())">
+                            @course.Text
+                        </option>
+                    }
+                </select>
+            </form>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="@Url.Action("CreateQuestion", new { courseId = selectedCourseId })" class="btn btn-success">
+                <i class="fas fa-plus"></i> Tạo câu hỏi mới
+            </a>
+            <a href="@Url.Action("Exams")" class="btn btn-secondary">
+                <i class="fas fa-file-alt"></i> Đề thi
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            @if (Model.Any())
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Môn học</th>
+                                        <th>Nội dung câu hỏi</th>
+                                        <th>Loại</th>
+                                        <th>Độ khó</th>
+                                        <th>Điểm</th>
+                                        <th>Ngày tạo</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var question in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <small class="text-muted">@question.Course?.Name</small>
+                                            </td>
+                                            <td>
+                                                <strong>@(question.Content.Length > 100 ? question.Content.Substring(0, 100) + "..." : question.Content)</strong>
+                                                @if (!string.IsNullOrEmpty(question.Options))
+                                                {
+                                                    <br />
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-list"></i> Có đáp án lựa chọn
+                                                    </small>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (question.Type == "MultipleChoice")
+                                                {
+                                                    <span class="badge bg-primary">Trắc nghiệm</span>
+                                                }
+                                                else if (question.Type == "Essay")
+                                                {
+                                                    <span class="badge bg-warning">Tự luận</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">@question.Type</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (question.Difficulty != null)
+                                                {
+                                                    if (question.Difficulty.LevelName == "Easy")
+                                                    {
+                                                        <span class="badge bg-success">Dễ</span>
+                                                    }
+                                                    else if (question.Difficulty.LevelName == "Medium")
+                                                    {
+                                                        <span class="badge bg-warning">Trung bình</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-danger">Khó</span>
+                                                    }
+                                                }
+                                            </td>
+                                            <td>@question.MaxScore điểm</td>
+                                            <td>@question.CreatedAt?.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <a href="@Url.Action("EditQuestion", new { id = question.QuestionId })" 
+                                                   class="btn btn-sm btn-warning" title="Chỉnh sửa">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button onclick="deleteQuestion(@question.QuestionId)" 
+                                                        class="btn btn-sm btn-danger" title="Xóa">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Chưa có câu hỏi nào. Hãy tạo câu hỏi đầu tiên cho ngân hàng!
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function deleteQuestion(questionId) {
+            if (confirm('Bạn có chắc muốn xóa câu hỏi này?')) {
+                $.ajax({
+                    url: '@Url.Action("DeleteQuestion")',
+                    type: 'POST',
+                    data: { id: questionId },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.message);
+                            location.reload();
+                        } else {
+                            alert('Lỗi: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Có lỗi xảy ra!');
+                    }
+                });
+            }
+        }
+    </script>
+}

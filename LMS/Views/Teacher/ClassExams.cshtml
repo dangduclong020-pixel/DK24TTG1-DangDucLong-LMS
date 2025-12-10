@@ -1,0 +1,174 @@
+@model List<LMS.Models.Exam>
+@{
+    ViewData["Title"] = "Quản lý đề thi";
+    var classInfo = ViewBag.ClassInfo as LMS.Models.Class;
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="fas fa-file-alt"></i> Quản lý đề thi - Thi online</h4>
+                </div>
+                <div class="card-body">
+                    <h5><strong>Môn học:</strong> @classInfo?.Course?.Name</h5>
+                    <p class="mb-0">
+                        <strong>Lớp:</strong> @classInfo?.Name (@classInfo?.Code) | 
+                        <strong>Số đề thi:</strong> @Model.Count
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <a href="@Url.Action("CreateExam", new { classId = classInfo?.ClassId })" class="btn btn-success">
+                <i class="fas fa-plus"></i> Tạo đề thi mới
+            </a>
+            <a href="@Url.Action("QuestionBank", new { courseId = classInfo?.CourseId })" class="btn btn-info">
+                <i class="fas fa-question-circle"></i> Ngân hàng câu hỏi
+            </a>
+            <a href="@Url.Action("ClassDetails", new { id = classInfo?.ClassId })" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            @if (Model.Any())
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tên đề thi</th>
+                                        <th>Thời gian thi</th>
+                                        <th>Thời lượng</th>
+                                        <th>Số câu hỏi</th>
+                                        <th>Điểm tối đa</th>
+                                        <th>Lượt thi</th>
+                                        <th>Trạng thái</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var exam in Model)
+                                    {
+                                        var resultCount = exam.ExamResults.Count;
+                                        var isActive = exam.StartTime <= DateTime.Now && exam.EndTime >= DateTime.Now;
+                                        var isUpcoming = exam.StartTime > DateTime.Now;
+                                        var isEnded = exam.EndTime < DateTime.Now;
+
+                                        <tr class="@(isActive ? "table-success" : isEnded ? "table-secondary" : "")">
+                                            <td>
+                                                <strong>@exam.Title</strong>
+                                                @if (!string.IsNullOrEmpty(exam.Description))
+                                                {
+                                                    <br />
+                                                    <small class="text-muted">@(exam.Description.Length > 50 ? exam.Description.Substring(0, 50) + "..." : exam.Description)</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    <strong>Bắt đầu:</strong> @exam.StartTime.ToString("dd/MM/yyyy HH:mm")<br />
+                                                    <strong>Kết thúc:</strong> @exam.EndTime.ToString("dd/MM/yyyy HH:mm")
+                                                </small>
+                                            </td>
+                                            <td>@exam.Duration phút</td>
+                                            <td>
+                                                <span class="badge bg-primary">@exam.ExamQuestions.Count câu</span>
+                                            </td>
+                                            <td>@exam.MaxScore điểm</td>
+                                            <td>
+                                                <span class="badge bg-info">@resultCount lượt</span>
+                                            </td>
+                                            <td>
+                                                @if (isActive)
+                                                {
+                                                    <span class="badge bg-success">Đang diễn ra</span>
+                                                }
+                                                else if (isUpcoming)
+                                                {
+                                                    <span class="badge bg-warning">Sắp tới</span>
+                                                }
+                                                else if (isEnded)
+                                                {
+                                                    <span class="badge bg-secondary">Đã kết thúc</span>
+                                                }
+                                                
+                                                @if (exam.IsPublished == true)
+                                                {
+                                                    <span class="badge bg-success">Đã xuất bản</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-dark">Nháp</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="@Url.Action("ExamResults", new { examId = exam.ExamId })" 
+                                                       class="btn btn-sm btn-primary" title="Xem kết quả">
+                                                        <i class="fas fa-chart-bar"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("EditExam", new { id = exam.ExamId })" 
+                                                       class="btn btn-sm btn-warning" title="Chỉnh sửa">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button onclick="deleteExam(@exam.ExamId)" 
+                                                            class="btn btn-sm btn-danger" title="Xóa">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Chưa có đề thi nào. Hãy tạo đề thi đầu tiên!
+                    <br /><br />
+                    <strong>Gợi ý:</strong> Trước tiên hãy tạo câu hỏi trong 
+                    <a href="@Url.Action("QuestionBank", new { courseId = classInfo?.CourseId })">Ngân hàng câu hỏi</a>,
+                    sau đó tạo đề thi và chọn câu hỏi từ ngân hàng.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function deleteExam(examId) {
+            if (confirm('Bạn có chắc muốn xóa đề thi này? Tất cả kết quả thi sẽ không bị xóa.')) {
+                $.ajax({
+                    url: '@Url.Action("DeleteExam")',
+                    type: 'POST',
+                    data: { id: examId },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.message);
+                            location.reload();
+                        } else {
+                            alert('Lỗi: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Có lỗi xảy ra!');
+                    }
+                });
+            }
+        }
+    </script>
+}

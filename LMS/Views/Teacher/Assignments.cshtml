@@ -1,0 +1,346 @@
+@{
+    Layout = "~/Views/Shared/_TeacherLayout.cshtml";
+    ViewBag.Title = "Quản lý bài tập";
+}
+
+@model IEnumerable<dynamic>
+
+<div class="page-header">
+    <div>
+        <h1><i class="fas fa-tasks me-2"></i>Quản lý bài tập</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Teacher")">Dashboard</a></li>
+                <li class="breadcrumb-item active">Bài tập</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <a href="@Url.Action("CreateAssignment", "Teacher")" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Tạo bài tập mới
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6><i class="fas fa-tasks me-1"></i>TỔNG BÀI TẬP</h6>
+            <div class="stat-value">@ViewBag.TotalAssignments</div>
+            <div class="stat-desc">Đã tạo</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6><i class="fas fa-clock me-1"></i>CHỜ CHẤM ĐIỂM</h6>
+            <div class="stat-value text-warning">@ViewBag.PendingGrading</div>
+            <div class="stat-desc">Bài nộp</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6><i class="fas fa-calendar-times me-1"></i>QUÁ HẠN</h6>
+            <div class="stat-value text-danger">@ViewBag.OverdueAssignments</div>
+            <div class="stat-desc">Bài tập</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6><i class="fas fa-check-circle me-1"></i>ĐÃ HOÀN THÀNH</h6>
+            <div class="stat-value text-success">@ViewBag.CompletedAssignments</div>
+            <div class="stat-desc">Bài tập</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Tìm kiếm</label>
+                <input type="text" class="form-control" name="search" value="@ViewBag.CurrentSearch" 
+                       placeholder="Tên bài tập...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Lớp học</label>
+                <select class="form-select" name="classId">
+                    <option value="">Tất cả lớp</option>
+                    @if (ViewBag.Classes != null)
+                    {
+                        @foreach (var classItem in ViewBag.Classes)
+                        {
+                            <option value="@classItem.ClassId" selected="@(ViewBag.CurrentClass?.ToString() == classItem.ClassId.ToString())">
+                                @classItem.ClassName
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Trạng thái</label>
+                <select class="form-select" name="status">
+                    <option value="">Tất cả</option>
+                    <option value="active" selected="@(ViewBag.CurrentStatus == "active")">Đang mở</option>
+                    <option value="overdue" selected="@(ViewBag.CurrentStatus == "overdue")">Quá hạn</option>
+                    <option value="completed" selected="@(ViewBag.CurrentStatus == "completed")">Đã kết thúc</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Sắp xếp</label>
+                <select class="form-select" name="sortBy">
+                    <option value="newest" selected="@(ViewBag.CurrentSort == "newest")">Mới nhất</option>
+                    <option value="oldest" selected="@(ViewBag.CurrentSort == "oldest")">Cũ nhất</option>
+                    <option value="duedate" selected="@(ViewBag.CurrentSort == "duedate")">Hạn nộp</option>
+                    <option value="name" selected="@(ViewBag.CurrentSort == "name")">Tên A-Z</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i>Lọc
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assignments List -->
+@if (Model != null && Model.Any())
+{
+    <div class="row">
+        @foreach (var assignment in Model)
+        {
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title mb-1">@assignment.Title</h6>
+                            <small class="text-muted">@assignment.ClassName</small>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="@Url.Action("EditAssignment", "Teacher", new { id = assignment.AssignmentId })">
+                                    <i class="fas fa-edit me-2"></i>Chỉnh sửa
+                                </a></li>
+                                <li><a class="dropdown-item" href="@Url.Action("DuplicateAssignment", "Teacher", new { id = assignment.AssignmentId })">
+                                    <i class="fas fa-copy me-2"></i>Nhân bản
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" 
+                                       onclick="deleteAssignment(@assignment.AssignmentId, '@assignment.Title')">
+                                    <i class="fas fa-trash me-2"></i>Xóa
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">@assignment.Description</p>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <small class="text-muted d-block">Ngày giao</small>
+                                <strong>@assignment.CreatedAt.ToString("dd/MM/yyyy")</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block">Hạn nộp</small>
+                                <strong class="@(assignment.DueDate < DateTime.Now ? "text-danger" : "")">
+                                    @assignment.DueDate.ToString("dd/MM/yyyy HH:mm")
+                                </strong>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">Tiến độ nộp bài</small>
+                                <small class="text-muted">@assignment.SubmissionCount/@assignment.TotalStudents</small>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-info" 
+                                     style="width: @(assignment.TotalStudents > 0 ? (assignment.SubmissionCount * 100.0 / assignment.TotalStudents) : 0)%"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                @if (assignment.DueDate < DateTime.Now)
+                                {
+                                    <span class="badge bg-danger">Quá hạn</span>
+                                }
+                                else if (assignment.DueDate.Date == DateTime.Today)
+                                {
+                                    <span class="badge bg-warning">Hết hạn hôm nay</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Đang mở</span>
+                                }
+                                
+                                @if (assignment.MaxScore > 0)
+                                {
+                                    <span class="badge bg-secondary ms-1">@assignment.MaxScore điểm</span>
+                                }
+                            </div>
+                            <div>
+                                @if (assignment.PendingGrading > 0)
+                                {
+                                    <span class="badge bg-warning">@assignment.PendingGrading chờ chấm</span>
+                                }
+                            </div>
+                        </div>
+
+                        @if (assignment.HasFiles)
+                        {
+                            <div class="alert alert-info py-2 mb-3">
+                                <i class="fas fa-paperclip me-1"></i>
+                                <small>Có file đính kèm</small>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100" role="group">
+                            <a href="@Url.Action("AssignmentSubmissions", "Teacher", new { id = assignment.AssignmentId })" 
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>Xem bài nộp
+                                @if (assignment.PendingGrading > 0)
+                                {
+                                    <span class="badge bg-warning ms-1">@assignment.PendingGrading</span>
+                                }
+                            </a>
+                            <a href="@Url.Action("AssignmentStatistics", "Teacher", new { id = assignment.AssignmentId })" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-chart-bar me-1"></i>Thống kê
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav aria-label="Phân trang">
+            <ul class="pagination justify-content-center">
+                @if (ViewBag.CurrentPage > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("Assignments", new { 
+                            page = ViewBag.CurrentPage - 1, 
+                            search = ViewBag.CurrentSearch, 
+                            classId = ViewBag.CurrentClass, 
+                            status = ViewBag.CurrentStatus,
+                            sortBy = ViewBag.CurrentSort 
+                        })">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                }
+
+                @for (int i = Math.Max(1, ViewBag.CurrentPage - 2); i <= Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2); i++)
+                {
+                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("Assignments", new { 
+                            page = i, 
+                            search = ViewBag.CurrentSearch, 
+                            classId = ViewBag.CurrentClass, 
+                            status = ViewBag.CurrentStatus,
+                            sortBy = ViewBag.CurrentSort 
+                        })">@i</a>
+                    </li>
+                }
+
+                @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("Assignments", new { 
+                            page = ViewBag.CurrentPage + 1, 
+                            search = ViewBag.CurrentSearch, 
+                            classId = ViewBag.CurrentClass, 
+                            status = ViewBag.CurrentStatus,
+                            sortBy = ViewBag.CurrentSort 
+                        })">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-tasks fa-4x text-muted mb-4"></i>
+            <h4 class="text-muted">Không tìm thấy bài tập nào</h4>
+            <p class="text-muted">
+                @if (!string.IsNullOrEmpty(ViewBag.CurrentSearch?.ToString()) || !string.IsNullOrEmpty(ViewBag.CurrentClass?.ToString()))
+                {
+                    <text>Không có bài tập nào phù hợp với bộ lọc hiện tại</text>
+                }
+                else
+                {
+                    <text>Bạn chưa tạo bài tập nào</text>
+                }
+            </p>
+            <a href="@Url.Action("CreateAssignment", "Teacher")" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Tạo bài tập đầu tiên
+            </a>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+    // Delete assignment function
+    function deleteAssignment(assignmentId, title) {
+        if (confirm('Bạn có chắc chắn muốn xóa bài tập "' + title + '"?\nHành động này không thể hoàn tác!')) {
+            $.post('@Url.Action("DeleteAssignment", "Teacher")', {
+                id: assignmentId,
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            }).done(function(result) {
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert('Có lỗi xảy ra: ' + result.message);
+                }
+            }).fail(function() {
+                alert('Có lỗi xảy ra khi xóa bài tập');
+            });
+        }
+    }
+
+    // Auto-submit form when filters change
+    $('.form-select').change(function() {
+        $(this).closest('form').submit();
+    });
+
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
+</script>
+}
+
+<!-- CSRF Token for AJAX -->
+@Html.AntiForgeryToken()

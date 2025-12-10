@@ -23,15 +23,11 @@ namespace LMS.Controllers
                 .OrderBy(f => f.Name)
                 .ToList();
             
-            // Kiểm tra trạng thái đăng nhập từ session (tạm thời dùng TempData)
-            ViewBag.IsLoggedIn = TempData["IsLoggedIn"] as bool? ?? false;
-            ViewBag.UserName = TempData["UserName"] as string ?? "";
-            ViewBag.UserRole = TempData["UserRole"] as string ?? "";
-            
-            // Keep data for next request
-            TempData.Keep("IsLoggedIn");
-            TempData.Keep("UserName");
-            TempData.Keep("UserRole");
+            // Kiểm tra trạng thái đăng nhập từ session
+            var isLoggedIn = HttpContext.Session.GetString("IsLoggedIn") == "true";
+            ViewBag.IsLoggedIn = isLoggedIn;
+            ViewBag.UserName = HttpContext.Session.GetString("UserName") ?? "";
+            ViewBag.UserRole = HttpContext.Session.GetString("UserRole") ?? "";
             
             return View(faculties);
         }
@@ -67,10 +63,10 @@ namespace LMS.Controllers
                         
                         // Set trạng thái đăng nhập vào session
                         HttpContext.Session.SetString("IsLoggedIn", "true");
-                        HttpContext.Session.SetString("IsLoggedIn", "true");
                         HttpContext.Session.SetString("UserId", user.UserId.ToString());
                         HttpContext.Session.SetString("UserName", user.FullName);
                         HttpContext.Session.SetString("UserRole", user.Role?.RoleName ?? "User");
+                        HttpContext.Session.SetString("RoleId", user.RoleId?.ToString() ?? "");
                         HttpContext.Session.SetString("FacultyId", user.FacultyId?.ToString() ?? "");
                         HttpContext.Session.SetString("FacultyName", user.Faculty?.Name ?? "");
                         
@@ -130,6 +126,19 @@ namespace LMS.Controllers
                 .ToListAsync();
             
             return View(users);
+        }
+
+        // Debug action to check all roles
+        public async Task<IActionResult> DebugRoles()
+        {
+            var roles = await _context.Roles.ToListAsync();
+            var users = await _context.Users.Include(u => u.Role).ToListAsync();
+            
+            ViewBag.Roles = roles;
+            ViewBag.Users = users;
+            
+            return Content($"Roles: {string.Join(", ", roles.Select(r => $"ID:{r.RoleId} Name:'{r.RoleName}'"))}\n\n" +
+                          $"Users: {string.Join("\n", users.Select(u => $"{u.FullName} - Role: {u.Role?.RoleName} (ID: {u.RoleId})"))}");
         }
 
         // Action to create test data if needed
@@ -197,19 +206,11 @@ namespace LMS.Controllers
 
         public IActionResult Logout()
         {
-            // Xóa hoàn toàn session đăng nhập
-            TempData.Remove("IsLoggedIn");
-            TempData.Remove("UserName");
-            TempData.Remove("UserRole");
-            TempData.Remove("FacultyName");
+            // Xóa session đăng nhập
+            HttpContext.Session.Clear();
             
             // Xóa tất cả TempData
             TempData.Clear();
-            
-            // Xóa session nếu có
-            HttpContext.Session.Clear();
-            
-            TempData["SuccessMessage"] = "Đã đăng xuất thành công!";
             
             return RedirectToAction("Index");
         }

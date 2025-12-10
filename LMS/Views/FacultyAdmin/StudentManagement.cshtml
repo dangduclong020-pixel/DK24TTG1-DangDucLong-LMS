@@ -17,6 +17,12 @@
                     <p class="text-muted mb-0">Quản lý sinh viên trong khoa</p>
                 </div>
                 <div class="btn-group" role="group">
+                    <button class="btn btn-info" onclick="exportStudentsToExcel()">
+                        <i class="fas fa-download"></i> Xuất Excel
+                    </button>
+                    <button class="btn btn-warning" onclick="autoAssignDepartments()">
+                        <i class="fas fa-magic"></i> Tự động phân chuyên ngành
+                    </button>
                     <button class="btn btn-success" onclick="importStudents()">
                         <i class="fas fa-file-excel"></i> Import từ Excel
                     </button>
@@ -57,16 +63,32 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-3">
-                    <label for="classFilter">Lớp học:</label>
-                    <select class="form-control" id="classFilter">
+                    <label for="studentClassFilter">Lớp hành chính:</label>
+                    <select class="form-control" id="studentClassFilter">
                         <option value="">Tất cả</option>
-                        @foreach (var cls in ViewBag.Classes)
+                        @if (ViewBag.StudentClasses != null)
                         {
-                            <option value="@cls.ClassName">@cls.ClassName (@cls.Course.CourseName)</option>
+                            @foreach (var studentClass in ViewBag.StudentClasses)
+                            {
+                                <option value="@studentClass">@studentClass</option>
+                            }
                         }
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <label for="departmentFilter">Chuyên ngành:</label>
+                    <select class="form-control" id="departmentFilter">
+                        <option value="">Tất cả</option>
+                        @if (ViewBag.Departments != null)
+                        {
+                            @foreach (var dept in ViewBag.Departments)
+                            {
+                                <option value="@dept.DepartmentId">@dept.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label for="statusFilter">Trạng thái:</label>
                     <select class="form-control" id="statusFilter">
                         <option value="">Tất cả</option>
@@ -75,7 +97,7 @@
                         <option value="Graduated">Đã tốt nghiệp</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="searchInput">Tìm kiếm:</label>
                     <input type="text" class="form-control" id="searchInput" placeholder="MSSV, tên sinh viên...">
                 </div>
@@ -94,6 +116,22 @@
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">
                 Danh sách sinh viên (@Model.Count() sinh viên)
+                @{
+                    var studentsWithoutDept = Model.Count(s => s.Department == null);
+                    var studentsWithDept = Model.Count(s => s.Department != null);
+                }
+                @if (studentsWithoutDept > 0)
+                {
+                    <span class="badge badge-warning ml-2">
+                        <i class="fas fa-exclamation-triangle"></i> @studentsWithoutDept chưa phân chuyên ngành
+                    </span>
+                }
+                @if (studentsWithDept > 0)
+                {
+                    <span class="badge badge-success ml-2">
+                        <i class="fas fa-check-circle"></i> @studentsWithDept đã phân chuyên ngành
+                    </span>
+                }
             </h6>
         </div>
         <div class="card-body">
@@ -104,8 +142,8 @@
                             <th>MSSV</th>
                             <th>Họ tên</th>
                             <th>Email</th>
-                            <th>Bộ môn</th>
-                            <th>Lớp học hiện tại</th>
+                            <th>Chuyên ngành/Bộ môn</th>
+                            <th>Lớp hành chính</th>
                             <th>Trạng thái</th>
                             <th>Ngày nhập học</th>
                             <th>Thao tác</th>
@@ -130,40 +168,57 @@
                                     </div>
                                 </td>
                                 <td>@student.Email</td>
-                                <td>@(student.Department?.Name ?? "Chưa phân")</td>
                                 <td>
-                                    @if (student.ClassStudents.Any())
+                                    @if (student.Department != null)
                                     {
-                                        var currentClass = student.ClassStudents.FirstOrDefault()?.Class;
-                                        if (currentClass != null)
-                                        {
-                                            <span class="badge badge-info">@currentClass.Name</span>
-                                            <br><small class="text-muted">@currentClass.Course?.Name</small>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">Chưa có lớp</span>
-                                        }
+                                        <div class="department-info">
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-graduation-cap"></i> @student.Department.Name
+                                            </span>
+                                            <br><small class="text-muted">@(student.Department.Description ?? "")</small>
+                                        </div>
                                     }
                                     else
                                     {
-                                        <span class="text-muted">Chưa có lớp</span>
+                                        <div class="no-department">
+                                            <span class="badge badge-warning">
+                                                <i class="fas fa-exclamation-triangle"></i> Chưa phân chuyên ngành
+                                            </span>
+                                            <br><small class="text-muted">Thuộc @(student.Faculty?.Name ?? "Chưa xác định")</small>
+                                        </div>
                                     }
                                 </td>
                                 <td>
-                                    @switch (student.Status)
+                                    @if (!string.IsNullOrEmpty(student.StudentClass))
                                     {
-                                        case "Active":
+                                        <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 0.9em; font-weight: 600; padding: 6px 12px;">
+                                            <i class="fas fa-users"></i> @student.StudentClass
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-light" style="font-size: 0.85em; color: #6c757d; border: 1px dashed #dee2e6;">
+                                            <i class="fas fa-question"></i> Chưa xác định
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @{
+                                        var status = student.Status?.ToLower();
+                                    }
+                                    @switch (status)
+                                    {
+                                        case "active":
                                             <span class="badge badge-success">Đang học</span>
                                             break;
-                                        case "Inactive":
+                                        case "inactive":
                                             <span class="badge badge-warning">Tạm nghỉ</span>
                                             break;
-                                        case "Graduated":
+                                        case "graduated":
                                             <span class="badge badge-primary">Đã tốt nghiệp</span>
                                             break;
                                         default:
-                                            <span class="badge badge-secondary">@student.Status</span>
+                                            <span class="badge badge-secondary">@(student.Status ?? "N/A")</span>
                                             break;
                                     }
                                 </td>
@@ -171,8 +226,13 @@
                                 <td>
                                     <div class="btn-group" role="group">
                                         <button type="button" class="btn btn-sm btn-outline-info" 
-                                                onclick="transferStudent(@student.UserId, '@student.FullName')">
-                                            <i class="fas fa-exchange-alt"></i> Chuyển lớp
+                                                onclick="updateStudentClass(@student.UserId, '@student.FullName', '@(student.StudentClass ?? "")')">
+                                            <i class="fas fa-edit"></i> Cập nhật lớp
+                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                onclick="assignDepartment(@student.UserId, '@student.FullName')"
+                                                title="Phân chuyên ngành cho sinh viên">
+                                            <i class="fas fa-graduation-cap"></i> Phân chuyên ngành
                                         </button>
                                         <button type="button" class="btn btn-sm btn-outline-primary" 
                                                 onclick="viewProgress(@student.UserId)">
@@ -189,30 +249,39 @@
     </div>
 </div>
 
-<!-- Modal chuyển lớp -->
-<div class="modal fade" id="transferModal" tabindex="-1" role="dialog">
+<!-- Modal phân bộ môn -->
+<div class="modal fade" id="departmentModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Chuyển lớp sinh viên</h5>
+                <h5 class="modal-title">Phân chuyên ngành cho sinh viên</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="transferForm" method="post" action="@Url.Action("TransferStudent", "FacultyAdmin")">
-                    <input type="hidden" id="studentId" name="studentId" />
+                <form id="departmentForm" method="post" action="@Url.Action("AssignDepartment", "FacultyAdmin")">
+                    <input type="hidden" id="studentIdDept" name="studentId" />
                     <div class="form-group">
                         <label>Sinh viên:</label>
-                        <p id="studentName" class="font-weight-bold text-primary"></p>
+                        <p id="studentNameDept" class="font-weight-bold text-primary"></p>
                     </div>
                     <div class="form-group">
-                        <label for="newClassId">Chọn lớp mới:</label>
-                        <select class="form-control" id="newClassId" name="newClassId" required>
-                            <option value="">-- Chọn lớp --</option>
-                            @foreach (var cls in ViewBag.Classes)
+                        <label for="departmentId">Chọn chuyên ngành:</label>
+                        <select class="form-control" id="departmentId" name="departmentId" required>
+                            <option value="">-- Chọn chuyên ngành --</option>
+                            @if (ViewBag.Departments != null)
                             {
-                                <option value="@cls.ClassId">@cls.ClassName - @cls.Course.CourseName</option>
+                                @foreach (var dept in ViewBag.Departments)
+                                {
+                                    <option value="@dept.DepartmentId" title="@(dept.Description ?? "")">
+                                        @dept.Name
+                                        @if (!string.IsNullOrEmpty(dept.Description))
+                                        {
+                                            <text> - @dept.Description</text>
+                                        }
+                                    </option>
+                                }
                             }
                         </select>
                     </div>
@@ -220,7 +289,48 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary" onclick="submitTransfer()">Xác nhận chuyển</button>
+                <button type="button" class="btn btn-warning" onclick="submitDepartment()">Xác nhận phân chuyên ngành</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal cập nhật lớp hành chính -->
+<div class="modal fade" id="updateClassModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Cập nhật lớp hành chính
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="updateClassForm" method="post" action="@Url.Action("UpdateStudentClass", "FacultyAdmin")">
+                    <input type="hidden" id="updateClassStudentId" name="studentId" />
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Sinh viên:</label>
+                        <p id="updateClassStudentName" class="font-weight-bold text-primary mb-0"></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="studentClass"><i class="fas fa-school"></i> Lớp hành chính: <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="studentClass" name="studentClass" 
+                               placeholder="VD: CNTT K22A, NN K21B..." required maxlength="50">
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> Nhập tên lớp hành chính (lớp cố định suốt quá trình học)
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-info" onclick="submitUpdateClass()">
+                    <i class="fas fa-save"></i> Lưu thay đổi
+                </button>
             </div>
         </div>
     </div>
@@ -251,11 +361,43 @@
     .badge {
         font-size: 0.75em;
     }
+
+    .department-info {
+        min-height: 40px;
+    }
+
+    .no-department {
+        min-height: 40px;
+    }
+
+    .badge-success {
+        background-color: #28a745;
+        animation: pulse-success 2s infinite;
+    }
+
+    .badge-warning {
+        background-color: #ffc107;
+        color: #212529;
+        animation: pulse-warning 2s infinite;
+    }
+
+    @@keyframes pulse-success {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+
+    @@keyframes pulse-warning {
+        0% { opacity: 1; }
+        50% { opacity: 0.8; }
+        100% { opacity: 1; }
+    }
 </style>
 
 <script>
     function filterTable() {
-        var classFilter = document.getElementById('classFilter').value.toLowerCase();
+        var classFilter = document.getElementById('studentClassFilter').value.toLowerCase();
+        var departmentFilter = document.getElementById('departmentFilter').value.toLowerCase();
         var statusFilter = document.getElementById('statusFilter').value.toLowerCase();
         var searchInput = document.getElementById('searchInput').value.toLowerCase();
         var table = document.getElementById('studentTable');
@@ -267,16 +409,18 @@
             
             var mssv = cells[0].textContent.toLowerCase();
             var fullName = cells[1].textContent.toLowerCase();
+            var department = cells[3].textContent.toLowerCase();
             var className = cells[4].textContent.toLowerCase();
             var status = cells[5].textContent.toLowerCase();
 
             var matchClass = classFilter === '' || className.includes(classFilter);
+            var matchDepartment = departmentFilter === '' || department.includes(departmentFilter);
             var matchStatus = statusFilter === '' || status.includes(statusFilter);
             var matchSearch = searchInput === '' || 
                             mssv.includes(searchInput) || 
                             fullName.includes(searchInput);
 
-            if (matchClass && matchStatus && matchSearch) {
+            if (matchClass && matchDepartment && matchStatus && matchSearch) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';
@@ -284,18 +428,85 @@
         }
     }
 
-    function transferStudent(studentId, studentName) {
-        document.getElementById('studentId').value = studentId;
-        document.getElementById('studentName').textContent = studentName;
-        $('#transferModal').modal('show');
+    function assignDepartment(studentId, studentName) {
+        document.getElementById('studentIdDept').value = studentId;
+        document.getElementById('studentNameDept').textContent = studentName;
+        $('#departmentModal').modal('show');
     }
 
-    function submitTransfer() {
-        document.getElementById('transferForm').submit();
+    function submitDepartment() {
+        document.getElementById('departmentForm').submit();
+    }
+
+    function updateStudentClass(studentId, studentName, currentClass) {
+        document.getElementById('updateClassStudentId').value = studentId;
+        document.getElementById('updateClassStudentName').textContent = studentName;
+        document.getElementById('studentClass').value = currentClass;
+        $('#updateClassModal').modal('show');
+    }
+
+    function submitUpdateClass() {
+        var form = document.getElementById('updateClassForm');
+        var studentClass = document.getElementById('studentClass').value.trim();
+        
+        if (studentClass === '') {
+            alert('Vui lòng nhập tên lớp hành chính!');
+            document.getElementById('studentClass').focus();
+            return false;
+        }
+        
+        form.submit();
     }
 
     function viewProgress(studentId) {
         alert('Chức năng xem tiến độ học tập đang được phát triển. Student ID: ' + studentId);
+    }
+
+    function autoAssignDepartments() {
+        if (confirm('Bạn có chắc chắn muốn tự động phân chuyên ngành cho tất cả sinh viên chưa được phân? Hành động này không thể hoàn tác.')) {
+            // Tạo form để submit
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '@Url.Action("AutoAssignDepartments", "FacultyAdmin")';
+            
+            // Thêm token chống CSRF nếu cần
+            var token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                var tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = token.value;
+                form.appendChild(tokenInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function exportStudentsToExcel() {
+        // Lấy các giá trị filter hiện tại
+        var administrativeClass = document.getElementById('studentClassFilter').value;
+        var departmentId = document.getElementById('departmentFilter').value;
+        
+        // Tạo URL với parameters
+        var url = '@Url.Action("ExportStudentsToExcel", "FacultyAdmin")';
+        var params = [];
+        
+        if (administrativeClass && administrativeClass !== '') {
+            params.push('administrativeClass=' + encodeURIComponent(administrativeClass));
+        }
+        
+        if (departmentId && departmentId !== '') {
+            params.push('departmentId=' + departmentId);
+        }
+        
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
+        
+        // Tải file
+        window.location.href = url;
     }
 
     function importStudents() {

@@ -1,0 +1,102 @@
+@model LMS.Models.AdministrativeClass
+
+@{
+    ViewData["Title"] = "Chỉnh sửa lớp hành chính";
+    Layout = "~/Views/Shared/_FacultyLayout.cshtml";
+    var facultyName = ViewBag.FacultyName as string;
+}
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="fas fa-edit"></i> Chỉnh sửa lớp hành chính</h2>
+            <p class="text-muted">Cập nhật thông tin lớp @Model.Name</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-edit"></i> Thông tin lớp</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="EditAdministrativeClass" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="AdministrativeClassId" />
+                <input type="hidden" asp-for="FacultyId" />
+                <input type="hidden" asp-for="CreatedAt" />
+                <input type="hidden" asp-for="CreatedBy" />
+                <input type="hidden" asp-for="CurrentStudents" />
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Name" class="form-label">Tên lớp <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Code" class="form-label">Mã lớp <span class="text-danger">*</span></label>
+                        <input asp-for="Code" class="form-control" required />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="AcademicYear" class="form-label">Năm học <span class="text-danger">*</span></label>
+                        <input asp-for="AcademicYear" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Intake" class="form-label">Khóa</label>
+                        <input asp-for="Intake" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="MaxStudents" class="form-label">Sĩ số tối đa</label>
+                        <input asp-for="MaxStudents" type="number" class="form-control" min="1" />
+                        <div class="form-text">Hiện tại: @Model.CurrentStudents/@Model.MaxStudents sinh viên</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="DepartmentId" class="form-label">Bộ môn</label>
+                        <select asp-for="DepartmentId" class="form-select" asp-items="ViewBag.Departments">
+                            <option value="">-- Không chọn bộ môn --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="AdvisorId" class="form-label">Giảng viên chủ nhiệm</label>
+                        <select asp-for="AdvisorId" class="form-select" asp-items="ViewBag.Teachers">
+                            <option value="">-- Chọn GVCN --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <div class="form-check">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                            <label asp-for="IsActive" class="form-check-label">
+                                Lớp đang hoạt động
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save"></i> Cập nhật
+                        </button>
+                        <a href="@Url.Action("AdministrativeClassManagement", "FacultyAdmin")" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Hủy bỏ
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -59,6 +59,18 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
+                                    <label>Mã số (Tự động sinh) <span class="text-danger">*</span></label>
+                                    <input type="text" id="generatedCode" class="form-control bg-light" readonly placeholder="Sẽ tự động sinh sau khi chọn khoa">
+                                    <input asp-for="MssvMgv" type="hidden" id="MssvMgv">
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle"></i> Format: <strong>[Năm 2 số][Mã Khoa][STT 3 số]</strong>
+                                        <br>VD: Khoa CNTT (mã 22) năm 2025 → <code>2522001</code>
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
                                     <label asp-for="Email">Email <span class="text-danger">*</span></label>
                                     <input asp-for="Email" class="form-control" type="email" required>
                                     <span asp-validation-for="Email" class="text-danger"></span>
@@ -250,6 +262,64 @@
             return false;
         }
     });
+
+    // Auto-generate MssvMgv code when faculty is selected
+    async function loadDepartments() {
+        const facultyId = document.querySelector('[name="FacultyId"]').value;
+        const roleId = document.querySelector('[name="RoleId"]').value;
+        
+        if (!facultyId) {
+            document.getElementById('generatedCode').value = '';
+            document.getElementById('MssvMgv').value = '';
+            return;
+        }
+
+        try {
+            // Fetch faculty code from server
+            const response = await fetch(`/Admin/GetFacultyCode?facultyId=${facultyId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const facultyCode = data.facultyCode; // VD: "22" cho CNTT
+                const currentYear = new Date().getFullYear().toString().slice(-2); // "25" cho 2025
+                
+                // Fetch next sequential number for this faculty
+                const countResponse = await fetch(`/Admin/GetNextUserCode?facultyId=${facultyId}&roleId=${roleId}`);
+                const countData = await countResponse.json();
+                
+                if (countData.success) {
+                    const sequentialNumber = countData.nextNumber.toString().padStart(3, '0'); // "001", "002", ...
+                    const generatedCode = `${currentYear}${facultyCode}${sequentialNumber}`;
+                    
+                    document.getElementById('generatedCode').value = generatedCode;
+                    document.getElementById('MssvMgv').value = generatedCode;
+                } else {
+                    alert('Không thể tạo mã tự động. Vui lòng thử lại.');
+                }
+            }
+        } catch (error) {
+            console.error('Error generating code:', error);
+            alert('Lỗi khi tạo mã tự động.');
+        }
+        
+        // Load departments as before
+        if (facultyId) {
+            fetch(`/Admin/GetDepartments?facultyId=${facultyId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const deptSelect = document.querySelector('[name="DepartmentId"]');
+                    deptSelect.innerHTML = '<option value="">-- Chọn bộ môn --</option>';
+                    data.forEach(dept => {
+                        deptSelect.innerHTML += `<option value="${dept.departmentId}">${dept.name}</option>`;
+                    });
+                });
+        }
+    }
+
+    // Trigger code generation when role changes too
+    function handleRoleChange() {
+        loadDepartments();
+    }
 </script>
 
 <style>

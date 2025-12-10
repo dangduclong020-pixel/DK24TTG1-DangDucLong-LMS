@@ -44,9 +44,12 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label asp-for="Code">Mã khoa</label>
-                                    <input asp-for="Code" class="form-control" 
-                                           placeholder="VD: CNTT">
+                                    <label asp-for="Code">Mã khoa (2 chữ số) <span class="text-danger">*</span></label>
+                                    <input asp-for="Code" class="form-control" type="text" maxlength="2" pattern="[0-9]{2}"
+                                           placeholder="VD: 22, 21, 23..." required>
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle"></i> Nhập 2 chữ số để tạo mã sinh viên (VD: 22 → 2522001)
+                                    </small>
                                     <span asp-validation-for="Code" class="text-danger"></span>
                                 </div>
                             </div>
@@ -141,28 +144,28 @@
         }
     }
 
-    // Auto generate code from name
-    document.querySelector('[name="Name"]').addEventListener('input', function() {
-        var name = this.value;
-        var codeField = document.querySelector('[name="Code"]');
+    // Validate faculty code: only 2 digits allowed
+    document.querySelector('[name="Code"]').addEventListener('input', function(e) {
+        // Remove non-digit characters
+        this.value = this.value.replace(/[^0-9]/g, '');
         
-        if (name && !codeField.value) {
-            // Extract initials from Vietnamese faculty names
-            var words = name.split(' ');
-            var code = '';
-            
-            words.forEach(function(word) {
-                if (word.length > 0) {
-                    code += word.charAt(0).toUpperCase();
-                }
-            });
-            
-            codeField.value = code.substring(0, 10); // Limit to 10 characters
+        // Limit to 2 characters
+        if (this.value.length > 2) {
+            this.value = this.value.substring(0, 2);
         }
     });
 
     // Form validation
     document.querySelector('form').addEventListener('submit', function(e) {
+        var codeField = document.querySelector('[name="Code"]');
+        
+        // Validate faculty code is exactly 2 digits
+        if (!/^[0-9]{2}$/.test(codeField.value)) {
+            e.preventDefault();
+            alert('Mã khoa phải là 2 chữ số (VD: 22, 21, 23...)');
+            codeField.focus();
+            return false;
+        }
         var name = document.querySelector('[name="Name"]').value.trim();
         
         if (name.length < 5) {

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Rs7XHJdcw4Y=",
+  "dgSpecHash": "wVoo5aqY4/o=",
   "success": true,
-  "projectFilePath": "C:\\Study\\C#_ASP.Net_MVC\\LMS\\LMS\\LMS.csproj",
+  "projectFilePath": "C:\\Study\\C#_ASP.Net_MVC\\LMS3\\LMS\\LMS.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ngoct\\.nuget\\packages\\azure.core\\1.25.0\\azure.core.1.25.0.nupkg.sha512",
     "C:\\Users\\ngoct\\.nuget\\packages\\azure.identity\\1.7.0\\azure.identity.1.7.0.nupkg.sha512",

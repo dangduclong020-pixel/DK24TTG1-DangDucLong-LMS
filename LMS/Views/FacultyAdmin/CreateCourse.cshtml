@@ -54,8 +54,8 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label asp-for="Code" class="form-label">Mã khóa học</label>
-                            <input asp-for="Code" class="form-control" placeholder="Sẽ tự động tạo" readonly />
-                            <small class="form-text text-muted">Mã sẽ được tạo tự động (VD: CRS001)</small>
+                            <input asp-for="Code" class="form-control" placeholder="Nhập mã khóa học (VD: CNPM001)" />
+                            <small class="form-text text-muted">Mã khóa học duy nhất (nếu để trống sẽ tự động tạo)</small>
                         </div>
                     </div>
 
@@ -70,12 +70,8 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="DepartmentId" class="form-label">Bộ môn <span class="text-danger">*</span></label>
-                            <select name="DepartmentId" class="form-select" required>
+                            <select name="DepartmentId" class="form-select" asp-items="ViewBag.Departments" required>
                                 <option value="">-- Chọn bộ môn --</option>
-                                @foreach (var dept in ViewBag.Departments)
-                                {
-                                    <option value="@dept.DepartmentId">@dept.Name</option>
-                                }
                             </select>
                         </div>
                     </div>
@@ -108,12 +104,8 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="InstructorId" class="form-label">Giảng viên phụ trách</label>
-                            <select name="InstructorId" class="form-select">
+                            <select name="InstructorId" class="form-select" asp-items="ViewBag.Teachers">
                                 <option value="">-- Chọn giảng viên --</option>
-                                @foreach (var teacher in ViewBag.Teachers)
-                                {
-                                    <option value="@teacher.UserId">@teacher.FullName (@teacher.MssvMgv)</option>
-                                }
                             </select>
                         </div>
                     </div>
@@ -125,56 +117,15 @@
                                    placeholder="Ví dụ: Toán cao cấp, Lập trình cơ bản" />
                         </div>
                     </div>
-                    
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label asp-for="Name" class="form-label">Tên khóa học <span class="text-danger">*</span></label>
-                            <input asp-for="Name" class="form-control" placeholder="Ví dụ: Lập trình C# cơ bản" required />
-                            <span asp-validation-for="Name" class="text-danger"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label asp-for="Credits" class="form-label">Số tín chỉ <span class="text-danger">*</span></label>
-                            <input asp-for="Credits" type="number" class="form-control" min="1" max="10" required />
-                            <span asp-validation-for="Credits" class="text-danger"></span>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label asp-for="Duration" class="form-label">Thời lượng (giờ)</label>
-                            <input asp-for="Duration" type="number" class="form-control" min="1" placeholder="Ví dụ: 45" />
-                            <span asp-validation-for="Duration" class="text-danger"></span>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label asp-for="LeadInstructorId" class="form-label">Giảng viên phụ trách</label>
-                            <select asp-for="LeadInstructorId" class="form-select" asp-items="ViewBag.Teachers">
-                                <option value="">-- Chọn giảng viên --</option>
-                            </select>
-                            <span asp-validation-for="LeadInstructorId" class="text-danger"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Description" class="form-label">Mô tả khóa học</label>
-                    <textarea asp-for="Description" class="form-control" rows="4" placeholder="Mô tả chi tiết về nội dung, mục tiêu của khóa học..."></textarea>
-                    <span asp-validation-for="Description" class="text-danger"></span>
                 </div>
 
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
                             <div class="form-check">
-                                <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
-                                <label asp-for="IsActive" class="form-check-label">
+                                <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked />
+                                <input name="IsActive" type="hidden" value="false" />
+                                <label for="IsActive" class="form-check-label">
                                     Kích hoạt khóa học ngay
                                 </label>
                             </div>

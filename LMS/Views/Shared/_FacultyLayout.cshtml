@@ -6,6 +6,7 @@
     <title>Dashboard Khoa CNTT - LMS</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
         :root {
@@ -136,6 +137,9 @@
             <li class="menu-title">QUẢN LÝ ĐÀO TẠO</li>
             <a href="@Url.Action("CourseManagement", "FacultyAdmin")" class="menu-item" data-page="CourseManagement"><i class="fa-solid fa-book"></i> Quản lý Khóa học</a>
             <a href="@Url.Action("CreateCourse", "FacultyAdmin")" class="menu-item" data-page="CreateCourse"><i class="fa-solid fa-plus-circle"></i> Tạo Khóa học mới</a>
+            <a href="@Url.Action("ClassManagement", "FacultyAdmin")" class="menu-item" data-page="ClassManagement"><i class="fa-solid fa-users-class"></i> Quản lý Lớp học</a>
+            <a href="@Url.Action("CreateClass", "FacultyAdmin")" class="menu-item" data-page="CreateClass"><i class="fa-solid fa-plus-square"></i> Tạo Lớp học mới</a>
+            <a href="@Url.Action("AdministrativeClassManagement", "FacultyAdmin")" class="menu-item" data-page="AdministrativeClassManagement"><i class="fa-solid fa-users-rectangle"></i> Quản lý Lớp hành chính</a>
             
             <li class="menu-title">QUẢN LÝ NHÂN SỰ</li>
             <a href="@Url.Action("TeacherManagement", "FacultyAdmin")" class="menu-item" data-page="TeacherManagement"><i class="fa-solid fa-user-tie"></i> Quản lý Giảng viên</a>
@@ -169,7 +173,8 @@
         @RenderBody()
     </main>
 
-    <!-- Bootstrap JS for alert dismissal -->
+    <!-- jQuery and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     @await RenderSectionAsync("Scripts", required: false)

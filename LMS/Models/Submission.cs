@@ -29,6 +29,8 @@ public partial class Submission
 
     public string? Status { get; set; }
 
+    public DateTime? GradedAt { get; set; }
+
     public virtual Assignment Assignment { get; set; } = null!;
 
     public virtual User Student { get; set; } = null!;

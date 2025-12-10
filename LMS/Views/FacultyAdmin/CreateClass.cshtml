@@ -1,0 +1,144 @@
+@model LMS.Models.Class
+@{
+    ViewData["Title"] = "Tạo Lớp học mới";
+    Layout = "~/Views/Shared/_FacultyLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>
+                <i class="fas fa-plus-circle"></i> Tạo Lớp học mới
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Index">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="ClassManagement">Quản lý Lớp học</a></li>
+                    <li class="breadcrumb-item active">Tạo mới</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-edit"></i> Thông tin Lớp học</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="CreateClass" method="post">
+                @Html.AntiForgeryToken()
+                
+                <div class="row">
+                    <!-- Cột trái -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="Name" class="form-label">Tên lớp học <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="VD: Lớp học Lập trình Web - K67" required />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Code" class="form-label">Mã lớp học</label>
+                            <input asp-for="Code" class="form-control" placeholder="Để trống để tự động tạo mã" />
+                            <small class="form-text text-muted">Bỏ trống để hệ thống tự động tạo mã lớp</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="CourseId" class="form-label">Khóa học <span class="text-danger">*</span></label>
+                            <select asp-for="CourseId" class="form-select" asp-items="ViewBag.Courses" required>
+                                <option value="">-- Chọn khóa học --</option>
+                            </select>
+                            <span asp-validation-for="CourseId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="InstructorId" class="form-label">Giảng viên phụ trách <span class="text-danger">*</span></label>
+                            <select asp-for="InstructorId" class="form-select" asp-items="ViewBag.Teachers" required>
+                                <option value="">-- Chọn giảng viên --</option>
+                            </select>
+                            <span asp-validation-for="InstructorId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="MaxStudents" class="form-label">Sĩ số tối đa</label>
+                            <input asp-for="MaxStudents" type="number" class="form-control" value="40" min="1" max="200" />
+                            <span asp-validation-for="MaxStudents" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <!-- Cột phải -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="StartDate" class="form-label">Ngày bắt đầu</label>
+                            <input asp-for="StartDate" type="date" class="form-control" />
+                            <span asp-validation-for="StartDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="EndDate" class="form-label">Ngày kết thúc</label>
+                            <input asp-for="EndDate" type="date" class="form-control" />
+                            <span asp-validation-for="EndDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="IsActive" value="true" class="form-check-input" id="IsActive" checked />
+                                <label class="form-check-label" for="IsActive">
+                                    Kích hoạt lớp học
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">Lớp học kích hoạt sẽ hiển thị cho giảng viên và sinh viên</small>
+                        </div>
+
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle"></i> <strong>Lưu ý:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Chọn khóa học và giảng viên trước khi tạo lớp</li>
+                                <li>Mã lớp học sẽ tự động tạo dựa trên mã khóa học</li>
+                                <li>Sĩ số ban đầu là 0, tăng khi thêm sinh viên</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <div class="d-flex justify-content-between">
+                    <a asp-action="ClassManagement" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Quay lại
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Tạo lớp học
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.form-label {
+    font-weight: 600;
+}
+
+.text-danger {
+    font-size: 0.875rem;
+}
+</style>

@@ -1,0 +1,259 @@
+@{
+    Layout = "~/Views/Shared/_TeacherLayout.cshtml";
+    ViewBag.Title = "Dashboard Giảng viên";
+}
+
+@model dynamic
+
+<div class="page-header">
+    <div>
+        <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item active">Tổng quan</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <span class="text-muted">Xin chào, <strong>@ViewBag.TeacherName</strong></span>
+        <br><small class="text-muted">@DateTime.Now.ToString("dd/MM/yyyy - HH:mm")</small>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <h6><i class="fas fa-users me-1"></i>TỔNG LỚP HỌC</h6>
+        <div class="stat-value">@ViewBag.TotalClasses</div>
+        <div class="stat-desc">Đang quản lý</div>
+    </div>
+    
+    <div class="stat-card">
+        <h6><i class="fas fa-user-graduate me-1"></i>TỔNG SINH VIÊN</h6>
+        <div class="stat-value">@ViewBag.TotalStudents</div>
+        <div class="stat-desc">Trong các lớp</div>
+    </div>
+    
+    <div class="stat-card">
+        <h6><i class="fas fa-tasks me-1"></i>BÀI TẬP CHỜ CHẤM</h6>
+        <div class="stat-value text-warning">@ViewBag.PendingAssignments</div>
+        <div class="stat-desc">Cần xem xét</div>
+    </div>
+    
+    <div class="stat-card">
+        <h6><i class="fas fa-clipboard-list me-1"></i>ĐỀ THI HOẠT ĐỘNG</h6>
+        <div class="stat-value text-success">@ViewBag.ActiveExams</div>
+        <div class="stat-desc">Đang diễn ra</div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Activities -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock me-2"></i>Hoạt động gần đây
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.RecentActivities != null && ViewBag.RecentActivities.Count > 0)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Thời gian</th>
+                                    <th>Hoạt động</th>
+                                    <th>Lớp học</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var activity in ViewBag.RecentActivities)
+                                {
+                                    <tr>
+                                        <td>
+                                            <small class="text-muted">@activity.CreatedAt.ToString("dd/MM HH:mm")</small>
+                                        </td>
+                                        <td>
+                                            <strong>@activity.Description</strong>
+                                        </td>
+                                        <td>@activity.ClassName</td>
+                                        <td>
+                                            @if (activity.Type == "assignment")
+                                            {
+                                                <span class="badge bg-primary">Bài tập</span>
+                                            }
+                                            else if (activity.Type == "exam")
+                                            {
+                                                <span class="badge bg-warning">Kiểm tra</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">Thông báo</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Chưa có hoạt động nào gần đây</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Thao tác nhanh
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a href="@Url.Action("CreateAssignment", "Teacher")" class="btn btn-primary w-100">
+                            <i class="fas fa-plus-circle me-2"></i>Tạo bài tập mới
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="@Url.Action("Exams", "Teacher")" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-file-alt me-2"></i>Quản lý đề thi
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="@Url.Action("SendNotification", "Teacher")" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-bullhorn me-2"></i>Gửi thông báo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Info -->
+    <div class="col-lg-4">
+        <!-- My Classes Summary -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>Lớp học của tôi
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.MyClasses != null && ViewBag.MyClasses.Count > 0)
+                {
+                    @foreach (var classItem in ViewBag.MyClasses)
+                    {
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <strong>@classItem.ClassName</strong>
+                                <br><small class="text-muted">@classItem.CourseName</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-light text-dark">@classItem.StudentCount SV</span>
+                            </div>
+                        </div>
+                    }
+                    <div class="text-center mt-3">
+                        <a href="@Url.Action("MyClasses", "Teacher")" class="btn btn-sm btn-outline-primary">
+                            Xem tất cả <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-3">
+                        <i class="fas fa-chalkboard fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Chưa có lớp học nào</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Upcoming Deadlines -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-check me-2"></i>Hạn chót sắp tới
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.UpcomingDeadlines != null && ViewBag.UpcomingDeadlines.Count > 0)
+                {
+                    @foreach (var deadline in ViewBag.UpcomingDeadlines)
+                    {
+                        <div class="d-flex align-items-center border-bottom py-2">
+                            <div class="flex-grow-1">
+                                <strong>@deadline.Title</strong>
+                                <br><small class="text-muted">@deadline.ClassName</small>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-danger fw-bold">
+                                    @deadline.DueDate.ToString("dd/MM")
+                                </small>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-3">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <p class="text-muted mb-0">Không có hạn chót nào</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- System Notifications -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bell me-2"></i>Thông báo hệ thống
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.SystemNotifications != null && ViewBag.SystemNotifications.Count > 0)
+                {
+                    @foreach (var notification in ViewBag.SystemNotifications)
+                    {
+                        <div class="alert alert-info alert-sm mb-2">
+                            <strong>@notification.Title</strong>
+                            <br><small>@notification.CreatedAt.ToString("dd/MM/yyyy")</small>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-3">
+                        <i class="fas fa-bell-slash fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Không có thông báo</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        // Auto refresh stats every 5 minutes
+        setInterval(function() {
+            location.reload();
+        }, 300000);
+
+        // Initialize tooltips
+        $('[data-bs-toggle="tooltip"]').tooltip();
+    });
+</script>
+}
