@@ -1,0 +1,532 @@
+@model List<LMS.Models.Attendance>
+@{
+    ViewData["Title"] = "Quản lý điểm danh";
+    var lesson = ViewBag.Lesson as LMS.Models.Lesson;
+    var classInfo = ViewBag.ClassInfo as LMS.Models.Class;
+    var totalStudents = ViewBag.TotalStudents as int? ?? 0;
+}
+    
+<style>
+    /* Định nghĩa các biến màu sắc chủ đạo theo ảnh */
+    :root {
+        --lms-orange: #f37021;
+        --lms-green: #8dbb69;
+        --lms-text: #333333;
+        --lms-bg-light: #f8f9fa;
+        --border-color: #dee2e6;
+    }
+
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background-color: #fff;
+        color: var(--lms-text);
+        line-height: 1.5;
+    }
+
+    .admin-container {
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 0 20px;
+    }
+
+    .header-section {
+        position: relative;
+        margin-bottom: 25px;
+    }
+
+    .course-title {
+        color: var(--lms-orange);
+        font-size: 26px;
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .instructor-note {
+        font-size: 14px;
+        margin-top: 8px;
+        color: #555;
+    }
+
+    .settings-icon {
+        position: absolute;
+        right: 0;
+        top: 5px;
+        color: var(--lms-green);
+        font-size: 20px;
+    }
+
+    .admin-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-top: 20px;
+        gap: 2px;
+    }
+
+    .tab {
+        padding: 10px 18px;
+        color: var(--lms-orange);
+        cursor: pointer;
+        font-size: 14px;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .tab:hover {
+        background-color: #fff5ee;
+    }
+
+    .tab.active-tab {
+        border: 1px solid var(--border-color);
+        border-bottom: 2px solid white;
+        border-radius: 4px 4px 0 0;
+        color: var(--lms-text);
+        background-color: white;
+        position: relative;
+        top: 1px;
+        font-weight: 500;
+    }
+
+    .tab.highlight {
+        border: 2px solid red;
+        border-radius: 4px;
+    }
+
+    .filter-container {
+        display: flex;
+        justify-content: flex-end;
+        margin: 15px 0;
+    }
+
+    .filter-right {
+        display: flex;
+        gap: 10px;
+        font-size: 13px;
+        align-items: center;
+    }
+
+    .filter-right span {
+        padding: 3px 10px;
+        color: var(--lms-orange);
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+
+    .filter-right .active-filter {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f2f2f2;
+        color: var(--lms-text);
+    }
+
+    .session-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 5px;
+    }
+
+    .session-table th {
+        background-color: var(--lms-green);
+        color: white;
+        text-align: left;
+        padding: 12px;
+        font-weight: 500;
+        font-size: 14px;
+        border: 1px solid #7ca85a;
+    }
+
+    .session-table td {
+        border: 1px solid var(--border-color);
+        padding: 12px;
+        font-size: 14px;
+    }
+
+    .table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 0;
+    }
+
+    .help-icon {
+        color: var(--lms-green);
+        font-size: 20px;
+        cursor: help;
+    }
+
+    .actions-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .select-action {
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+        background-color: white;
+    }
+
+    .btn-confirm {
+        background-color: var(--lms-green);
+        color: white;
+        border: none;
+        padding: 7px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .btn-confirm:hover {
+        background-color: #7ca85a;
+    }
+
+    .footer-navigation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 60px;
+        border-top: 1px solid #eee;
+        padding-top: 25px;
+    }
+
+    .footer-navigation a {
+        color: var(--lms-green);
+        text-decoration: none;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .footer-navigation a:hover {
+        text-decoration: underline;
+    }
+
+    .jump-to-box {
+        padding: 6px;
+        width: 300px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    @@media (max-width: 768px) {
+        .admin-tabs { flex-wrap: wrap; }
+        .footer-navigation { flex-direction: column; gap: 20px; }
+        .jump-to-box { width: 100%; }
+    }
+</style>
+
+<div class="admin-container">
+    <div class="header-section">
+        <h1 class="course-title">Attendance for the course :: @classInfo.Name - @classInfo.Code</h1>
+        <p class="instructor-note">@Html.Raw(lesson.Title)</p>
+        <div class="settings-icon">
+            <a href="@Url.Action("ClassDetails", new { id = classInfo.ClassId })" style="color: var(--lms-green); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-tabs">
+        <div class="tab active-tab">Sessions</div>
+        <div class="tab highlight" onclick="showAddSessionModal()">Add session</div>
+        <div class="tab">Report</div>
+        <div class="tab">Export</div>
+        <div class="tab">Status set</div>
+        <div class="tab">Temporary users</div>
+    </div>
+
+    <div class="filter-container">
+        <div class="filter-right">
+            <span>All</span>
+            <span class="active-filter">All past</span>
+            <span>Months</span>
+            <span>Weeks</span>
+            <span>Days</span>
+        </div>
+    </div>
+
+    <table class="session-table">
+        <thead>
+            <tr>
+                <th width="40px">#</th>
+                <th width="150px">Date</th>
+                <th width="100px">Time</th>
+                <th width="120px">Type</th>
+                <th>Description</th>
+                <th width="150px">Hành động</th>
+                <th width="40px"><input type="checkbox"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                int index = 1;
+                foreach (var attendance in Model)
+                {
+                    var presentCount = attendance.AttendanceRecords?.Count(ar => ar.Status == "Present") ?? 0;
+                    var attendanceRate = totalStudents > 0 ? (presentCount * 100.0 / totalStudents) : 0;
+                    var isClosed = attendance.Status == "Closed";
+                    
+                    <tr>
+                        <td>@index</td>
+                        <td>@attendance.StartTime.ToString("dd/MM/yyyy")</td>
+                        <td>@attendance.StartTime.ToString("HH:mm") - @attendance.EndTime.ToString("HH:mm")</td>
+                        <td>
+                            @if (isClosed)
+                            {
+                                <span style="color: #999;"><i class="fas fa-lock"></i> Closed</span>
+                            }
+                            else
+                            {
+                                <span style="color: var(--lms-green);"><i class="fas fa-door-open"></i> Open</span>
+                            }
+                        </td>
+                        <td>
+                            <strong>@attendance.Title</strong>
+                            @if (!string.IsNullOrEmpty(attendance.Description))
+                            {
+                                <br><small style="color: #666;">@attendance.Description</small>
+                            }
+                            <br>
+                            <small style="color: #666;">
+                                <i class="fas fa-users"></i> @presentCount/@totalStudents (@attendanceRate.ToString("F0")%)
+                                @if (attendance.AllowCodeAttendance && !string.IsNullOrEmpty(attendance.AttendanceCode))
+                                {
+                                    <span style="margin-left: 10px;">
+                                        <i class="fas fa-key"></i> Mã: <strong>@attendance.AttendanceCode</strong>
+                                    </span>
+                                }
+                            </small>
+                        </td>
+                        <td>
+                            <a href="@Url.Action("EditAttendance", new { id = attendance.AttendanceId })" style="color: var(--lms-orange); text-decoration: none;">
+                                <i class="fas fa-edit"></i> Sửa
+                            </a>
+                            |
+                            <a href="@Url.Action("TakeAttendance", new { id = attendance.AttendanceId })" style="color: var(--lms-green); text-decoration: none;">
+                                <i class="fas fa-list"></i> DS
+                            </a>
+                            |
+                            <a href="#" onclick="deleteAttendance(@attendance.AttendanceId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(attendance.Title))'); return false;" style="color: red; text-decoration: none;">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                        <td><input type="checkbox" name="selectedSessions" value="@attendance.AttendanceId"></td>
+                    </tr>
+                    index++;
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                        <i class="fas fa-info-circle"></i> Chưa có session nào. Click <strong>"Add session"</strong> để tạo mới!
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="table-footer">
+        <div class="help-icon">
+            <i class="far fa-question-circle"></i>
+        </div>
+        <div class="actions-group">
+            <select class="select-action">
+                <option value="">Chọn...</option>
+                <option value="delete">Xóa các mục đã chọn</option>
+                <option value="change">Thay đổi loại buổi học</option>
+            </select>
+            <button class="btn-confirm">Đồng ý</button>
+        </div>
+    </div>
+
+    <div class="footer-navigation">
+        <a href="@Url.Action("ClassDetails", new { id = classInfo.ClassId })">
+            <i class="fas fa-caret-left"></i> Quay lại khóa học
+        </a>
+        
+        <select class="jump-to-box" onchange="if(this.value) window.location.href = this.value;">
+            <option value="">Chuyển tới...</option>
+            <option value="@Url.Action("ClassDetails", new { id = classInfo.ClassId })">Trang chủ khóa học</option>
+            <option value="@Url.Action("MyClasses")">Danh sách lớp học</option>
+        </select>
+        
+        <a href="@Url.Action("ClassDetails", new { id = classInfo.ClassId })">
+            Xem khóa học <i class="fas fa-caret-right"></i>
+        </a>
+    </div>
+</div>
+
+<!-- Modal Add Session -->
+<div id="addSessionModal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div style="max-width: 700px; margin: 50px auto; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+            <h5 style="margin: 0; font-size: 20px;"><i class="fas fa-plus-circle"></i> Ngày bắt đầu điểm danh</h5>
+            <button type="button" onclick="closeAddSessionModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div style="padding: 25px;">
+            <form id="addSessionForm">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Type</label>
+                    <div style="background: #e3f2fd; padding: 12px; border-radius: 4px; border-left: 4px solid #2196f3;">
+                        <i class="fas fa-info-circle"></i> <strong>All students</strong>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label for="sessionTitle" style="display: block; margin-bottom: 8px; font-weight: 500;">
+                        Tên phiên điểm danh <span style="color: red;">*</span>
+                    </label>
+                    <input type="text" id="sessionTitle" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;" placeholder="VD: Điểm danh buổi 1, Attendance Week 5..." required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <label for="sessionDate" style="display: block; margin-bottom: 8px; font-weight: 500;">
+                            Date <span style="color: red;">*</span>
+                        </label>
+                        <input type="date" id="sessionDate" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;" required>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Time</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <input type="time" id="sessionTimeFrom" value="00:00" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                                <small style="color: #666;">from</small>
+                            </div>
+                            <div>
+                                <input type="time" id="sessionTimeTo" value="23:59" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                                <small style="color: #666;">to</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label for="sessionDescription" style="display: block; margin-bottom: 8px; font-weight: 500;">Description</label>
+                    <textarea id="sessionDescription" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;" placeholder="Mô tả về phiên điểm danh..."></textarea>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="allowCodeAttendance" checked style="width: 18px; height: 18px; margin-right: 10px;">
+                        <span><i class="fas fa-key"></i> Cho phép điểm danh bằng mã</span>
+                    </label>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="autoClose" checked style="width: 18px; height: 18px; margin-right: 10px;">
+                        <span><i class="fas fa-clock"></i> Tự động đóng khi hết thời gian</span>
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div style="padding: 15px 25px; border-top: 1px solid #eee; text-align: right;">
+            <button type="button" onclick="closeAddSessionModal()" style="background: #6c757d; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                <i class="fas fa-times"></i> Hủy
+            </button>
+            <button type="button" onclick="submitAddSession()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer;">
+                <i class="fas fa-check"></i> Tạo phiên điểm danh
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showAddSessionModal() {
+        var today = new Date().toISOString().split('T')[0];
+        document.getElementById('sessionDate').value = today;
+        document.getElementById('addSessionModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeAddSessionModal() {
+        document.getElementById('addSessionModal').style.display = 'none';
+        document.getElementById('addSessionForm').reset();
+        document.body.style.overflow = 'auto';
+    }
+
+    function submitAddSession() {
+        var title = document.getElementById('sessionTitle').value.trim();
+        var date = document.getElementById('sessionDate').value;
+        var timeFrom = document.getElementById('sessionTimeFrom').value;
+        var timeTo = document.getElementById('sessionTimeTo').value;
+        var description = document.getElementById('sessionDescription').value.trim();
+        var allowCode = document.getElementById('allowCodeAttendance').checked;
+        var autoClose = document.getElementById('autoClose').checked;
+
+        if (!title || !date) {
+            alert('Vui lòng nhập đầy đủ thông tin bắt buộc!');
+            return;
+        }
+
+        var startTime = date + 'T' + timeFrom;
+        var endTime = date + 'T' + timeTo;
+
+        var formData = new FormData();
+        formData.append('classId', '@classInfo.ClassId');
+        formData.append('lessonId', '@lesson.LessonId');
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('startTime', startTime);
+        formData.append('endTime', endTime);
+        formData.append('allowCodeAttendance', allowCode);
+        formData.append('autoClose', autoClose);
+
+        fetch('@Url.Action("CreateAttendanceWithDetails", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                closeAddSessionModal();
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    function deleteAttendance(attendanceId, title) {
+        if (confirm('Bạn có chắc muốn xóa phiên điểm danh "' + title + '"?')) {
+            fetch('@Url.Action("DeleteAttendance", "Teacher")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'attendanceId=' + attendanceId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                alert('Có lỗi xảy ra: ' + error);
+            });
+        }
+    }
+
+    window.onclick = function(event) {
+        var modal = document.getElementById('addSessionModal');
+        if (event.target == modal) {
+            closeAddSessionModal();
+        }
+    }
+</script>

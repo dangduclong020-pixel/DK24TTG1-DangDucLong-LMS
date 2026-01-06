@@ -1,5 +1,5 @@
 @{
-    Layout = "~/Views/Shared/_TeacherLayout.cshtml";
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
     ViewBag.Title = "Tạo bài tập mới";
 }
 
@@ -58,15 +58,16 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="DifficultyLevel" class="form-label">Mức độ khó</label>
-                            <select class="form-select" id="DifficultyLevel" name="DifficultyLevel">
-                                <option value="1">Dễ</option>
-                                <option value="2" selected>Trung bình</option>
-                                <option value="3">Khó</option>
-                                <option value="4">Rất khó</option>
+                            <label for="AssignmentType" class="form-label">Loại bài tập <span class="text-danger">*</span></label>
+                            <select class="form-select" id="AssignmentType" name="AssignmentType" required>
+                                <option value="assignment" selected>Bài tập tự luận (nộp file)</option>
+                                <option value="exam">Kiểm tra trắc nghiệm</option>
                             </select>
+                            <div class="invalid-feedback">Vui lòng chọn loại bài tập</div>
                         </div>
                     </div>
+
+                    <!-- Bỏ trường Mức độ khó - Không cần thiết cho bài tập tự luận -->
 
                     <div class="mb-3">
                         <label for="Title" class="form-label">Tiêu đề bài tập <span class="text-danger">*</span></label>
@@ -112,7 +113,7 @@
             </div>
 
             <!-- Time Settings -->
-            <div class="card mb-4">
+            <div class="card mb-4" id="assignmentTimeCard">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-clock me-2"></i>Thời gian
@@ -122,7 +123,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="DueDate" class="form-label">Hạn nộp <span class="text-danger">*</span></label>
-                            <input type="datetime-local" class="form-control" id="DueDate" name="DueDate" required
+                            <input type="datetime-local" class="form-control" id="DueDate" name="DueDate"
                                    min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")">
                             <div class="invalid-feedback">Vui lòng chọn hạn nộp</div>
                         </div>
@@ -153,8 +154,79 @@
                 </div>
             </div>
 
-            <!-- Files and Resources -->
-            <div class="card mb-4">
+            <!-- Exam Time Settings (hidden by default) -->
+            <div class="card mb-4" id="examTimeCard" style="display: none;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Thời gian làm bài
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="StartTime" class="form-label">Thời gian bắt đầu <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="StartTime" name="StartTime"
+                                   min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")">
+                            <div class="invalid-feedback">Vui lòng chọn thời gian bắt đầu</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="EndTime" class="form-label">Thời gian kết thúc <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="EndTime" name="EndTime">
+                            <div class="invalid-feedback">Vui lòng chọn thời gian kết thúc</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="Duration" class="form-label">Thời gian làm bài (phút) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="Duration" name="Duration" 
+                                   min="5" placeholder="VD: 90">
+                            <small class="text-muted">Thời gian sinh viên có để hoàn thành bài kiểm tra</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="AllowMultipleAttempts" class="form-label">Cho phép làm lại</label>
+                            <select class="form-select" id="AllowMultipleAttempts" name="AllowMultipleAttempts">
+                                <option value="false" selected>Không</option>
+                                <option value="true">Có</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Bank (for Exam only, hidden by default) -->
+            <div class="card mb-4" id="questionBankCard" style="display: none;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-question-circle me-2"></i>Ngân hàng câu hỏi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Hướng dẫn:</strong> Sau khi tạo kiểm tra, bạn sẽ được chuyển đến trang quản lý câu hỏi để thêm/chọn câu hỏi trắc nghiệm cho đề thi này.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tổng số câu hỏi dự kiến</label>
+                        <input type="number" class="form-control" id="TotalQuestions" name="TotalQuestions" 
+                               min="1" value="10" placeholder="Nhập số câu hỏi">
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="RandomizeQuestions" 
+                               name="RandomizeQuestions" value="true">
+                        <label class="form-check-label" for="RandomizeQuestions">
+                            Trộn thứ tự câu hỏi khi làm bài
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Files and Resources (for Assignment only) -->
+            <div class="card mb-4" id="filesCard">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-paperclip me-2"></i>File đính kèm & Tài liệu
@@ -162,11 +234,11 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label for="AssignmentFiles" class="form-label">File đính kèm</label>
-                        <input type="file" class="form-control" id="AssignmentFiles" name="AssignmentFiles" 
-                               multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar">
+                        <label for="attachmentFile" class="form-label">File đính kèm</label>
+                        <input type="file" class="form-control" id="attachmentFile" name="attachmentFile" 
+                               accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar">
                         <div class="form-text">
-                            Hỗ trợ: PDF, Word, PowerPoint, ZIP, RAR. Tối đa 50MB mỗi file.
+                            Hỗ trợ: PDF, Word, PowerPoint, ZIP, RAR. Tối đa 50MB.
                         </div>
                     </div>
 
@@ -264,17 +336,12 @@
                     </div>
 
                     <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="AutoGrade" name="AutoGrade">
-                        <label class="form-check-label" for="AutoGrade">
-                            Tự động chấm điểm (nếu có)
+                        <input class="form-check-input" type="checkbox" id="IsPublished" 
+                               name="IsPublished" value="true" checked>
+                        <label class="form-check-label" for="IsPublished">
+                            <strong>Công bố bài tập (sinh viên có thể xem)</strong>
                         </label>
-                    </div>
-
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="SaveAsDraft" name="SaveAsDraft">
-                        <label class="form-check-label" for="SaveAsDraft">
-                            Lưu nháp (không công bố)
-                        </label>
+                        <small class="text-muted d-block">Bỏ tick để lưu nháp, có thể công bố sau</small>
                     </div>
                 </div>
             </div>
@@ -297,7 +364,82 @@
 
 @section Scripts {
 <script>
-    $(document).ready(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle between Assignment and Exam type
+        const assignmentTypeSelect = document.getElementById('AssignmentType');
+        
+        assignmentTypeSelect.addEventListener('change', function() {
+            const type = this.value;
+            console.log('Assignment type changed to:', type);
+            
+            // If exam type is selected, redirect to CreateExam page
+            if (type === 'exam') {
+                const classId = document.getElementById('ClassId').value;
+                if (classId) {
+                    window.location.href = '/Teacher/CreateExam?classId=' + classId;
+                } else {
+                    alert('Vui lòng chọn lớp học trước');
+                    this.value = 'assignment';
+                }
+                return;
+            }
+            
+            const assignmentTimeCard = document.getElementById('assignmentTimeCard');
+            const filesCard = document.getElementById('filesCard');
+            const difficultyDiv = document.getElementById('difficultyDiv');
+            const examTimeCard = document.getElementById('examTimeCard');
+            const questionBankCard = document.getElementById('questionBankCard');
+            const submitBtn = document.querySelector('button[type="submit"]');
+            
+            if (type === 'assignment') {
+                // Show assignment fields
+                assignmentTimeCard.style.display = 'block';
+                filesCard.style.display = 'block';
+                
+                // Hide exam fields
+                examTimeCard.style.display = 'none';
+                questionBankCard.style.display = 'none';
+                
+                // Update required fields
+                document.getElementById('DueDate').required = true;
+                document.getElementById('StartTime').required = false;
+                document.getElementById('EndTime').required = false;
+                document.getElementById('Duration').required = false;
+                
+                // Update button text
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Tạo bài tập';
+                
+                // Remove alert if exists
+                const alert = document.querySelector('.exam-alert');
+                if (alert) alert.remove();
+            } else {
+                // Show exam fields
+                examTimeCard.style.display = 'block';
+                questionBankCard.style.display = 'block';
+                
+                // Hide assignment fields
+                assignmentTimeCard.style.display = 'none';
+                filesCard.style.display = 'none';
+                
+                // Update required fields
+                document.getElementById('DueDate').required = false;
+                document.getElementById('StartTime').required = true;
+                document.getElementById('EndTime').required = true;
+                document.getElementById('Duration').required = true;
+                
+                // Update button text
+                submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Tạo kiểm tra';
+                
+                // Show alert about questions
+                if (!document.querySelector('.exam-alert')) {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-info exam-alert mt-3';
+                    alertDiv.innerHTML = '<i class="fas fa-info-circle me-2"></i><strong>Lưu ý:</strong> Sau khi tạo kiểm tra, bạn cần thêm câu hỏi trắc nghiệm vào đề thi.';
+                    examTimeCard.after(alertDiv);
+                }
+            }
+        });
+
         // Real-time preview
         $('#Title').on('input', function() {
             $('#preview-title').text($(this).val() || 'Nhập tiêu đề bài tập');

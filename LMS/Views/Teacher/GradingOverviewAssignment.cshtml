@@ -1,0 +1,193 @@
+@model LMS.Models.Assignment
+
+@{
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    ViewBag.Title = $"Tổng quan chấm điểm - {Model.Title}";
+    var totalStudents = Model.Class?.ClassStudents?.Count ?? 0;
+    var submittedCount = Model.Submissions?.Count ?? 0;
+    var needGradingCount = Model.Submissions?.Count(s => s.Status == "Submitted" || s.Status == "Pending") ?? 0;
+    var timeRemaining = Model.DueDate - DateTime.Now;
+}
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        color: #333;
+        line-height: 1.6;
+    }
+
+    /* Header phần mô tả */
+    .header-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .file-link {
+        color: #333;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+    }
+
+    .file-link img { 
+        width: 20px; 
+        margin-right: 8px; 
+    }
+
+    /* Tiêu đề chính */
+    h2 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    /* Bảng tổng quan */
+    .grading-summary {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 30px;
+    }
+
+    .grading-summary td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+    }
+
+    /* Cột bên trái (nhãn) */
+    .grading-summary td:first-child {
+        width: 30%;
+        font-weight: bold;
+        background-color: #f9f9f9;
+    }
+
+    /* Dòng xen kẽ màu (Zebra stripes) */
+    .grading-summary tr:nth-child(even) td {
+        background-color: #ffffff;
+    }
+    .grading-summary tr:nth-child(odd) td {
+        background-color: #f5f5f5;
+    }
+
+    /* Group nút bấm */
+    .button-group {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+        text-transform: uppercase;
+        font-weight: 500;
+        transition: 0.3s;
+    }
+
+    /* Nút Xem toàn bộ bài nộp */
+    .btn-outline {
+        background-color: white;
+        color: #118ab2;
+        border: 1px solid #118ab2;
+    }
+
+    .btn-outline:hover {
+        background-color: #f0f8ff;
+    }
+
+    /* Nút Điểm */
+    .btn-primary {
+        background-color: #118ab2;
+        color: white;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background-color: #0e7496;
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-bottom: 15px;
+        color: #667eea;
+        text-decoration: none;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<a href="@Url.Action("ClassDetails", "Teacher", new { id = Model.ClassId })" class="back-link">
+    <i class="fas fa-arrow-left me-2"></i>Quay lại khóa học
+</a>
+
+<div style="font-size: 13px; color: #888; margin-bottom: 10px;">Mô tả bài tập</div>
+
+<div class="header-info">
+    <div>
+        <strong style="font-size: 16px;">@Model.Title</strong>
+        <div style="font-size: 13px; color: #666; margin-top: 5px;">@Model.Description</div>
+    </div>
+    <span>@Model.CreatedAt?.ToString("dd 'Tháng' MM - yyyy, HH:mm")</span>
+</div>
+
+<h2>Tổng quan chấm điểm</h2>
+
+<table class="grading-summary">
+    <tr>
+        <td>Ẩn đối với người học</td>
+        <td>Không</td>
+    </tr>
+    <tr>
+        <td>Các thành viên</td>
+        <td>@totalStudents</td>
+    </tr>
+    <tr>
+        <td>Đã nộp</td>
+        <td>@submittedCount</td>
+    </tr>
+    <tr>
+        <td>Cần phải chấm điểm</td>
+        <td>@needGradingCount</td>
+    </tr>
+    <tr>
+        <td>Hạn chót</td>
+        <td>@Model.DueDate.ToString("dddd, dd 'Tháng' MM - yyyy, HH:mm")</td>
+    </tr>
+    <tr>
+        <td>Thời gian còn lại</td>
+        <td>
+            @if (timeRemaining.TotalSeconds > 0)
+            {
+                if (timeRemaining.Days > 0)
+                {
+                    <span>@timeRemaining.Days ngày @timeRemaining.Hours giờ</span>
+                }
+                else if (timeRemaining.Hours > 0)
+                {
+                    <span>@timeRemaining.Hours giờ @timeRemaining.Minutes phút</span>
+                }
+                else
+                {
+                    <span>@timeRemaining.Minutes phút</span>
+                }
+            }
+            else
+            {
+                <span class="text-danger">Đã hết hạn</span>
+            }
+        </td>
+    </tr>
+</table>
+
+<div class="button-group">
+    <a href="@Url.Action("AssignmentSubmissions", "Teacher", new { id = Model.AssignmentId })" 
+       class="btn btn-outline">Xem toàn bộ bài nộp</a>
+    <a href="@Url.Action("AssignmentSubmissions", "Teacher", new { id = Model.AssignmentId })" 
+       class="btn btn-primary">Điểm</a>
+</div>

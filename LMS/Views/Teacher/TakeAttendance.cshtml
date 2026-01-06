@@ -1,0 +1,418 @@
+@model LMS.Models.Attendance
+@{
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    ViewBag.Title = $"Điểm danh - {Model.Title}";
+}
+
+@section Styles {
+<style>
+        :root {
+            --primary-color: #118ab2;
+            --bg-light: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-dark: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 20px 40px;
+            background-color: #fff;
+            color: var(--text-dark);
+        }
+
+        /* 1. Tiêu đề và Thông tin chung */
+        .attendance-header {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+
+        .attendance-header h2 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 22px;
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            background: var(--bg-light);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 2. Bảng điểm danh */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        thead th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        tbody td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        tbody tr:hover {
+            background-color: #f1f8fb;
+        }
+
+        /* Tùy chọn điểm danh (Radio buttons) */
+        .status-options {
+            display: flex;
+            gap: 15px;
+        }
+
+        .status-options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        /* 3. Phân trang & Footer */
+        .footer-actions {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 50px;
+        }
+
+        .btn {
+            padding: 10px 25px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .btn-save {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-save:hover {
+            background-color: #0e7496;
+        }
+
+        .btn-reset {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        /* Avatar giả lập */
+        .avatar {
+            width: 32px;
+            height: 32px;
+            background: #ddd;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .student-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+}
+
+<div class="attendance-header">
+    <h2>Điểm danh: @Model.Title</h2>
+    <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">
+        @Model.Class?.Course?.Name - Lớp @Model.Class?.Name
+    </p>
+</div>
+
+<div class="info-bar">
+    <div><strong>Giảng viên:</strong> @Model.Class?.Instructor?.FullName</div>
+    <div><strong>Thời gian:</strong> @Model.StartTime.ToString("dd/MM/yyyy HH:mm") - @Model.EndTime.ToString("HH:mm")</div>
+    <div>
+        <strong>Trạng thái:</strong> 
+        <span class="badge @(Model.Status == "Open" ? "bg-success" : "bg-secondary")">
+            @(Model.Status == "Open" ? "Đang mở" : "Đã đóng")
+        </span>
+    </div>
+    <div><strong>Sĩ số:</strong> @Model.AttendanceRecords.Count</div>
+    <div>
+        <strong>Có mặt:</strong> 
+        <span style="color: #28a745; font-weight: bold;">@Model.AttendanceRecords.Count(r => r.Status == "Present")</span>
+        /@Model.AttendanceRecords.Count
+        (@((Model.AttendanceRecords.Count > 0 ? (Model.AttendanceRecords.Count(r => r.Status == "Present") * 100.0 / Model.AttendanceRecords.Count) : 0).ToString("F1"))%)
+    </div>
+    @if (Model.AllowCodeAttendance && !string.IsNullOrEmpty(Model.AttendanceCode))
+    {
+        <div>
+            <strong>Mã điểm danh:</strong> 
+            <span style="background: #fff3cd; padding: 3px 10px; border-radius: 4px; font-weight: bold; letter-spacing: 2px;">
+                @Model.AttendanceCode
+            </span>
+        </div>
+    }
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th width="50">STT</th>
+                <th>Học viên</th>
+                <th>Mã sinh viên</th>
+                <th width="350">Trạng thái điểm danh</th>
+                <th>Thời gian</th>
+                <th>Ghi chú</th>
+            </tr>
+        </thead>
+        <tbody id="studentList">
+            @{
+                int index = 1;
+                foreach (var record in Model.AttendanceRecords)
+                {
+                    <tr id="row-@record.RecordId">
+                        <td>@index</td>
+                        <td class="student-cell">
+                            <div class="avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                @record.Student?.FullName?.Substring(0, 1).ToUpper()
+                            </div>
+                            <strong>@record.Student?.FullName</strong>
+                        </td>
+                        <td>@record.Student?.MssvMgv</td>
+                        <td>
+                            <div class="status-options">
+                                <label>
+                                    <input type="radio" name="status-@record.RecordId" value="Present" 
+                                           @(record.Status == "Present" ? "checked" : "")
+                                           onchange="updateStatus(@record.RecordId, 'Present')"> 
+                                    <span style="color: #28a745;">✓ Có mặt</span>
+                                </label>
+                                <label>
+                                    <input type="radio" name="status-@record.RecordId" value="Absent" 
+                                           @(record.Status == "Absent" ? "checked" : "")
+                                           onchange="updateStatus(@record.RecordId, 'Absent')"> 
+                                    <span style="color: #dc3545;">✗ Vắng</span>
+                                </label>
+                                <label>
+                                    <input type="radio" name="status-@record.RecordId" value="Late" 
+                                           @(record.Status == "Late" ? "checked" : "")
+                                           onchange="updateStatus(@record.RecordId, 'Late')"> 
+                                    <span style="color: #ffc107;">⏱ Muộn</span>
+                                </label>
+                                <label>
+                                    <input type="radio" name="status-@record.RecordId" value="Excused" 
+                                           @(record.Status == "Excused" ? "checked" : "")
+                                           onchange="updateStatus(@record.RecordId, 'Excused')"> 
+                                    <span style="color: #6c757d;">⊘ Có phép</span>
+                                </label>
+                            </div>
+                        </td>
+                        <td>
+                            @if (record.CheckInTime.HasValue)
+                            {
+                                <span>@record.CheckInTime.Value.ToString("HH:mm:ss")</span>
+                                @if (!string.IsNullOrEmpty(record.CheckInMethod))
+                                {
+                                    <br /><small style="color: #666;">(@record.CheckInMethod)</small>
+                                }
+                            }
+                            else
+                            {
+                                <span style="color: #999;">-</span>
+                            }
+                        </td>
+                        <td>
+                            <input type="text" id="note-@record.RecordId" 
+                                   class="form-control form-control-sm" 
+                                   value="@record.Note" 
+                                   placeholder="Ghi chú...">
+                        </td>
+                    </tr>
+                    index++;
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="footer-actions">
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <span style="font-size: 13px; color: #666;">
+            <i class="fas fa-info-circle"></i> Thay đổi tự động lưu khi chọn trạng thái
+        </span>
+        <a href="@Url.Action("ClassDetails", "Teacher", new { id = Model.ClassId })" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn" style="background: #6c757d; color: white;" onclick="markAllPresent()">
+            <i class="fas fa-check-double"></i> Đánh dấu tất cả có mặt
+        </button>
+        <button class="btn" style="background: #17a2b8; color: white;" onclick="exportToExcel()">
+            <i class="fas fa-file-excel"></i> Xuất Excel
+        </button>
+        @if (Model.Status == "Open")
+        {
+            <button class="btn" style="background: #dc3545; color: white;" onclick="closeAttendance()">
+                <i class="fas fa-lock"></i> Đóng điểm danh
+            </button>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Auto-save khi thay đổi trạng thái
+    function updateStatus(recordId, status) {
+        const formData = new FormData();
+        formData.append('recordId', recordId);
+        formData.append('status', status);
+        
+        const noteInput = document.getElementById('note-' + recordId);
+        if (noteInput) {
+            formData.append('note', noteInput.value);
+        }
+
+        fetch('@Url.Action("UpdateAttendanceStatus", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cập nhật thông tin thống kê
+                updateStatistics();
+                
+                // Hiển thị thông báo nhỏ
+                showToast('Đã cập nhật: ' + status);
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi lưu!');
+        });
+    }
+
+    // Cập nhật ghi chú
+    function updateNote(recordId) {
+        const noteInput = document.getElementById('note-' + recordId);
+        const statusRadio = document.querySelector('input[name="status-' + recordId + '"]:checked');
+        
+        if (!statusRadio) return;
+
+        const formData = new FormData();
+        formData.append('recordId', recordId);
+        formData.append('status', statusRadio.value);
+        formData.append('note', noteInput.value);
+
+        fetch('@Url.Action("UpdateAttendanceStatus", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Đã lưu ghi chú');
+            }
+        });
+    }
+
+    // Đánh dấu tất cả có mặt
+    function markAllPresent() {
+        if (!confirm('Bạn có chắc muốn đánh dấu TẤT CẢ sinh viên có mặt?')) {
+            return;
+        }
+
+        const allPresentRadios = document.querySelectorAll('input[type="radio"][value="Present"]');
+        allPresentRadios.forEach(radio => {
+            radio.checked = true;
+            const recordId = radio.name.replace('status-', '');
+            updateStatus(recordId, 'Present');
+        });
+    }
+
+    // Đóng phiên điểm danh
+    function closeAttendance() {
+        if (!confirm('Bạn có chắc muốn đóng phiên điểm danh này?\nSau khi đóng, sinh viên sẽ không thể tự điểm danh nữa.')) {
+            return;
+        }
+
+        fetch('@Url.Action("CloseAttendance", "Teacher")?id=@Model.AttendanceId', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        });
+    }
+
+    // Xuất Excel
+    function exportToExcel() {
+        window.location.href = '@Url.Action("ExportAttendanceToExcel", "Teacher")?attendanceId=@Model.AttendanceId';
+    }
+
+    // Cập nhật thống kê
+    function updateStatistics() {
+        // Đếm lại số lượng
+        const presentCount = document.querySelectorAll('input[value="Present"]:checked').length;
+        const total = @Model.AttendanceRecords.Count;
+        const percentage = total > 0 ? ((presentCount * 100.0) / total).toFixed(1) : 0;
+        
+        // Có thể cập nhật UI ở đây nếu cần
+        console.log(`Present: ${presentCount}/${total} (${percentage}%)`);
+    }
+
+    // Hiển thị toast notification
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 12px 20px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; animation: slideIn 0.3s ease;';
+        toast.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
+    }
+
+    // CSS animations
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @@keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @@keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+}

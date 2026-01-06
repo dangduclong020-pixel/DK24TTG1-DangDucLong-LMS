@@ -41,9 +41,13 @@ public partial class User
 
     public virtual ICollection<ActivityLog> ActivityLogs { get; set; } = new List<ActivityLog>();
 
+    public virtual ICollection<AttendanceRecord> AttendanceRecords { get; set; } = new List<AttendanceRecord>();
+
     public virtual ICollection<ClassStudent> ClassStudents { get; set; } = new List<ClassStudent>();
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
+
+    public virtual ICollection<Attendance> CreatedAttendances { get; set; } = new List<Attendance>();
 
     public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
 

@@ -1,0 +1,209 @@
+@model LMS.Models.Exam
+@{
+    ViewData["Title"] = "Xem lại bài làm";
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    var answers = ViewBag.Answers as Dictionary<int, string>;
+}
+
+<style>
+.review-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    color: #333;
+    line-height: 1.6;
+    background-color: #fff;
+}
+
+.review-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Đồng hồ đếm ngược màu hồng nổi bật */
+.timer-float {
+    position: fixed;
+    right: 0;
+    top: 150px;
+    background-color: #d63384;
+    color: white;
+    padding: 10px 20px;
+    font-weight: bold;
+    border-radius: 4px 0 0 4px;
+    box-shadow: -2px 2px 5px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+.timer-float.warning {
+    background-color: #dc3545;
+}
+
+/* Bảng danh sách câu hỏi */
+.review-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+}
+
+.review-table th {
+    text-align: left;
+    border-bottom: 2px solid #dee2e6;
+    padding: 10px;
+}
+
+.q-num {
+    color: #0056b3;
+    font-weight: bold;
+    width: 50px;
+}
+
+.status-saved {
+    color: #28a745;
+}
+
+.status-not-saved {
+    color: #dc3545
+
+.q-num {
+    color: #0056b3;
+    font-weight: bold;
+    width: 50px;
+}
+
+/* Khu vực nút bấm */
+.action-section {
+    text-align: center;
+    margin-top: 40px;
+}
+
+.btn-back {
+    background: white;
+    border: 1px solid #6c757d;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #495057;
+    margin-bottom: 20px;
+}
+
+.deadline-text {
+    font-size: 0.9em;
+    color: #666;
+    margin: 20px 0;
+}
+
+.btn-submit {
+    background-color: #6c757d; /* Màu xám đậm */
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 4px;
+</style>
+
+<div class="timer-float" id="timerBox">
+    THỜI GIAN CÒN LẠI <span id="timeRemaining">@((int)(ViewBag.TimeRemaining / 60)):@(((int)ViewBag.TimeRemaining % 60).ToString("00"))</span>
+</div>
+
+<div class="review-container">
+    <h2>Xem lại bài làm - @Model.Title</h2>
+    
+    <table class="review-table">
+        <thead>
+            <tr>
+                <th>Câu hỏi</th>
+                <th>Trạng thái</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int questionNum = 0;
+                foreach (var examQuestion in Model.ExamQuestions.OrderBy(eq => eq.QuestionId))
+                {
+                    questionNum++;
+                    var questionId = examQuestion.Question.QuestionId;
+                    var hasAnswer = answers != null && answers.ContainsKey(questionId);
+                    
+                    <tr>
+                        <td class="q-num">@questionNum</td>
+                        <td class="@(hasAnswer ? "status-saved" : "status-not-saved")">
+                            @(hasAnswer ? "Câu trả lời đã được lưu" : "Câu trả lời chưa được lưu")
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <form asp-action="SubmitExam" method="post" id="finalSubmitForm">
+        <input type="hidden" name="examId" value="@Model.ExamId" />
+        
+        <div class="action-section">
+            <button type="button" class="btn-back" onclick="window.history.back()">
+                Trở lại bài trắc nghiệm
+            </button>
+            
+            <p class="deadline-text">
+                Bài này phải nộp trước <strong>@Model.EndTime.ToString("dddd, dd MMMM yyyy, hh:mm tt")</strong>
+            </p>
+            
+            <button type="button" class="btn-submit" onclick="confirmFinalSubmit()">
+                Nộp bài và kết thúc
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    // Timer countdown
+    let timeRemaining = @ViewBag.TimeRemaining;
+    
+    function updateTimer() {
+        if (timeRemaining <= 0) {
+            alert('Hết thời gian làm bài! Bài làm sẽ được tự động nộp.');
+            document.getElementById('finalSubmitForm').submit();
+            return;
+        }
+
+        const hours = Math.floor(timeRemaining / 3600);
+        const minutes = Math.floor((timeRemaining % 3600) / 60);
+        const seconds = Math.floor(timeRemaining % 60);
+
+        const timeString = (hours > 0 ? hours + ':' : '') +
+            String(minutes).padStart(2, '0') + ':' +
+            String(seconds).padStart(2, '0');
+
+        document.getElementById('timeRemaining').textContent = timeString;
+
+        // Warning at 5 minutes
+        if (timeRemaining <= 300) {
+            document.getElementById('timerBox').classList.add('warning');
+        }
+
+        timeRemaining--;
+    }
+
+    // Update timer every second
+    setInterval(updateTimer, 1000);
+    updateTimer();
+
+    function confirmFinalSubmit() {
+        const answeredCount = @(answers?.Count ?? 0);
+        const totalCount = @Model.ExamQuestions.Count;
+        const unansweredCount = totalCount - answeredCount;
+
+        let message = 'Bạn có chắc chắn muốn nộp bài và kết thúc không?\n\n';
+        message += 'Đã trả lời: ' + answeredCount + '/' + totalCount + ' câu';
+
+        if (unansweredCount > 0) {
+            message += '\nCòn ' + unansweredCount + ' câu chưa trả lời!';
+            message += '\n\nBạn vẫn muốn nộp bài?';
+        }
+
+        if (confirm(message)) {
+            document.getElementById('finalSubmitForm').submit();
+        }
+    }
+</script>
+}

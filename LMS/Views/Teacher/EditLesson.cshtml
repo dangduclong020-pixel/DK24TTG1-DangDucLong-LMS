@@ -1,0 +1,186 @@
+@model LMS.Models.Lesson
+@{
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    ViewBag.Title = "Chỉnh sửa bài học";
+    var classInfo = ViewBag.ClassInfo as LMS.Models.Class;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit"></i> Chỉnh sửa bài học - Chương @Model.OrderNumber
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form asp-action="EditLesson" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="LessonId" />
+                        <input type="hidden" asp-for="ClassId" />
+                        <input type="hidden" asp-for="Week" />
+                        <input type="hidden" asp-for="OrderNumber" />
+                        <input type="hidden" asp-for="IsPublished" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Lớp học</label>
+                            <input type="text" class="form-control" value="@classInfo?.Code - @classInfo?.Name" readonly disabled />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label asp-for="Title" class="form-label fw-bold">Tiêu đề chương <span class="text-danger">*</span></label>
+                                <input asp-for="Title" class="form-control" placeholder="VD: Quyền Số Hữu Trí Tuệ và Vấn Đề Cấp Phép" required />
+                                <span asp-validation-for="Title" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Duration" class="form-label fw-bold">Thời lượng (phút)</label>
+                                <input asp-for="Duration" type="number" class="form-control" placeholder="VD: 180" />
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nội dung bài học <span class="text-danger">*</span></label>
+                            <textarea id="contentEditor" name="Content" class="form-control" rows="15">@Model.Content</textarea>
+                            <small class="text-muted">
+                                Nhập nội dung chi tiết cho chương này: mục đích, mục tiêu học tập, kết quả học tập, nhiệm vụ, liên hệ với bài học kế tiếp...
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="VideoUrl" class="form-label fw-bold"><i class="fas fa-video text-danger"></i> Video Bài Giảng (Link URL)</label>
+                            <input asp-for="VideoUrl" type="url" class="form-control" value="@Model.VideoUrl" placeholder="https://www.youtube.com/watch?v=... hoặc Vimeo, Dailymotion..." />
+                            <small class="text-muted">
+                                Dán link video bài giảng cho chương này. <br/>
+                                <strong>Hỗ trợ:</strong> YouTube, Vimeo, Dailymotion, Google Drive, và các nền tảng khác hỗ trợ embed iframe.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tài liệu đính kèm</label>
+                            <input type="file" name="newFiles" class="form-control" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.zip" />
+                            <small class="text-muted">Có thể chọn nhiều file. Định dạng: PDF, DOC, DOCX, PPT, PPTX, ZIP</small>
+                        </div>
+
+                        @if (Model.LessonFiles != null && Model.LessonFiles.Any())
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Tài liệu hiện có:</label>
+                                <ul class="list-group">
+                                    @foreach (var file in Model.LessonFiles)
+                                    {
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>
+                                                <i class="fas fa-file-pdf text-danger"></i> @file.FileName
+                                            </span>
+                                            <a href="@file.FilePath" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-download"></i> Tải về
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Gợi ý cấu trúc nội dung:</strong>
+                            <ul class="mb-0">
+                                <li><strong>Mục đích (Why?):</strong> Tại sao cần học chương này?</li>
+                                <li><strong>Kết quả học tập (Learning outcome):</strong> Sinh viên sẽ đạt được gì sau khi hoàn thành?</li>
+                                <li><strong>Nhiệm vụ (Mission):</strong> Các hoạt động và bài tập cần thực hiện</li>
+                                <li><strong>Nội dung chính cần xem lại:</strong> Những kiến thức quan trọng</li>
+                                <li><strong>Liên hệ với bài học kế tiếp:</strong> Kết nối kiến thức</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="@Url.Action("ClassDetails", new { id = Model.ClassId })" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <!-- CKEditor 5 -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js"></script>
+    <script>
+        ClassicEditor
+            .create(document.querySelector('#contentEditor'), {
+                toolbar: [
+                    'heading', '|',
+                    'bold', 'italic', '|',
+                    'bulletedList', 'numberedList', '|',
+                    'outdent', 'indent', '|',
+                    'link', '|',
+                    'undo', 'redo'
+                ]
+            })
+            .then(editor => {
+                window.contentEditor = editor;
+                
+                // Cho phép Tab để thêm khoảng trắng hoặc indent
+                const editorElement = editor.ui.view.editable.element;
+                editorElement.addEventListener('keydown', function(e) {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const selection = editor.model.document.selection;
+                        const hasSelection = !selection.isCollapsed;
+                        
+                        if (e.shiftKey) {
+                            editor.execute('outdent');
+                        } else {
+                            if (hasSelection) {
+                                editor.execute('indent');
+                            } else {
+                                const viewFragment = editor.data.processor.toView('&nbsp;&nbsp;&nbsp;&nbsp;');
+                                const modelFragment = editor.data.toModel(viewFragment);
+                                editor.model.insertContent(modelFragment);
+                            }
+                        }
+                    }
+                }, true);
+            })
+            .catch(error => {
+                console.error('Error initializing editor:', error);
+            });
+
+        // Xử lý submit form
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (window.contentEditor) {
+                const contentValue = window.contentEditor.getData();
+                document.querySelector('#contentEditor').value = contentValue;
+            }
+        });
+    </script>
+}

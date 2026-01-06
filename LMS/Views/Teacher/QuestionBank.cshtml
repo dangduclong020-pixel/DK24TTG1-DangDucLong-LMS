@@ -1,6 +1,7 @@
 @model List<LMS.Models.QuestionBank>
 @{
     ViewData["Title"] = "Ngân hàng câu hỏi";
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
     var selectedCourseId = ViewBag.SelectedCourseId;
 }
 
@@ -25,11 +26,14 @@
             <form method="get" asp-action="QuestionBank" class="d-flex">
                 <select name="courseId" class="form-select me-2" onchange="this.form.submit()">
                     <option value="">-- Tất cả môn học --</option>
-                    @foreach (var course in (ViewBag.MyCourses as SelectList)?.Items.Cast<SelectListItem>() ?? Enumerable.Empty<SelectListItem>())
+                    @if (ViewBag.MyCourses != null)
                     {
-                        <option value="@course.Value" selected="@(course.Value == selectedCourseId?.ToString())">
-                            @course.Text
-                        </option>
+                        foreach (SelectListItem item in ViewBag.MyCourses)
+                        {
+                            <option value="@item.Value" selected="@item.Selected">
+                                @item.Text
+                            </option>
+                        }
                     }
                 </select>
             </form>

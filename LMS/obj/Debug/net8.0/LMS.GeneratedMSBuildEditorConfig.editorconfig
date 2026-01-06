@@ -40,12 +40,20 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cQ3JlYXRlRmFjdWx0eS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Admin/CreateSemester.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cQ3JlYXRlU2VtZXN0ZXIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Admin/CreateUser.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cQ3JlYXRlVXNlci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Admin/EditFaculty.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cRWRpdEZhY3VsdHkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Admin/EditSemester.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cRWRpdFNlbWVzdGVyLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Admin/FacultyManagement.cshtml]
@@ -68,6 +76,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUmVzZXRQYXNzd29yZC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Admin/SemesterConfig.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cU2VtZXN0ZXJDb25maWcuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Admin/Students.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cU3R1ZGVudHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -84,20 +96,12 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXEFkbWluaXN0cmF0aXZlQ2xhc3NNYW5hZ2VtZW50LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/FacultyAdmin/AdministrativeClassStudents.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXEFkbWluaXN0cmF0aXZlQ2xhc3NTdHVkZW50cy5jc2h0bWw=
-build_metadata.AdditionalFiles.CssScope = 
-
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/FacultyAdmin/ClassManagement.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXENsYXNzTWFuYWdlbWVudC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/FacultyAdmin/CourseManagement.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXENvdXJzZU1hbmFnZW1lbnQuY3NodG1s
-build_metadata.AdditionalFiles.CssScope = 
-
-[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/FacultyAdmin/CreateAdministrativeClass.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXENyZWF0ZUFkbWluaXN0cmF0aXZlQ2xhc3MuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/FacultyAdmin/CreateClass.cshtml]
@@ -108,12 +112,16 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXENyZWF0ZUNvdXJzZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/FacultyAdmin/EditAdministrativeClass.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXEVkaXRBZG1pbmlzdHJhdGl2ZUNsYXNzLmNzaHRtbA==
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/FacultyAdmin/EditClass.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXEVkaXRDbGFzcy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/FacultyAdmin/EditCourse.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXEVkaXRDb3Vyc2UuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/FacultyAdmin/ImportStudents.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXEltcG9ydFN0dWRlbnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/FacultyAdmin/Index.cshtml]
@@ -132,6 +140,30 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmFjdWx0eUFkbWluXFRlYWNoZXJNYW5hZ2VtZW50LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/AssignmentDetail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxBc3NpZ25tZW50RGV0YWlsLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/CourseDetail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxDb3Vyc2VEZXRhaWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/ExamDetail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxFeGFtRGV0YWlsLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/ExamIntro.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxFeGFtSW50cm8uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/ExamResult.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxFeGFtUmVzdWx0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/ExamReview.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxFeGFtUmV2aWV3LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -140,8 +172,24 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxMb2dpbi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/MyCourses.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxNeUNvdXJzZXMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/MySchedule.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxNeVNjaGVkdWxlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/Privacy.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/ScanQRAttendance.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxTY2FuUVJBdHRlbmRhbmNlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/StudentAttendance.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxTdHVkZW50QXR0ZW5kYW5jZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Home/TestUsers.cshtml]
@@ -156,6 +204,22 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9GYWN1bHR5TGF5b3V0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Shared/_Header.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9IZWFkZXIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Shared/_LayoutWithSidebar.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXRXaXRoU2lkZWJhci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Shared/_SharedLayout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9TaGFyZWRMYXlvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Shared/_Sidebar.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9TaWRlYmFyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Shared/_TeacherLayout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9UZWFjaGVyTGF5b3V0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
@@ -168,8 +232,8 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxBc3NpZ25tZW50cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/ClassAssignments.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxDbGFzc0Fzc2lnbm1lbnRzLmNzaHRtbA==
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/AssignmentSubmissions.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxBc3NpZ25tZW50U3VibWlzc2lvbnMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/ClassDetails.cshtml]
@@ -188,8 +252,60 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxDcmVhdGVBc3NpZ25tZW50LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/CreateExam.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxDcmVhdGVFeGFtLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/CreateLesson.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxDcmVhdGVMZXNzb24uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/CreateQuestion.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxDcmVhdGVRdWVzdGlvbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/EditAssignment.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxFZGl0QXNzaWdubWVudC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/EditAttendance.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxFZGl0QXR0ZW5kYW5jZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/EditClass.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxFZGl0Q2xhc3MuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/EditLesson.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxFZGl0TGVzc29uLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/EditQuestion.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxFZGl0UXVlc3Rpb24uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/ExamResults.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxFeGFtUmVzdWx0cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/Exams.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxFeGFtcy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/GradeManagement.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxHcmFkZU1hbmFnZW1lbnQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/GradeSubmissionDetail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxHcmFkZVN1Ym1pc3Npb25EZXRhaWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/GradingOverviewAssignment.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxHcmFkaW5nT3ZlcnZpZXdBc3NpZ25tZW50LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/GradingOverviewExam.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxHcmFkaW5nT3ZlcnZpZXdFeGFtLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/ImportStudents.cshtml]
@@ -200,6 +316,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/ManageAttendance.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxNYW5hZ2VBdHRlbmRhbmNlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/ManageStudents.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxNYW5hZ2VTdHVkZW50cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -208,8 +328,28 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxNeUNsYXNzZXMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/MySchedule.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxNeVNjaGVkdWxlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/QuestionBank.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxRdWVzdGlvbkJhbmsuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/ShowAttendanceQR.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxTaG93QXR0ZW5kYW5jZVFSLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/TakeAttendance.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxUYWtlQXR0ZW5kYW5jZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/_BACKUP_ClassAssignments.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxfQkFDS1VQX0NsYXNzQXNzaWdubWVudHMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Teacher/_BACKUP_ClassExams.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVhY2hlclxfQkFDS1VQX0NsYXNzRXhhbXMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Study/C\#_ASP.Net_MVC/LMS3/LMS/Views/Users/Index.cshtml]

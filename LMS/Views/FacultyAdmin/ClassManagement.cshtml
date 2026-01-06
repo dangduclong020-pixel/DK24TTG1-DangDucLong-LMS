@@ -5,20 +5,6 @@
 }
 
 <div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h2>
-                <i class="fas fa-users-class"></i> Quản lý Lớp học
-            </h2>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a asp-action="Index">Trang chủ</a></li>
-                    <li class="breadcrumb-item active">Quản lý Lớp học</li>
-                </ol>
-            </nav>
-        </div>
-    </div>
-
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show">
@@ -45,16 +31,73 @@
         <div class="card-body">
             @if (Model.Any())
             {
+                <!-- Filter section -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-filter"></i> Lọc theo môn học
+                        </label>
+                        <select id="courseFilter" class="form-select">
+                            <option value="">-- Tất cả môn học --</option>
+                            @{
+                                var courses = Model
+                                    .Where(c => c.Course != null)
+                                    .Select(c => new { c.Course.CourseId, c.Course.Code, c.Course.Name })
+                                    .Distinct()
+                                    .OrderBy(c => c.Code)
+                                    .ToList();
+                            }
+                            @foreach (var course in courses)
+                            {
+                                <option value="@course.CourseId">@course.Code - @course.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-calendar-alt"></i> Lọc theo học kỳ
+                        </label>
+                        <select id="semesterFilter" class="form-select">
+                            <option value="">-- Tất cả học kỳ --</option>
+                            @{
+                                var semesters = Model
+                                    .Where(c => !string.IsNullOrEmpty(c.Semester))
+                                    .Select(c => c.Semester)
+                                    .Distinct()
+                                    .OrderByDescending(s => s)
+                                    .ToList();
+                            }
+                            @foreach (var semester in semesters)
+                            {
+                                <option value="@semester">@semester</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-search"></i> Tìm kiếm
+                        </label>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Tìm theo mã lớp, tên lớp, giảng viên...">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-secondary w-100" onclick="resetFilters()">
+                            <i class="fas fa-redo"></i> Đặt lại
+                        </button>
+                    </div>
+                </div>
+                
                 <div class="table-responsive">
-                    <table class="table table-hover table-striped">
+                    <table class="table table-hover table-striped" id="classTable">
                         <thead class="table-dark">
                             <tr>
                                 <th>Mã lớp</th>
                                 <th>Tên lớp học</th>
-                                <th>Khóa học</th>
+                                <th>Mã khóa học</th>
+                                <th>Tên môn học</th>
                                 <th>Giảng viên</th>
                                 <th>Sĩ số</th>
                                 <th>Thời gian</th>
+                                <th>Lịch học</th>
                                 <th>Trạng thái</th>
                                 <th>Tạo ngày</th>
                                 <th>Thao tác</th>
@@ -63,11 +106,24 @@
                         <tbody>
                             @foreach (var item in Model)
                             {
-                                <tr>
+                                <tr data-course-id="@item.Course?.CourseId" data-course-name="@item.Course?.Name" 
+                                    data-class-code="@item.Code" data-class-name="@item.Name" 
+                                    data-instructor-name="@item.Instructor?.FullName"
+                                    data-semester="@item.Semester">
                                     <td>
                                         <span class="badge bg-primary">@item.Code</span>
                                     </td>
-                                    <td><strong>@item.Name</strong></td>
+                                    <td>
+                                        <strong>@item.Code - @item.Course?.Name</strong>
+                                        @if (!string.IsNullOrEmpty(item.Name) && item.Name != $"{item.Course?.Code}_{item.Code}")
+                                        {
+                                            <br />
+                                            <small class="text-muted">
+                                                <i class="fas fa-tag"></i> @item.Name
+                                            </small>
+                                        }
+                                    </td>
+                                    <td>@item.Course?.Code</td>
                                     <td>@item.Course?.Name</td>
                                     <td>
                                         <i class="fas fa-user text-info"></i> @item.Instructor?.FullName
@@ -81,8 +137,28 @@
                                     </td>
                                     <td>
                                         <small>
+                                            @if (!string.IsNullOrEmpty(item.Semester))
+                                            {
+                                                <div><strong>@item.Semester</strong></div>
+                                            }
                                             @(item.StartDate?.ToString("dd/MM/yyyy") ?? "N/A") - 
                                             @(item.EndDate?.ToString("dd/MM/yyyy") ?? "N/A")
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            @if (!string.IsNullOrEmpty(item.DayOfWeek))
+                                            {
+                                                <div><i class="fas fa-calendar-day"></i> @item.DayOfWeek</div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(item.Session))
+                                            {
+                                                <div><i class="fas fa-clock"></i> @item.Session</div>
+                                            }
+                                            @if (item.StartTime != null && item.EndTime != null)
+                                            {
+                                                <div>@item.StartTime?.ToString("HH:mm") - @item.EndTime?.ToString("HH:mm")</div>
+                                            }
                                         </small>
                                     </td>
                                     <td>
@@ -197,6 +273,73 @@ function deleteClass(id, name) {
     if (confirm(`Bạn có chắc chắn muốn xóa lớp học "${name}"?`)) {
         window.location.href = `/FacultyAdmin/DeleteClass/${id}`;
     }
+}
+
+// Filter và Search functionality
+document.getElementById('courseFilter').addEventListener('change', filterTable);
+document.getElementById('semesterFilter').addEventListener('change', filterTable);
+document.getElementById('searchInput').addEventListener('input', filterTable);
+
+function filterTable() {
+    const courseFilter = document.getElementById('courseFilter').value;
+    const semesterFilter = document.getElementById('semesterFilter').value;
+    const searchText = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#classTable tbody tr');
+    
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const courseId = row.getAttribute('data-course-id');
+        const semester = row.getAttribute('data-semester') || '';
+        const courseName = (row.getAttribute('data-course-name') || '').toLowerCase();
+        const classCode = (row.getAttribute('data-class-code') || '').toLowerCase();
+        const className = (row.getAttribute('data-class-name') || '').toLowerCase();
+        const instructorName = (row.getAttribute('data-instructor-name') || '').toLowerCase();
+        
+        // Check course filter
+        const courseMatch = !courseFilter || courseId === courseFilter;
+        
+        // Check semester filter
+        const semesterMatch = !semesterFilter || semester === semesterFilter;
+        
+        // Check search filter
+        const searchMatch = !searchText || 
+            courseName.includes(searchText) ||
+            classCode.includes(searchText) ||
+            className.includes(searchText) ||
+            instructorName.includes(searchText);
+        
+        if (courseMatch && semesterMatch && searchMatch) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Show message if no results
+    const tbody = document.querySelector('#classTable tbody');
+    let noResultRow = document.getElementById('noResultRow');
+    
+    if (visibleCount === 0) {
+        if (!noResultRow) {
+            noResultRow = document.createElement('tr');
+            noResultRow.id = 'noResultRow';
+            noResultRow.innerHTML = '<td colspan="11" class="text-center text-muted py-4"><i class="fas fa-search"></i> Không tìm thấy lớp học nào phù hợp</td>';
+            tbody.appendChild(noResultRow);
+        }
+    } else {
+        if (noResultRow) {
+            noResultRow.remove();
+        }
+    }
+}
+
+function resetFilters() {
+    document.getElementById('courseFilter').value = '';
+    document.getElementById('semesterFilter').value = '';
+    document.getElementById('searchInput').value = '';
+    filterTable();
 }
 </script>
 

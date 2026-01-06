@@ -1,0 +1,148 @@
+@{
+    var isLoggedIn = ViewBag.IsLoggedIn ?? false;
+    var userName = ViewBag.UserName ?? "";
+    var userRole = ViewBag.UserRole ?? "";
+}
+
+<!-- Sidebar -->
+<div class="sidebar-menu" id="sidebarMenu">
+    <div class="sidebar-header">
+        <h5>Menu</h5>
+        <button class="btn-close-sidebar" id="closeSidebar">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="sidebar-content">
+        <a href="@Url.Action("Index", "Home")" class="sidebar-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+            <i class="fas fa-home"></i>
+            <span>Trang chủ</span>
+        </a>
+        @if (isLoggedIn)
+        {
+            var userRoleLower = userRole.ToString().ToLower();
+            if (userRoleLower == "admin")
+            {
+            <a href="@Url.Action("Index", "Admin")" class="sidebar-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Bảng Điều khiển</span>
+            </a>
+            <a href="@Url.Action("UserManagement", "Admin")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "UserManagement" ? "active" : "")">
+                <i class="fas fa-users"></i>
+                <span>Quản lý người dùng</span>
+            </a>
+            <a href="@Url.Action("FacultyManagement", "Admin")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "FacultyManagement" ? "active" : "")">
+                <i class="fas fa-university"></i>
+                <span>Quản lý khoa</span>
+            </a>
+            <a href="@Url.Action("SystemReports", "Admin")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "SystemReports" ? "active" : "")">
+                <i class="fas fa-chart-bar"></i>
+                <span>Báo cáo thống kê</span>
+            </a>
+            }
+            else if (userRoleLower == "teacher" || userRoleLower == "giảng viên" || userRoleLower == "giang vien")
+            {
+            <a href="@Url.Action("Index", "Teacher")" class="sidebar-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Teacher" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Bảng Điều khiển</span>
+            </a>
+            <a href="@Url.Action("MyClasses", "Teacher")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "MyClasses" ? "active" : "")">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <span>Lớp học của tôi</span>
+            </a>
+            <a href="@Url.Action("MySchedule", "Teacher")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "MySchedule" ? "active" : "")">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Thời khóa biểu</span>
+            </a>
+            <a href="@Url.Action("Assignments", "Teacher")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Assignments" ? "active" : "")">
+                <i class="fas fa-tasks"></i>
+                <span>Quản lý bài tập</span>
+            </a>
+            <a href="@Url.Action("Exams", "Teacher")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Exams" ? "active" : "")">
+                <i class="fas fa-file-alt"></i>
+                <span>Quản lý đề thi</span>
+            </a>
+            <a href="@Url.Action("QuestionBank", "Teacher")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "QuestionBank" ? "active" : "")">
+                <i class="fas fa-question-circle"></i>
+                <span>Ngân hàng câu hỏi</span>
+            </a>
+            <a href="@Url.Action("Attendance", "Teacher")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Attendance" ? "active" : "")">
+                <i class="fas fa-user-check"></i>
+                <span>Điểm danh</span>
+            </a>
+            }
+            else if (userRoleLower == "quản trị khoa" || userRoleLower == "faculty admin")
+            {
+            <a href="@Url.Action("Index", "FacultyAdmin")" class="sidebar-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "FacultyAdmin" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Bảng Điều khiển</span>
+            </a>
+            <a href="@Url.Action("CourseManagement", "FacultyAdmin")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "CourseManagement" ? "active" : "")">
+                <i class="fas fa-book"></i>
+                <span>Quản lý môn học</span>
+            </a>
+            <a href="@Url.Action("ClassManagement", "FacultyAdmin")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "ClassManagement" ? "active" : "")">
+                <i class="fas fa-users"></i>
+                <span>Quản lý lớp học</span>
+            </a>
+            <a href="@Url.Action("TeacherManagement", "FacultyAdmin")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "TeacherManagement" ? "active" : "")">
+                <i class="fas fa-user-tie"></i>
+                <span>Quản lý giảng viên</span>
+            </a>
+            <a href="@Url.Action("StudentManagement", "FacultyAdmin")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "StudentManagement" ? "active" : "")">
+                <i class="fas fa-user-graduate"></i>
+                <span>Quản lý sinh viên</span>
+            </a>
+            }
+            else if (userRoleLower == "sinh viên" || userRoleLower == "student" || userRoleLower == "sinh vien")
+            {
+            <a href="@Url.Action("Index", "Home")" class="sidebar-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Bảng Điều khiển</span>
+            </a>
+            <a href="@Url.Action("MyCourses", "Home")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "MyCourses" ? "active" : "")">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Khóa học của tôi</span>
+            </a>
+            <a href="@Url.Action("MySchedule", "Home")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "MySchedule" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Thời khóa biểu</span>
+            </a>
+            <a href="@Url.Action("MyAssignments", "Home")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "MyAssignments" ? "active" : "")">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Bài tập</span>
+            </a>
+            <a href="@Url.Action("MyExams", "Home")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "MyExams" ? "active" : "")">
+                <i class="fas fa-file-signature"></i>
+                <span>Bài kiểm tra</span>
+            </a>
+            <a href="@Url.Action("MyGrades", "Home")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "MyGrades" ? "active" : "")">
+                <i class="fas fa-chart-line"></i>
+                <span>Điểm số</span>
+            </a>
+            }
+            <a href="@Url.Action("Calendar", "Home")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Calendar" ? "active" : "")">
+                <i class="fas fa-calendar"></i>
+                <span>Lịch</span>
+            </a>
+            <a href="@Url.Action("Files", "Home")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Files" ? "active" : "")">
+                <i class="fas fa-folder"></i>
+                <span>Tập tin cá nhân</span>
+            </a>
+            <a href="@Url.Action("Notifications", "Home")" class="sidebar-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")">
+                <i class="fas fa-bell"></i>
+                <span>Thông báo</span>
+            </a>
+            <a href="@Url.Action("Logout", "Home")" class="sidebar-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Đăng xuất</span>
+            </a>
+        }
+        else
+        {
+            <a href="@Url.Action("Login", "Home")" class="sidebar-item">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Đăng nhập</span>
+            </a>
+        }
+    </div>
+</div>

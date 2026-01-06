@@ -1,0 +1,164 @@
+@model LMS.Models.Assignment
+@{
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    ViewBag.Title = "Chỉnh sửa bài tập";
+    var classInfo = ViewBag.ClassInfo as LMS.Models.Class;
+}
+
+@section Styles {
+<style>
+    .form-section {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .form-section h5 {
+        color: #667eea;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+</style>
+}
+
+<div class="container mt-4">
+    <a href="@Url.Action("ClassDetails", "Teacher", new { id = Model.ClassId })" class="btn btn-link mb-3">
+        <i class="fas fa-arrow-left"></i> Quay lại lớp học
+    </a>
+
+    <h2 class="mb-4">
+        <i class="fas fa-edit"></i> Chỉnh sửa bài tập
+    </h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form method="post" asp-action="EditAssignment" enctype="multipart/form-data">
+        <input type="hidden" asp-for="AssignmentId" />
+        <input type="hidden" asp-for="ClassId" />
+        <input type="hidden" asp-for="CreatedBy" />
+        <input type="hidden" asp-for="CreatedAt" />
+        <input type="hidden" asp-for="FilePath" />
+        <input type="hidden" asp-for="AttachmentName" />
+        <input type="hidden" asp-for="AttachmentPath" />
+
+        <div class="form-section">
+            <h5><i class="fas fa-info-circle"></i> Thông tin cơ bản</h5>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Lớp học</label>
+                <input type="text" class="form-control" value="@classInfo?.Code - @classInfo?.Course?.Name" readonly disabled />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label fw-bold">Tiêu đề bài tập <span class="text-danger">*</span></label>
+                <input asp-for="Title" class="form-control" required />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label fw-bold">Mô tả bài tập</label>
+                <textarea asp-for="Description" class="form-control" rows="4" placeholder="Nhập mô tả chi tiết về bài tập..."></textarea>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-calendar-alt"></i> Thời gian & Điểm số</h5>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="DueDate" class="form-label fw-bold">Hạn nộp <span class="text-danger">*</span></label>
+                    <input asp-for="DueDate" type="datetime-local" class="form-control" required />
+                    <span asp-validation-for="DueDate" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="MaxScore" class="form-label fw-bold">Điểm tối đa <span class="text-danger">*</span></label>
+                    <input asp-for="MaxScore" type="number" class="form-control" min="0" required />
+                    <span asp-validation-for="MaxScore" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="MaxAttempts" class="form-label fw-bold">Số lần nộp tối đa</label>
+                    <input asp-for="MaxAttempts" type="number" class="form-control" min="1" placeholder="Không giới hạn nếu để trống" />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Weightage" class="form-label fw-bold">Trọng số (%)</label>
+                    <input asp-for="Weightage" type="number" class="form-control" min="0" max="100" step="0.01" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-cog"></i> Cài đặt nâng cao</h5>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input name="AllowLateSubmission" class="form-check-input" type="checkbox" value="true" @(Model.AllowLateSubmission == true ? "checked" : "") />
+                    <input type="hidden" name="AllowLateSubmission" value="false" />
+                    <label class="form-check-label">
+                        Cho phép nộp muộn
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="LatePenalty" class="form-label fw-bold">Phạt nộp muộn (%)</label>
+                <input asp-for="LatePenalty" type="number" class="form-control" min="0" max="100" step="0.01" placeholder="Ví dụ: 10 (trừ 10% điểm mỗi ngày)" />
+            </div>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input name="IsPublished" class="form-check-input" type="checkbox" value="true" @(Model.IsPublished == true ? "checked" : "") />
+                    <input type="hidden" name="IsPublished" value="false" />
+                    <label class="form-check-label">
+                        Công bố bài tập (sinh viên có thể xem)
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-paperclip"></i> Tài liệu đính kèm</h5>
+
+            @if (!string.IsNullOrEmpty(Model.AttachmentPath))
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-file"></i> 
+                    Tài liệu hiện tại: <strong>@Model.AttachmentName</strong>
+                    <a href="@Model.AttachmentPath" target="_blank" class="btn btn-sm btn-link">Xem tài liệu</a>
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Tải lên tài liệu mới (nếu muốn thay đổi)</label>
+                <input type="file" name="newAttachment" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip" />
+                <small class="text-muted">Chấp nhận: PDF, Word, PowerPoint, ZIP. Tối đa 10MB</small>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Lưu thay đổi
+            </button>
+            <a href="@Url.Action("ClassDetails", "Teacher", new { id = Model.ClassId })" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Hủy
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

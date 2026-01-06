@@ -29,12 +29,33 @@
             display: flex; flex-direction: column; position: fixed; height: 100%; top: 0; left: 0;
         }
         .dept-logo {
-            height: 70px; display: flex; align-items: center; padding: 0 20px;
+            min-height: 70px; display: flex; align-items: center; padding: 15px 20px;
             border-bottom: 1px solid #f0f0f0; gap: 10px;
         }
-        .dept-logo i { font-size: 24px; color: var(--primary-color); }
-        .dept-info h3 { font-size: 14px; font-weight: 700; color: #333; }
-        .dept-info p { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .dept-logo i { font-size: 24px; color: var(--primary-color); flex-shrink: 0; }
+        .dept-info { 
+            flex: 1; 
+            overflow: hidden; 
+            min-width: 0;
+        }
+        .dept-info h3 { 
+            font-size: 14px; 
+            font-weight: 700; 
+            color: #333; 
+            line-height: 1.3;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+        .dept-info p { 
+            font-size: 11px; 
+            color: #888; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
         .menu { list-style: none; padding: 15px 10px; }
         .menu-title { font-size: 11px; text-transform: uppercase; color: #999; margin: 15px 15px 5px; font-weight: 600; }
@@ -123,7 +144,6 @@
 
     <aside class="sidebar">
         <div class="dept-logo">
-            <i class="fa-solid fa-laptop-code"></i>
             <div class="dept-info">
                 <h3>@(ViewBag.FacultyName ?? "KHOA CNTT")</h3>
                 <p>Faculty Admin</p>
@@ -136,10 +156,7 @@
             
             <li class="menu-title">QUẢN LÝ ĐÀO TẠO</li>
             <a href="@Url.Action("CourseManagement", "FacultyAdmin")" class="menu-item" data-page="CourseManagement"><i class="fa-solid fa-book"></i> Quản lý Khóa học</a>
-            <a href="@Url.Action("CreateCourse", "FacultyAdmin")" class="menu-item" data-page="CreateCourse"><i class="fa-solid fa-plus-circle"></i> Tạo Khóa học mới</a>
             <a href="@Url.Action("ClassManagement", "FacultyAdmin")" class="menu-item" data-page="ClassManagement"><i class="fa-solid fa-users-class"></i> Quản lý Lớp học</a>
-            <a href="@Url.Action("CreateClass", "FacultyAdmin")" class="menu-item" data-page="CreateClass"><i class="fa-solid fa-plus-square"></i> Tạo Lớp học mới</a>
-            <a href="@Url.Action("AdministrativeClassManagement", "FacultyAdmin")" class="menu-item" data-page="AdministrativeClassManagement"><i class="fa-solid fa-users-rectangle"></i> Quản lý Lớp hành chính</a>
             
             <li class="menu-title">QUẢN LÝ NHÂN SỰ</li>
             <a href="@Url.Action("TeacherManagement", "FacultyAdmin")" class="menu-item" data-page="TeacherManagement"><i class="fa-solid fa-user-tie"></i> Quản lý Giảng viên</a>
@@ -154,7 +171,7 @@
     </aside>
 
     <main class="main-content">
-        <!-- Alert Messages -->
+        @* <!-- Alert Messages -->
         @if (TempData["SuccessMessage"] != null)
         {
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -168,7 +185,7 @@
                 <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-        }
+        } *@
 
         @RenderBody()
     </main>

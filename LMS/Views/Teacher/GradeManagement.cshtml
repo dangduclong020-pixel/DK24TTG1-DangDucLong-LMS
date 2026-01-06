@@ -1,0 +1,606 @@
+@{
+    ViewData["Title"] = "Quản lý điểm";
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    var classInfo = ViewBag.ClassInfo as LMS.Models.Class;
+    var assignments = ViewBag.Assignments as List<LMS.Models.Assignment>;
+    var exams = ViewBag.Exams as List<LMS.Models.Exam>;
+    var studentGrades = ViewBag.StudentGrades as List<dynamic>;
+}
+
+@section Styles {
+<style>
+    .grade-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .grade-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 28px;
+    }
+
+    .grade-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 16px;
+    }
+
+    .action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .grade-table-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .grade-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    .grade-table thead {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .grade-table th {
+        padding: 12px 8px;
+        text-align: center;
+        font-weight: 600;
+        color: #495057;
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+        background: #f8f9fa;
+        z-index: 10;
+        border: 1px solid #dee2e6;
+    }
+
+    .grade-table td {
+        padding: 12px 8px;
+        text-align: center;
+        border: 1px solid #e9ecef;
+    }
+
+    .grade-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .student-info {
+        text-align: left !important;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .user-avatar {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .student-details {
+        flex: 1;
+    }
+
+    .student-name {
+        color: #007bff;
+        font-weight: 500;
+    }
+
+    .student-code {
+        color: #6c757d;
+        font-size: 12px;
+        display: block;
+        margin-top: 2px;
+    }
+
+    .score-input {
+        width: 70px;
+        padding: 5px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        text-align: center;
+    }
+
+    .score-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .grade-letter {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .grade-A { background: #d4edda; color: #155724; }
+    .grade-B { background: #d1ecf1; color: #0c5460; }
+    .grade-C { background: #fff3cd; color: #856404; }
+    .grade-D { background: #f8d7da; color: #721c24; }
+    .grade-F { background: #f8d7da; color: #721c24; }
+
+    .btn-save {
+        padding: 6px 16px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.3s;
+    }
+
+    .btn-save:hover {
+        background: #218838;
+        transform: translateY(-1px);
+    }
+
+    .btn-calculate {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+
+    .btn-calculate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .score-empty {
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    .average-score {
+        font-weight: 600;
+        color: #495057;
+        background: #e3f2fd;
+    }
+
+    .table-scroll {
+        overflow-x: auto;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 5;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    }
+
+    .sticky-col-header {
+        position: sticky;
+        left: 0;
+        background: #f8f9fa !important;
+        z-index: 15;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    }
+
+    .weight-config {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-right: 20px;
+    }
+
+    .weight-input {
+        width: 60px;
+        padding: 5px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        text-align: center;
+    }
+
+    .export-buttons {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-export {
+        padding: 8px 16px;
+        background: #17a2b8;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.3s;
+    }
+
+    .btn-export:hover {
+        background: #138496;
+    }
+
+    .alert {
+        padding: 12px 20px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+
+    .alert-info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+    }
+
+    .grade-value {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .icon-search {
+        color: #007bff;
+        font-size: 12px;
+        cursor: pointer;
+        opacity: 0.6;
+    }
+
+    .icon-search:hover {
+        opacity: 1;
+    }
+</style>
+}
+
+<div class="grade-header">
+    <h1><i class="fas fa-chart-line"></i> Quản lý điểm: @classInfo?.Name</h1>
+    <p>@classInfo?.Course?.Code - @classInfo?.Course?.Name</p>
+</div>
+
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> 
+    <strong>Hướng dẫn:</strong> Nhập điểm cuối kỳ cho từng sinh viên hoặc sử dụng nút "Tính điểm tự động" để hệ thống tính toán dựa trên điểm bài tập và thi.
+</div>
+
+<div class="action-bar">
+    <div>
+        <div class="weight-config">
+            <label>Trọng số BT:</label>
+            <input type="number" id="assignmentWeight" class="weight-input" value="40" min="0" max="100" />
+            <span>%</span>
+        </div>
+        <div class="weight-config">
+            <label>Trọng số Thi:</label>
+            <input type="number" id="examWeight" class="weight-input" value="60" min="0" max="100" />
+            <span>%</span>
+        </div>
+        <button type="button" class="btn-calculate" onclick="calculateAllGrades()">
+            <i class="fas fa-calculator"></i> Tính điểm tự động
+        </button>
+    </div>
+    <div class="export-buttons">
+        <button type="button" class="btn-export" onclick="exportToExcel()">
+            <i class="fas fa-file-excel"></i> Xuất Excel
+        </button>
+        <a href="@Url.Action("ClassDetails", new { id = classInfo?.ClassId })" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+    </div>
+</div>
+
+<div class="grade-table-container">
+    <div class="table-scroll">
+        <table class="grade-table">
+            <thead>
+                <tr>
+                    <th class="sticky-col-header" style="min-width: 250px;">
+                        <i class="fas fa-user"></i> Sinh viên
+                    </th>
+                    
+                    @if (assignments != null && assignments.Any())
+                    {
+                        @foreach (var assignment in assignments)
+                        {
+                            <th style="min-width: 150px;" title="@assignment.Title">
+                                <i class="fas fa-file-alt"></i> @assignment.Title
+                                <br />
+                                <small>(@assignment.MaxScore đ)</small>
+                            </th>
+                        }
+                        <th style="min-width: 100px;" class="average-score">TB BT</th>
+                    }
+                    
+                    @if (exams != null && exams.Any())
+                    {
+                        @foreach (var exam in exams)
+                        {
+                            <th style="min-width: 150px;" title="@exam.Title">
+                                <i class="fas fa-file-signature"></i> @exam.Title
+                                <br />
+                                <small>(@exam.MaxScore đ)</small>
+                            </th>
+                        }
+                        <th style="min-width: 100px;" class="average-score">TB Thi</th>
+                    }
+                    
+                    <th style="min-width: 120px;"><i class="fas fa-star"></i> Điểm CK</th>
+                    <th style="min-width: 100px;"><i class="fas fa-medal"></i> Xếp loại</th>
+                    <th style="min-width: 100px;"><i class="fas fa-cog"></i> Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (studentGrades != null && studentGrades.Any())
+                {
+                    @foreach (var student in studentGrades)
+                    {
+                        <tr>
+                            <td class="student-info sticky-col">
+                                <div class="user-avatar">
+                                    @(student.StudentName.ToString().Substring(0, 1).ToUpper())
+                                </div>
+                                <div class="student-details">
+                                    <div class="student-name">@student.StudentName</div>
+                                    <span class="student-code">@student.StudentCode</span>
+                                </div>
+                            </td>
+                            
+                            @if (assignments != null && assignments.Any())
+                            {
+                                var assignmentScores = student.AssignmentScores as List<decimal?>;
+                                if (assignmentScores != null)
+                                {
+                                    @for (int i = 0; i < assignmentScores.Count; i++)
+                                    {
+                                        var score = assignmentScores[i];
+                                        <td>
+                                            @if (score != null && score.HasValue)
+                                            {
+                                                <div class="grade-value">
+                                                    <strong>@score.Value</strong>
+                                                    <i class="fas fa-search-plus icon-search" title="Xem chi tiết"></i>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="score-empty">-</span>
+                                            }
+                                        </td>
+                                    }
+                                }
+                                <td class="average-score">
+                                    @{
+                                        var assignmentAvg = student.AssignmentAverage as decimal?;
+                                    }
+                                    @if (assignmentAvg != null && assignmentAvg.HasValue)
+                                    {
+                                        <strong>@assignmentAvg.Value</strong>
+                                    }
+                                    else
+                                    {
+                                        <span class="score-empty">-</span>
+                                    }
+                                </td>
+                            }
+                            
+                            @if (exams != null && exams.Any())
+                            {
+                                var examScores = student.ExamScores as List<decimal?>;
+                                if (examScores != null)
+                                {
+                                    @for (int i = 0; i < examScores.Count; i++)
+                                    {
+                                        var score = examScores[i];
+                                        <td>
+                                            @if (score != null && score.HasValue)
+                                            {
+                                                <div class="grade-value">
+                                                    <strong>@score.Value</strong>
+                                                    <i class="fas fa-search-plus icon-search" title="Xem chi tiết"></i>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="score-empty">-</span>
+                                            }
+                                        </td>
+                                    }
+                                }
+                                <td class="average-score">
+                                    @{
+                                        var examAvg = student.ExamAverage as decimal?;
+                                    }
+                                    @if (examAvg != null && examAvg.HasValue)
+                                    {
+                                        <strong>@examAvg.Value</strong>
+                                    }
+                                    else
+                                    {
+                                        <span class="score-empty">-</span>
+                                    }
+                                </td>
+                            }
+                            
+                            <td>
+                                @{
+                                    var finalScore = student.FinalScore as decimal?;
+                                }
+                                <input type="number" 
+                                       class="score-input" 
+                                       id="finalScore_@student.StudentId" 
+                                       value="@(finalScore?.ToString() ?? "")" 
+                                       min="0" 
+                                       max="10" 
+                                       step="0.01"
+                                       placeholder="0-10" />
+                            </td>
+                            <td>
+                                @{
+                                    var gradeLetter = student.GradeLetter?.ToString() ?? "";
+                                    var gradeClass = !string.IsNullOrEmpty(gradeLetter) ? gradeLetter.Substring(0, 1) : "F";
+                                }
+                                <span class="grade-letter grade-@gradeClass" id="gradeLetter_@student.StudentId">
+                                    @(string.IsNullOrEmpty(gradeLetter) ? "-" : gradeLetter)
+                                </span>
+                            </td>
+                            <td>
+                                <button type="button" class="btn-save" onclick="updateGrade(@student.StudentId)">
+                                    <i class="fas fa-save"></i> Lưu
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="20" class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Chưa có sinh viên nào trong lớp học này.</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function updateGrade(studentId) {
+        const finalScore = document.getElementById(`finalScore_${studentId}`).value;
+        
+        if (finalScore && (finalScore < 0 || finalScore > 10)) {
+            alert('Điểm phải trong khoảng 0-10!');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('classId', '@classInfo.ClassId');
+        formData.append('studentId', studentId);
+        formData.append('finalScore', finalScore);
+
+        fetch('@Url.Action("UpdateFinalGrade", "Teacher")', {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const gradeLetterSpan = document.getElementById(`gradeLetter_${studentId}`);
+                gradeLetterSpan.textContent = data.gradeLetter || '-';
+                gradeLetterSpan.className = `grade-letter grade-${data.gradeLetter ? data.gradeLetter.substring(0, 1) : 'F'}`;
+                
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi cập nhật điểm!');
+        });
+    }
+
+    function calculateAllGrades() {
+        const assignmentWeight = document.getElementById('assignmentWeight').value;
+        const examWeight = document.getElementById('examWeight').value;
+        
+        if (parseFloat(assignmentWeight) + parseFloat(examWeight) !== 100) {
+            alert('Tổng trọng số phải bằng 100%!');
+            return;
+        }
+
+        if (!confirm('Bạn có chắc muốn tính điểm tự động cho toàn bộ lớp? Điểm hiện tại sẽ bị ghi đè.')) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('classId', '@classInfo.ClassId');
+        formData.append('assignmentWeight', assignmentWeight);
+        formData.append('examWeight', examWeight);
+
+        fetch('@Url.Action("CalculateAllGrades", "Teacher")', {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi tính điểm!');
+        });
+    }
+
+    function exportToExcel() {
+        window.location.href = '@Url.Action("ExportGrades", "Teacher", new { id = classInfo.ClassId })';
+    }
+
+    // Tự động tính xếp loại khi nhập điểm
+    document.querySelectorAll('.score-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const score = parseFloat(this.value);
+            const studentId = this.id.split('_')[1];
+            
+            if (isNaN(score) || score < 0 || score > 10) {
+                return;
+            }
+
+            let gradeLetter = '';
+            if (score >= 9) gradeLetter = 'A+';
+            else if (score >= 8.5) gradeLetter = 'A';
+            else if (score >= 8) gradeLetter = 'B+';
+            else if (score >= 7) gradeLetter = 'B';
+            else if (score >= 6.5) gradeLetter = 'C+';
+            else if (score >= 5.5) gradeLetter = 'C';
+            else if (score >= 5) gradeLetter = 'D+';
+            else if (score >= 4) gradeLetter = 'D';
+            else gradeLetter = 'F';
+
+            const gradeLetterSpan = document.getElementById(`gradeLetter_${studentId}`);
+            gradeLetterSpan.textContent = gradeLetter;
+            gradeLetterSpan.className = `grade-letter grade-${gradeLetter.substring(0, 1)}`;
+        });
+    });
+</script>
+@Html.AntiForgeryToken()
+}

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "wVoo5aqY4/o=",
+  "dgSpecHash": "G1Jwbw8JHfA=",
   "success": true,
   "projectFilePath": "C:\\Study\\C#_ASP.Net_MVC\\LMS3\\LMS\\LMS.csproj",
   "expectedPackageFiles": [
@@ -142,6 +142,7 @@
     "C:\\Users\\ngoct\\.nuget\\packages\\nuget.projectmodel\\6.3.1\\nuget.projectmodel.6.3.1.nupkg.sha512",
     "C:\\Users\\ngoct\\.nuget\\packages\\nuget.protocol\\6.3.1\\nuget.protocol.6.3.1.nupkg.sha512",
     "C:\\Users\\ngoct\\.nuget\\packages\\nuget.versioning\\6.3.1\\nuget.versioning.6.3.1.nupkg.sha512",
+    "C:\\Users\\ngoct\\.nuget\\packages\\qrcoder\\1.6.0\\qrcoder.1.6.0.nupkg.sha512",
     "C:\\Users\\ngoct\\.nuget\\packages\\system.codedom\\5.0.0\\system.codedom.5.0.0.nupkg.sha512",
     "C:\\Users\\ngoct\\.nuget\\packages\\system.collections.immutable\\7.0.0\\system.collections.immutable.7.0.0.nupkg.sha512",
     "C:\\Users\\ngoct\\.nuget\\packages\\system.composition\\7.0.0\\system.composition.7.0.0.nupkg.sha512",

@@ -1,0 +1,237 @@
+@model LMS.Models.QuestionBank
+@{
+    ViewData["Title"] = "Tạo Câu Hỏi Mới";
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-1"><i class="fas fa-plus-circle text-primary me-2"></i>Tạo Câu Hỏi Mới</h4>
+                            <p class="text-muted mb-0">Thêm câu hỏi vào ngân hàng để sử dụng cho các đề thi</p>
+                        </div>
+                        <div>
+                            <a asp-action="QuestionBank" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Quay lại
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form asp-action="CreateQuestion" method="post">
+                        <div class="row">
+                            <!-- Môn học -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="CourseId" class="form-label">
+                                    Môn học <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="CourseId" class="form-select" asp-items="ViewBag.Courses" required>
+                                    <option value="">-- Chọn môn học --</option>
+                                </select>
+                                <span asp-validation-for="CourseId" class="text-danger"></span>
+                            </div>
+
+                            <!-- Loại câu hỏi -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Type" class="form-label">
+                                    Loại câu hỏi <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Type" class="form-select" id="questionType" required onchange="toggleQuestionOptions()">
+                                    <option value="">-- Chọn loại --</option>
+                                    <option value="TracNghiem">Trắc nghiệm</option>
+                                    <option value="TuLuan">Tự luận</option>
+                                </select>
+                                <span asp-validation-for="Type" class="text-danger"></span>
+                            </div>
+
+                            <!-- Nội dung câu hỏi -->
+                            <div class="col-12 mb-3">
+                                <label asp-for="Content" class="form-label">
+                                    Nội dung câu hỏi <span class="text-danger">*</span>
+                                </label>
+                                <textarea asp-for="Content" class="form-control" rows="4" required 
+                                          placeholder="Nhập nội dung câu hỏi..."></textarea>
+                                <span asp-validation-for="Content" class="text-danger"></span>
+                            </div>
+
+                            <!-- Các đáp án (cho trắc nghiệm) -->
+                            <div class="col-12 mb-3" id="optionsSection" style="display: none;">
+                                <label class="form-label">
+                                    Các đáp án <span class="text-danger">*</span>
+                                </label>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Nhập mỗi đáp án trên một dòng. Format: <code>A|Nội dung đáp án A</code>
+                                </div>
+                                <textarea asp-for="Options" class="form-control" rows="6" id="optionsInput"
+                                          placeholder="A|Đáp án A&#10;B|Đáp án B&#10;C|Đáp án C&#10;D|Đáp án D"></textarea>
+                                <small class="text-muted">Mỗi đáp án một dòng, định dạng: Ký tự|Nội dung</small>
+                            </div>
+
+                            <!-- Đáp án đúng -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Answer" class="form-label">
+                                    Đáp án đúng <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Answer" class="form-control" id="answerInput" required 
+                                       placeholder="VD: A hoặc A,C (nhiều đáp án) hoặc nội dung tự luận">
+                                <small class="text-muted" id="answerHint">
+                                    Với trắc nghiệm: nhập ký tự đáp án (A, B, C...). Nhiều đáp án cách nhau bởi dấu phẩy (A,C)
+                                </small>
+                                <span asp-validation-for="Answer" class="text-danger"></span>
+                            </div>
+
+                            <!-- Điểm tối đa -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="MaxScore" class="form-label">
+                                    Điểm tối đa <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="MaxScore" type="number" step="0.5" min="0" class="form-control" required value="1">
+                                <span asp-validation-for="MaxScore" class="text-danger"></span>
+                            </div>
+
+                            <!-- Độ khó -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DifficultyId" class="form-label">
+                                    Độ khó
+                                </label>
+                                <select asp-for="DifficultyId" class="form-select" asp-items="ViewBag.Difficulties">
+                                    <option value="">-- Chọn độ khó --</option>
+                                </select>
+                                <span asp-validation-for="DifficultyId" class="text-danger"></span>
+                            </div>
+
+                            <!-- Giải thích -->
+                            <div class="col-12 mb-3">
+                                <label asp-for="Explanation" class="form-label">
+                                    Giải thích đáp án
+                                </label>
+                                <textarea asp-for="Explanation" class="form-control" rows="3" 
+                                          placeholder="Giải thích tại sao đáp án này đúng (tùy chọn)"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <hr />
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-save me-2"></i>Lưu Câu Hỏi
+                                </button>
+                                <a asp-action="QuestionBank" class="btn btn-secondary btn-lg ms-2">
+                                    <i class="fas fa-times me-2"></i>Hủy
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hướng dẫn -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Hướng Dẫn Tạo Câu Hỏi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-check-circle text-success me-2"></i>Trắc nghiệm (1 đáp án)</h6>
+                            <ul class="small">
+                                <li>Chọn loại: <strong>Trắc nghiệm (1 đáp án đúng)</strong></li>
+                                <li>Nhập các đáp án theo format: <code>A|Nội dung A</code></li>
+                                <li>Đáp án đúng: nhập ký tự đáp án (VD: <code>A</code>)</li>
+                            </ul>
+
+                            <h6 class="mt-3"><i class="fas fa-check-double text-primary me-2"></i>Nhiều đáp án đúng</h6>
+                            <ul class="small">
+                                <li>Chọn loại: <strong>Nhiều đáp án đúng</strong></li>
+                                <li>Nhập các đáp án tương tự trắc nghiệm</li>
+                                <li>Đáp án đúng: các ký tự cách nhau bởi dấu phẩy (VD: <code>A,C,D</code>)</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-toggle-on text-warning me-2"></i>Đúng/Sai</h6>
+                            <ul class="small">
+                                <li>Chọn loại: <strong>Đúng/Sai</strong></li>
+                                <li>Đáp án: <code>True</code> hoặc <code>False</code></li>
+                                <li>Không cần nhập các đáp án</li>
+                            </ul>
+
+                            <h6 class="mt-3"><i class="fas fa-pen text-danger me-2"></i>Tự luận</h6>
+                            <ul class="small">
+                                <li>Chọn loại: <strong>Tự luận</strong></li>
+                                <li>Đáp án: nhập gợi ý đáp án hoặc đáp án mẫu</li>
+                                <li>Giáo viên sẽ chấm điểm thủ công</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Mẹo:</strong> Sau khi tạo câu hỏi, bạn có thể sử dụng chúng để tạo đề thi từ trang quản lý lớp học.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        function toggleQuestionOptions() {
+            const questionType = document.getElementById('questionType').value;
+            const optionsSection = document.getElementById('optionsSection');
+            const optionsInput = document.getElementById('optionsInput');
+            const answerInput = document.getElementById('answerInput');
+            const answerHint = document.getElementById('answerHint');
+
+            if (questionType === 'TracNghiem') {
+                optionsSection.style.display = 'block';
+                optionsInput.required = true;
+                answerHint.textContent = 'Nhập ký tự đáp án đúng (VD: A) hoặc nhiều đáp án cách nhau bởi dấu phẩy (VD: A,C)';
+                answerInput.placeholder = 'VD: A hoặc A,C (nhiều đáp án)';
+            } else if (questionType === 'TuLuan') {
+                optionsSection.style.display = 'none';
+                optionsInput.required = false;
+                optionsInput.value = '';
+                answerHint.textContent = 'Nhập gợi ý đáp án hoặc đáp án mẫu';
+                answerInput.placeholder = 'Gợi ý đáp án hoặc nội dung tham khảo';
+            } else {
+                optionsSection.style.display = 'none';
+                optionsInput.required = false;
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleQuestionOptions();
+        });
+    </script>
+}

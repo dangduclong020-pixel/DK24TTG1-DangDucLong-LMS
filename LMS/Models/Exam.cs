@@ -9,6 +9,8 @@ public partial class Exam
 
     public int ClassId { get; set; }
 
+    public int? LessonId { get; set; }
+
     public string Title { get; set; } = null!;
 
     public string? Description { get; set; }
@@ -29,6 +31,14 @@ public partial class Exam
 
     public bool? AllowMultipleAttempts { get; set; }
 
+    public int? MaxAttempts { get; set; }
+
+    public bool? ShowSubmission { get; set; }
+
+    public bool? ShowAnswers { get; set; }
+
+    public bool? ShowScore { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? DeletedAt { get; set; }
@@ -36,6 +46,8 @@ public partial class Exam
     public int? CreatedBy { get; set; }
 
     public virtual Class Class { get; set; } = null!;
+
+    public virtual Lesson? Lesson { get; set; }
 
     public virtual ICollection<ExamQuestion> ExamQuestions { get; set; } = new List<ExamQuestion>();
 

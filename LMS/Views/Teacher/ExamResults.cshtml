@@ -1,0 +1,421 @@
+@model LMS.Models.Exam
+
+@{
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    ViewBag.Title = $"Danh sách bài làm - {Model.Title}";
+    var totalStudents = Model.Class?.ClassStudents?.Count ?? 0;
+    var submittedCount = Model.ExamResults?.Count ?? 0;
+}
+
+<style>
+    /* 1. Cấu hình chung */
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 20px 40px;
+        background-color: #fff;
+        color: #333;
+        line-height: 1.6;
+    }
+
+    /* 2. Bộ lọc chữ cái (Alphabet Filter) */
+    .filter-section {
+        margin-bottom: 25px;
+    }
+    
+    .filter-row {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 8px;
+    }
+
+    .filter-label {
+        width: 80px;
+        font-weight: 600;
+        color: #555;
+        padding-top: 5px;
+    }
+
+    .alphabet-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .alphabet-item {
+        padding: 2px 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #118ab2;
+        font-size: 13px;
+        transition: 0.2s;
+    }
+
+    .alphabet-item:hover {
+        background-color: #f0faff;
+    }
+
+    .alphabet-item.active {
+        background-color: #118ab2;
+        color: white;
+        border-color: #118ab2;
+    }
+
+    /* 3. Bảng dữ liệu (Data Table) */
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid #eee;
+        border-radius: 4px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1100px;
+    }
+
+    thead th {
+        background-color: #118ab2;
+        color: white;
+        padding: 12px 10px;
+        text-align: left;
+        font-weight: 500;
+        font-size: 13px;
+        border-right: 1px solid #0e7496;
+        white-space: nowrap;
+    }
+
+    tbody td {
+        padding: 15px 10px;
+        border-bottom: 1px solid #eee;
+        vertical-align: middle;
+        font-size: 14px;
+    }
+
+    .status-tag {
+        background-color: #f8f9fa;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #666;
+        border: 1px solid #eee;
+    }
+
+    .btn-grade {
+        background-color: #118ab2;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+    }
+
+    .btn-grade:hover {
+        background-color: #0e7496;
+    }
+
+    .edit-dropdown {
+        color: #666;
+        text-decoration: none;
+        font-size: 13px;
+    }
+
+    /* 4. Phân trang phía dưới (Bottom Pagination) */
+    .pagination-wrapper {
+        margin-top: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        padding-bottom: 40px;
+    }
+
+    .pagination-info {
+        font-size: 13px;
+        color: #777;
+    }
+</style>
+
+<a href="@Url.Action("GradingOverviewExam", "Teacher", new { id = Model.ExamId })" class="btn btn-outline-secondary mb-3">
+    <i class="fas fa-arrow-left me-2"></i>Quay lại tổng quan
+</a>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-2">
+            <i class="fas fa-clipboard-list me-2"></i>@Model.Title
+        </h2>
+        <p class="text-muted mb-0">
+            <i class="fas fa-book me-2"></i>@Model.Class?.Course?.Name - @Model.Class?.Name
+        </p>
+    </div>
+    <div>
+        <a href="@Url.Action("ExportExamResultsToExcel", "Teacher", new { examId = Model.ExamId })" 
+           class="btn btn-success">
+            <i class="fas fa-file-excel me-2"></i>Xuất Excel
+        </a>
+    </div>
+</div>
+
+<div class="filter-section">
+    <div style="margin-bottom: 15px;">
+        Cách chấm: 
+        <select style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+            <option>Chọn...</option>
+            <option>Chấm điểm trực tiếp</option>
+        </select>
+    </div>
+
+    <div class="filter-row">
+        <span class="filter-label">Tên</span>
+        <div class="alphabet-list">
+            <a href="#" class="alphabet-item active">Tất cả</a>
+            <script>
+                const letters = "A Ă Â B C D Đ E Ê F G H I J K L M N O Ô Ơ P Q R S T U Ư V W X Y Z".split(" ");
+                letters.forEach(l => document.write(`<a href="#" class="alphabet-item">${l}</a>`));
+            </script>
+        </div>
+    </div>
+
+    <div class="filter-row">
+        <span class="filter-label">Họ & đệm</span>
+        <div class="alphabet-list">
+            <a href="#" class="alphabet-item active">Tất cả</a>
+            <script>
+                letters.forEach(l => document.write(`<a href="#" class="alphabet-item">${l}</a>`));
+            </script>
+        </div>
+    </div>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Chọn</th>
+                <th>Họ & đệm / Tên</th>
+                <th>Địa chỉ Email</th>
+                <th>MSSV</th>
+                <th>Trạng thái</th>
+                <th>Điểm</th>
+                <th>Chỉnh sửa</th>
+                <th>Thời gian làm</th>
+                <th>Điểm cuối cùng</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Class?.ClassStudents != null && Model.Class.ClassStudents.Any())
+            {
+                foreach (var classStudent in Model.Class.ClassStudents.OrderBy(cs => cs.Student.FullName))
+                {
+                    var student = classStudent.Student;
+                    var result = Model.ExamResults?.FirstOrDefault(r => r.StudentId == student.UserId);
+                    
+                    <tr data-status="@(result != null ? "submitted" : "not-submitted")" 
+                        data-graded="@(result?.Score != null ? "graded" : "not-graded")"
+                        data-name="@student.FullName?.ToLower()"
+                        data-mssv="@student.MssvMgv?.ToLower()">
+                        <td><input type="checkbox" class="student-checkbox" value="@student.UserId"></td>
+                        <td><strong>@student.FullName</strong></td>
+                        <td>@student.Email</td>
+                        <td>@student.MssvMgv</td>
+                        <td>
+                            @if (result != null)
+                            {
+                                if (result.Score != null)
+                                {
+                                    <span class="status-tag" style="background-color: #d4edda; color: #155724; border-color: #c3e6cb;">Đã nộp</span>
+                                }
+                                else
+                                {
+                                    <span class="status-tag" style="background-color: #fff3cd; color: #856404; border-color: #ffeeba;">Đã nộp</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="status-tag">Không có bài nộp</span>
+                            }
+                        </td>
+                        <td>
+                            @if (result != null)
+                            {
+                                <button class="btn-grade" onclick="quickGrade(@result.ResultId, '@student.FullName', @(result.Score ?? 0))">
+                                    Điểm
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn-grade" disabled style="opacity: 0.5; cursor: not-allowed;">
+                                    Điểm
+                                </button>
+                            }
+                        </td>
+                        <td>
+                            @if (result != null)
+                            {
+                                <a href="@Url.Action("ViewExamSubmission", "Teacher", new { resultId = result.ResultId })" 
+                                   target="_blank" class="edit-dropdown">Xem bài</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </td>
+                        <td>
+                            @if (result != null)
+                            {
+                                @result.CompletedAt?.ToString("dd/MM/yyyy")
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </td>
+                        <td>
+                            @if (result?.Score != null)
+                            {
+                                <strong style="color: #118ab2;">@result.Score.Value.ToString("0.00")</strong>
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Chưa có sinh viên nào trong lớp</p>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="pagination-wrapper">
+    <div class="pagination-info">
+        Hiển thị 1 đến @totalStudents trong tổng số @totalStudents mục
+    </div>
+</div>
+
+<!-- Modal chấm điểm nhanh -->
+<div class="modal fade" id="quickGradeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chấm điểm nhanh</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="gradeResultId">
+                <div class="mb-3">
+                    <label class="form-label">Sinh viên</label>
+                    <input type="text" class="form-control" id="gradeStudentName" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Điểm</label>
+                    <input type="number" class="form-control" id="gradeScore" min="0" max="10" step="0.01">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nhận xét</label>
+                    <textarea class="form-control" id="gradeFeedback" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="saveQuickGrade()">Lưu điểm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Quick grade
+    function quickGrade(resultId, studentName, currentScore) {
+        document.getElementById('gradeResultId').value = resultId;
+        document.getElementById('gradeStudentName').value = studentName;
+        document.getElementById('gradeScore').value = currentScore || '';
+        document.getElementById('gradeFeedback').value = '';
+        
+        const modal = new bootstrap.Modal(document.getElementById('quickGradeModal'));
+        modal.show();
+    }
+    
+    function saveQuickGrade() {
+        const resultId = document.getElementById('gradeResultId').value;
+        const score = document.getElementById('gradeScore').value;
+        const feedback = document.getElementById('gradeFeedback').value;
+        
+        if (!score) {
+            alert('Vui lòng nhập điểm!');
+            return;
+        }
+        
+        fetch('@Url.Action("GradeExamResult", "Teacher")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                resultId: parseInt(resultId),
+                score: parseFloat(score),
+                feedback: feedback
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Chấm điểm thành công!');
+                location.reload();
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // Xử lý chọn alphabet
+    const alphabetItems = document.querySelectorAll('.alphabet-item');
+    alphabetItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            item.parentElement.querySelector('.active').classList.remove('active');
+            item.classList.add('active');
+            
+            // Filter logic
+            const letter = item.textContent.trim();
+            const rows = document.querySelectorAll('tbody tr[data-name]');
+            
+            if (letter === 'Tất cả') {
+                rows.forEach(row => row.style.display = '');
+            } else {
+                rows.forEach(row => {
+                    const name = row.querySelector('td:nth-child(2) strong').textContent;
+                    const filterType = item.closest('.filter-row').querySelector('.filter-label').textContent.trim();
+                    
+                    if (filterType === 'Tên') {
+                        const lastName = name.split(' ').pop();
+                        row.style.display = lastName.toUpperCase().startsWith(letter) ? '' : 'none';
+                    } else {
+                        const firstName = name.substring(0, name.lastIndexOf(' '));
+                        row.style.display = firstName.toUpperCase().startsWith(letter) ? '' : 'none';
+                    }
+                });
+            }
+        });
+    });
+</script>
+}

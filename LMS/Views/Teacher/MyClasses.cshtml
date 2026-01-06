@@ -1,5 +1,5 @@
 @{
-    Layout = "~/Views/Shared/_TeacherLayout.cshtml";
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
     ViewBag.Title = "Lớp học của tôi";
 }
 
@@ -137,11 +137,11 @@
                                class="btn btn-outline-info btn-sm" title="Quản lý nội dung giảng dạy">
                                 <i class="fas fa-book-open me-1"></i>Bài học
                             </a>
-                            <a href="@Url.Action("ClassAssignments", "Teacher", new { classId = classItem.ClassId })" 
+                            <a href="@Url.Action("Assignments", "Teacher")" 
                                class="btn btn-outline-warning btn-sm" title="Quản lý bài tập">
                                 <i class="fas fa-tasks me-1"></i>Bài tập
                             </a>
-                            <a href="@Url.Action("ClassExams", "Teacher", new { classId = classItem.ClassId })" 
+                            <a href="@Url.Action("Exams", "Teacher")" 
                                class="btn btn-outline-danger btn-sm" title="Quản lý đề thi">
                                 <i class="fas fa-file-alt me-1"></i>Đề thi
                             </a>

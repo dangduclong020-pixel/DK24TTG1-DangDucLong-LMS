@@ -1,0 +1,341 @@
+@model LMS.Models.Exam
+@{
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    ViewBag.Title = Model.Title;
+    var userId = Context.Session.GetInt32("UserId") ?? 0;
+    var attemptCount = Model.ExamResults?.Count(er => er.StudentId == userId) ?? 0;
+    
+    // Xác định số lần được phép làm
+    int maxAttempts;
+    if (Model.MaxAttempts.HasValue && Model.MaxAttempts.Value > 0)
+    {
+        maxAttempts = Model.MaxAttempts.Value;
+    }
+    else if (Model.AllowMultipleAttempts == true)
+    {
+        maxAttempts = -1; // Không giới hạn
+    }
+    else
+    {
+        maxAttempts = 1; // Mặc định chỉ 1 lần
+    }
+    
+    var remainingAttempts = maxAttempts == -1 ? -1 : (maxAttempts - attemptCount);
+    
+    // Kiểm tra xem bài thi đã kết thúc chưa
+    var isExamEnded = Model.EndTime < DateTime.Now;
+}
+
+@section Styles {
+<style>
+    /* Cấu hình chung cho toàn bộ trang */
+    body {
+        background-color: #f5f5f5;
+    }
+
+    /* Container chính */
+    .exam-intro-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #ffffff;
+    }
+
+    /* Tiêu đề chính nằm ngoài box */
+    .exam-title {
+        font-weight: 400;
+        font-size: 28px;
+        margin-bottom: 30px;
+        color: #333;
+        padding: 20px 0;
+    }
+
+    /* Box thông tin chính */
+    .exam-info-box {
+        text-align: center;
+        padding: 40px;
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 30px;
+    }
+
+    /* Các dòng thông tin */
+    .info-line {
+        font-size: 16px;
+        margin: 12px 0;
+        color: #333;
+    }
+
+    /* Section title */
+    .section-title {
+        font-size: 22px;
+        font-weight: 400;
+        margin: 30px 0 20px 0;
+        color: #333;
+    }
+
+    /* Bảng lịch sử */
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 30px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .history-table thead tr {
+        background-color: #ffffff;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .history-table th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 16px;
+        color: #333;
+    }
+
+    .history-table th:last-child {
+        text-align: right;
+    }
+
+    .history-table tbody tr {
+        border-bottom: 1px solid #e0e0e0;
+        background-color: #fafafa;
+    }
+
+    .history-table td {
+        padding: 20px 15px;
+    }
+
+    .history-table td:last-child {
+        text-align: right;
+    }
+
+    .status-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .status-time {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .review-not-allowed {
+        color: #999;
+        font-size: 14px;
+    }
+
+    /* Thông báo */
+    .no-attempts-message {
+        text-align: center;
+        color: #666;
+        margin: 30px 0;
+        font-size: 16px;
+    }
+
+    /* Nút */
+    .action-button {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 24px;
+        font-size: 16px;
+        cursor: pointer;
+        background-color: #6c757d;
+        border: none;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .action-button:hover {
+        background-color: #5a6268;
+        color: #fff;
+    }
+
+    .start-btn {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 24px;
+        font-size: 16px;
+        cursor: pointer;
+        background-color: #b0bac3;
+        border: 2px solid #5a6b7d;
+        color: #333;
+        transition: all 0.3s ease;
+        border-radius: 4px;
+    }
+
+    .start-btn:hover {
+        background-color: #9aa7b5;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #667eea;
+        text-decoration: none;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+</style>
+}
+
+<div class="container mt-4">
+    <a href="@Url.Action("CourseDetail", "Home", new { id = Model.ClassId })" class="back-link">
+        <i class="fas fa-arrow-left"></i> Quay lại khóa học
+    </a>
+</div>
+
+<div class="exam-intro-container">
+    <h1 class="exam-title">@Model.Title</h1>
+
+    <div class="exam-info-box">
+        <div class="info-line">
+            <strong>
+                @if (maxAttempts == -1)
+                {
+                    <text>Không giới hạn số lần làm</text>
+                }
+                else if (maxAttempts == 1)
+                {
+                    <text>Chỉ được làm bài 1 lần</text>
+                }
+                else
+                {
+                    <text>Chỉ được làm bài @maxAttempts lần</text>
+                }
+            </strong>
+        </div>
+
+        <div class="info-line">
+            <strong>Bài trắc nghiệm kết thúc:</strong> @Model.EndTime.ToString("H:mm, dddd, d 'tháng' M 'năm' yyyy")
+        </div>
+
+        <div class="info-line">
+            <strong>Thời gian làm bài:</strong> 
+            @{
+                var hours = Model.Duration / 60;
+                var minutes = Model.Duration % 60;
+                if (hours > 0)
+                {
+                    @hours <text> giờ </text>
+                }
+                if (minutes > 0)
+                {
+                    @minutes <text> phút</text>
+                }
+            }
+        </div>
+    </div>
+
+    @if (attemptCount > 0)
+    {
+        var highestResult = Model.ExamResults.OrderByDescending(r => r.Score).FirstOrDefault();
+        
+        <h2 class="section-title">Lần làm bài cao nhất</h2>
+        
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Trạng thái</th>
+                    <th>Điểm</th>
+                    <th>Xem lại</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (highestResult != null)
+                {
+                    <tr>
+                        <td>
+                            <div class="status-title">Đã xong</div>
+                            <div class="status-time">
+                                Đã nộp @(highestResult.CompletedAt?.ToString("H:mm, dddd, d 'tháng' M 'năm' yyyy") ?? "N/A")
+                            </div>
+                        </td>
+                        <td>
+                            <div class="status-title">@highestResult.Score điểm</div>
+                        </td>
+                        <td>
+                            @if (Model.AllowMultipleAttempts == true || maxAttempts > 1 || maxAttempts == -1)
+                            {
+                                <a href="@Url.Action("ExamResult", "Home", new { id = highestResult.ResultId })" 
+                                   style="color: #667eea; text-decoration: none;">
+                                    Xem lại
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="review-not-allowed">Không được phép</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <div style="text-align: center;">
+        @if (isExamEnded)
+        {
+            <div class="no-attempts-message">
+                Bài kiểm tra đã kết thúc
+            </div>
+            <a href="@Url.Action("CourseDetail", "Home", new { id = Model.ClassId })" class="action-button">
+                <i class="fas fa-arrow-left"></i> Trở về khóa học
+            </a>
+        }
+        else if (remainingAttempts > 0 || remainingAttempts == -1)
+        {
+            <form method="get" action="@Url.Action("StartExam", "Home", new { id = Model.ExamId })" style="display: inline;">
+                <button type="submit" class="start-btn">
+                    <i class="fas fa-play-circle"></i> Bắt đầu làm bài
+                </button>
+            </form>
+        }
+        else
+        {
+            <div class="no-attempts-message">
+                Không cho phép nhiều lần thử
+            </div>
+            <a href="@Url.Action("CourseDetail", "Home", new { id = Model.ClassId })" class="action-button">
+                <i class="fas fa-arrow-left"></i> Trở về khóa học
+            </a>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Hiển thị thông báo nếu có
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <text>
+        Swal.fire({
+            icon: 'success',
+            title: 'Thành công',
+            text: '@TempData["SuccessMessage"]',
+            confirmButtonColor: '#667eea'
+        });
+        </text>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <text>
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: '@TempData["ErrorMessage"]',
+            confirmButtonColor: '#667eea'
+        });
+        </text>
+    }
+</script>
+}

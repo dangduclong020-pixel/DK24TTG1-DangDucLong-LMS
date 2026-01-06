@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - E-Learning</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background-color: white;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1050;
+        }
+        
+        .navbar-brand {
+            color: #2c5aa0 !important;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .navbar-nav .nav-link {
+            color: #495057 !important;
+            margin: 0 10px;
+        }
+        
+        .navbar-nav .nav-link:hover {
+            color: #007bff !important;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar-menu {
+            position: fixed;
+            left: -280px;
+            top: 60px;
+            width: 280px;
+            height: calc(100vh - 60px);
+            background: #0051a8;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            transition: left 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        .sidebar-menu.active {
+            left: 0;
+        }
+        
+        /* Push content when sidebar is active */
+        body.sidebar-open {
+            overflow-x: hidden;
+        }
+        
+        body.sidebar-open .main-content {
+            margin-left: 280px;
+            width: calc(100% - 280px);
+            transition: all 0.3s ease;
+        }
+        
+        .main-content {
+            margin-left: 0;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 60px;
+            padding: 20px;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-header h5 {
+            color: white;
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .btn-close-sidebar {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-close-sidebar:hover {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        
+        .sidebar-content {
+            padding: 10px 0;
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            text-decoration: none;
+            border-left-color: white;
+        }
+        
+        .sidebar-item.active {
+            background: rgba(255,255,255,0.15);
+            border-left-color: #ffc107;
+        }
+        
+        .sidebar-item i {
+            width: 24px;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+        
+        .sidebar-item span {
+            font-size: 15px;
+        }
+        
+        /* Header Search Styles */
+        .header-search {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-icon-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #666;
+            cursor: pointer;
+            padding: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input-container {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            overflow: hidden;
+            transition: width 0.3s ease;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+        }
+        
+        .search-input-container.active {
+            width: 250px;
+        }
+        
+        .search-input-container input {
+            width: 100%;
+            padding: 8px 15px;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+        }
+        
+        .user-menu {
+            position: relative;
+            display: inline-block;
+            margin-left: 20px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 20px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .user-info:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .user-name {
+            color: #007bff;
+            font-weight: 500;
+            margin-right: 5px;
+        }
+        
+        .dropdown-arrow {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 200px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        .user-menu:hover .user-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-header {
+            background: #007bff;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .dropdown-header i {
+            margin-right: 8px;
+        }
+        
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            text-decoration: none;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s ease;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .dropdown-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .dropdown-item i {
+            margin-right: 10px;
+            width: 16px;
+            text-align: center;
+            color: #666;
+        }
+        
+        .login-link {
+            color: #007bff;
+            text-decoration: none;
+            margin-left: 5px;
+        }
+        
+        .login-link:hover {
+            text-decoration: underline;
+            color: #0056b3;
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    @await Html.PartialAsync("_Sidebar")
+    @await Html.PartialAsync("_Header")
+    
+    <div class="main-content">
+        @RenderBody()
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar functionality
+            const toggleSidebar = document.getElementById('toggleSidebar');
+            const closeSidebar = document.getElementById('closeSidebar');
+            const sidebarMenu = document.getElementById('sidebarMenu');
+            let sidebarOpen = false;
+            
+            function openSidebar() {
+                sidebarMenu.classList.add('active');
+                document.body.classList.add('sidebar-open');
+                sidebarOpen = true;
+            }
+            
+            function closeSidebarFunc() {
+                sidebarMenu.classList.remove('active');
+                document.body.classList.remove('sidebar-open');
+                sidebarOpen = false;
+            }
+            
+            function toggleSidebarFunc() {
+                if (sidebarOpen) {
+                    closeSidebarFunc();
+                } else {
+                    openSidebar();
+                }
+            }
+            
+            if (toggleSidebar) {
+                toggleSidebar.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    toggleSidebarFunc();
+                });
+            }
+            
+            if (closeSidebar) {
+                closeSidebar.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    closeSidebarFunc();
+                });
+            }
+            
+            // Close sidebar on ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && sidebarOpen) {
+                    closeSidebarFunc();
+                }
+            });
+            
+            // Search functionality
+            const searchBtn = document.getElementById('searchBtn');
+            const searchContainer = document.getElementById('searchContainer');
+            const searchInput = document.getElementById('searchInput');
+            let isSearchOpen = false;
+            
+            if (searchBtn) {
+                searchBtn.addEventListener('click', function() {
+                    if (!isSearchOpen) {
+                        searchContainer.classList.add('active');
+                        searchInput.focus();
+                        isSearchOpen = true;
+                    } else {
+                        const query = searchInput.value.trim();
+                        if (query) {
+                            window.location.href = '/Home/Search?q=' + encodeURIComponent(query);
+                        }
+                    }
+                });
+            }
+            
+            // Close search when clicking outside
+            document.addEventListener('click', function(e) {
+                if (searchBtn && searchContainer && !searchBtn.contains(e.target) && !searchContainer.contains(e.target)) {
+                    searchContainer.classList.remove('active');
+                    isSearchOpen = false;
+                }
+            });
+            
+            // Handle Enter key in search
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        const query = searchInput.value.trim();
+                        if (query) {
+                            window.location.href = '/Home/Search?q=' + encodeURIComponent(query);
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

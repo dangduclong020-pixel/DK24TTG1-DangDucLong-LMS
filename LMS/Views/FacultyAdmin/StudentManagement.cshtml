@@ -7,27 +7,16 @@
 
 <div class="container-fluid">
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0 text-primary">
-                        <i class="fas fa-user-graduate"></i> Quản lý sinh viên
-                    </h1>
-                    <p class="text-muted mb-0">Quản lý sinh viên trong khoa</p>
-                </div>
-                <div class="btn-group" role="group">
-                    <button class="btn btn-info" onclick="exportStudentsToExcel()">
-                        <i class="fas fa-download"></i> Xuất Excel
-                    </button>
-                    <button class="btn btn-warning" onclick="autoAssignDepartments()">
-                        <i class="fas fa-magic"></i> Tự động phân chuyên ngành
-                    </button>
-                    <button class="btn btn-success" onclick="importStudents()">
-                        <i class="fas fa-file-excel"></i> Import từ Excel
-                    </button>
-                    <a href="@Url.Action("Index", "FacultyAdmin")" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+    <div class="row mb-3">
+        <div class="col-12 text-end">
+            <button class="btn btn-info" onclick="exportStudentsToExcel()">
+                <i class="fas fa-download"></i> Xuất Excel
+            </button>
+            <button class="btn btn-success" onclick="importStudents()">
+                <i class="fas fa-file-excel"></i> Import từ Excel
+            </button>
+            <a href="@Url.Action("Index", "FacultyAdmin")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại Dashboard
                     </a>
                 </div>
             </div>
@@ -39,6 +28,11 @@
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            @if (TempData["ImportDetails"] != null)
+            {
+                <hr>
+                <small>@Html.Raw(TempData["ImportDetails"])</small>
+            }
             <button type="button" class="close" data-dismiss="alert">
                 <span>&times;</span>
             </button>
@@ -49,6 +43,11 @@
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            @if (TempData["ImportDetails"] != null)
+            {
+                <hr>
+                <small>@Html.Raw(TempData["ImportDetails"])</small>
+            }
             <button type="button" class="close" data-dismiss="alert">
                 <span>&times;</span>
             </button>
@@ -184,7 +183,13 @@
                                             <span class="badge badge-warning">
                                                 <i class="fas fa-exclamation-triangle"></i> Chưa phân chuyên ngành
                                             </span>
-                                            <br><small class="text-muted">Thuộc @(student.Faculty?.Name ?? "Chưa xác định")</small>
+                                            <br>
+                                            <small class="text-muted">@(student.Faculty?.Name ?? "Chưa xác định")</small>
+                                            <button type="button" class="btn btn-xs btn-warning mt-1" 
+                                                    onclick="assignDepartment(@student.UserId, '@student.FullName')"
+                                                    title="Phân chuyên ngành">
+                                                <i class="fas fa-graduation-cap"></i> Phân ngành
+                                            </button>
                                         </div>
                                     }
                                 </td>
@@ -226,17 +231,14 @@
                                 <td>
                                     <div class="btn-group" role="group">
                                         <button type="button" class="btn btn-sm btn-outline-info" 
-                                                onclick="updateStudentClass(@student.UserId, '@student.FullName', '@(student.StudentClass ?? "")')">
-                                            <i class="fas fa-edit"></i> Cập nhật lớp
+                                                onclick="updateStudentClass(@student.UserId, '@student.FullName', '@(student.StudentClass ?? "")')"
+                                                title="Cập nhật lớp hành chính">
+                                            <i class="fas fa-edit"></i>
                                         </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-warning" 
-                                                onclick="assignDepartment(@student.UserId, '@student.FullName')"
-                                                title="Phân chuyên ngành cho sinh viên">
-                                            <i class="fas fa-graduation-cap"></i> Phân chuyên ngành
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                onclick="viewProgress(@student.UserId)">
-                                            <i class="fas fa-chart-line"></i> Tiến độ
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="deleteStudent(@student.UserId, '@student.FullName', '@student.MssvMgv')"
+                                                title="Xóa tài khoản">
+                                            <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -358,6 +360,11 @@
         margin-right: 5px;
     }
 
+    .btn-xs {
+        padding: 2px 6px;
+        font-size: 0.75rem;
+    }
+
     .badge {
         font-size: 0.75em;
     }
@@ -367,7 +374,7 @@
     }
 
     .no-department {
-        min-height: 40px;
+        min-height: 60px;
     }
 
     .badge-success {
@@ -458,16 +465,19 @@
         form.submit();
     }
 
-    function viewProgress(studentId) {
-        alert('Chức năng xem tiến độ học tập đang được phát triển. Student ID: ' + studentId);
-    }
-
-    function autoAssignDepartments() {
-        if (confirm('Bạn có chắc chắn muốn tự động phân chuyên ngành cho tất cả sinh viên chưa được phân? Hành động này không thể hoàn tác.')) {
+    function deleteStudent(studentId, studentName, mssv) {
+        if (confirm(`Bạn có chắc chắn muốn xóa tài khoản sinh viên?\n\nMSSV: ${mssv}\nHọ tên: ${studentName}\n\nHành động này không thể hoàn tác!`)) {
             // Tạo form để submit
             var form = document.createElement('form');
             form.method = 'POST';
-            form.action = '@Url.Action("AutoAssignDepartments", "FacultyAdmin")';
+            form.action = '@Url.Action("DeleteStudent", "FacultyAdmin")';
+            
+            // Thêm student ID
+            var idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'studentId';
+            idInput.value = studentId;
+            form.appendChild(idInput);
             
             // Thêm token chống CSRF nếu cần
             var token = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -482,6 +492,10 @@
             document.body.appendChild(form);
             form.submit();
         }
+    }
+
+    function viewProgress(studentId) {
+        alert('Chức năng xem tiến độ học tập đang được phát triển. Student ID: ' + studentId);
     }
 
     function exportStudentsToExcel() {
@@ -510,7 +524,7 @@
     }
 
     function importStudents() {
-        alert('Chức năng import sinh viên từ Excel đang được phát triển');
+        window.location.href = '@Url.Action("ImportStudents", "FacultyAdmin")';
     }
 
     // Auto filter on input change

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace LMS.Controllers
 {
-    public class FacultyAdminController : Controller
+    public class FacultyAdminController : BaseController
     {
         private readonly LmsSystemContext _context;
 
@@ -281,6 +281,34 @@ namespace LMS.Controllers
             }
         }
 
+        // POST: Cập nhật tên khóa học qua AJAX
+        [HttpPost]
+        public async Task<IActionResult> UpdateCourseName([FromBody] UpdateCourseNameRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Name))
+                {
+                    return Json(new { success = false, message = "Tên khóa học không được để trống!" });
+                }
+
+                var course = await _context.Courses.FindAsync(request.CourseId);
+                if (course == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy khóa học!" });
+                }
+
+                course.Name = request.Name.Trim();
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Cập nhật tên khóa học thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
         // POST: Xóa khóa học
         [HttpPost]
         public async Task<IActionResult> DeleteCourse(int id)
@@ -305,6 +333,13 @@ namespace LMS.Controllers
                 TempData["ErrorMessage"] = $"Lỗi khi xóa khóa học: {ex.Message}";
                 return RedirectToAction("CourseManagement");
             }
+        }
+        
+        // Class để nhận dữ liệu từ AJAX request
+        public class UpdateCourseNameRequest
+        {
+            public int CourseId { get; set; }
+            public string Name { get; set; }
         }
 
         // 2.2. QUẢN LÝ GIẢNG VIÊN
@@ -510,81 +545,551 @@ namespace LMS.Controllers
             return RedirectToAction("StudentManagement");
         }
 
-        // POST: Auto assign departments for students without department
+        // POST: Delete student account
         [HttpPost]
-        public async Task<IActionResult> AutoAssignDepartments()
+        public async Task<IActionResult> DeleteStudent(int studentId)
         {
             try
             {
-                // Lấy FacultyId từ session
+                var student = await _context.Users.FindAsync(studentId);
+                if (student == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy sinh viên!";
+                    return RedirectToAction("StudentManagement");
+                }
+
+                // Kiểm tra quyền: chỉ được xóa sinh viên thuộc khoa mình
                 var facultyIdStr = HttpContext.Session.GetString("FacultyId");
                 if (!string.IsNullOrEmpty(facultyIdStr) && int.TryParse(facultyIdStr, out var currentFacultyId))
                 {
-                    // Lấy danh sách sinh viên chưa có chuyên ngành
-                    var studentsWithoutDept = await _context.Users
-                        .Where(u => u.FacultyId == currentFacultyId && u.RoleId == 4 && u.DepartmentId == null && u.DeletedAt == null)
-                        .ToListAsync();
-
-                    // Lấy danh sách chuyên ngành của khoa
-                    var departments = await _context.Departments
-                        .Where(d => d.FacultyId == currentFacultyId && d.IsActive == true && d.DeletedAt == null)
-                        .ToListAsync();
-
-                    if (departments.Count > 0 && studentsWithoutDept.Count > 0)
+                    if (student.FacultyId != currentFacultyId)
                     {
-                        // Phân đều sinh viên vào các chuyên ngành
-                        for (int i = 0; i < studentsWithoutDept.Count; i++)
-                        {
-                            var deptIndex = i % departments.Count;
-                            studentsWithoutDept[i].DepartmentId = departments[deptIndex].DepartmentId;
-                            studentsWithoutDept[i].UpdatedAt = DateTime.Now;
-                        }
-
-                        await _context.SaveChangesAsync();
-                        TempData["SuccessMessage"] = $"Đã tự động phân {studentsWithoutDept.Count} sinh viên vào {departments.Count} chuyên ngành!";
-                    }
-                    else
-                    {
-                        TempData["WarningMessage"] = "Không có sinh viên nào cần phân chuyên ngành hoặc không có chuyên ngành khả dụng!";
+                        TempData["ErrorMessage"] = "Bạn không có quyền xóa sinh viên của khoa khác!";
+                        return RedirectToAction("StudentManagement");
                     }
                 }
+                else
+                {
+                    TempData["ErrorMessage"] = "Không xác định được khoa của bạn!";
+                    return RedirectToAction("StudentManagement");
+                }
+
+                // Soft delete: sử dụng raw SQL để tránh conflict với trigger
+                // Chỉ set DeletedAt, không thay đổi Status để tránh conflict với CHECK constraint
+                // Thêm timestamp vào email và MSSV để tránh conflict với UNIQUE constraint khi import lại
+                var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+                await _context.Database.ExecuteSqlRawAsync(
+                    @"UPDATE Users 
+                      SET DeletedAt = GETDATE(), 
+                          UpdatedAt = GETDATE(),
+                          Email = Email + '_deleted_' + {1},
+                          MSSV_MGV = MSSV_MGV + '_deleted_' + {1}
+                      WHERE UserID = {0}",
+                    studentId, timestamp
+                );
+
+                TempData["SuccessMessage"] = $"Đã xóa tài khoản sinh viên {student.FullName} (MSSV: {student.MssvMgv})!";
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Lỗi khi tự động phân chuyên ngành: {ex.Message}";
+                TempData["ErrorMessage"] = $"Lỗi khi xóa tài khoản: {ex.Message}";
             }
 
             return RedirectToAction("StudentManagement");
         }
 
         // GET: Import sinh viên từ Excel
-        public IActionResult ImportStudents()
+        public async Task<IActionResult> ImportStudents()
         {
+            var currentFacultyId = GetCurrentFacultyId();
+            if (currentFacultyId == null)
+            {
+                TempData["ErrorMessage"] = "Không xác định được khoa của bạn!";
+                return RedirectToAction("Index", "Home");
+            }
+
+            // Lấy danh sách lớp hành chính để chọn
+            var administrativeClasses = await _context.AdministrativeClasses
+                .Where(ac => ac.FacultyId == currentFacultyId.Value && ac.DeletedAt == null && ac.IsActive == true)
+                .OrderBy(ac => ac.Name)
+                .ToListAsync();
+
+            // Lấy danh sách chuyên ngành của khoa để hiển thị
+            var departments = await _context.Departments
+                .Where(d => d.FacultyId == currentFacultyId.Value && d.IsActive == true && d.DeletedAt == null)
+                .OrderBy(d => d.Name)
+                .ToListAsync();
+
+            ViewBag.AdministrativeClasses = new SelectList(administrativeClasses, "AdministrativeClassId", "Name");
+            ViewBag.Departments = departments;
+
+            var faculty = await _context.Faculties.FindAsync(currentFacultyId.Value);
+            ViewBag.FacultyName = faculty?.Name ?? "";
+            ViewBag.UserName = HttpContext.Session.GetString("UserName");
+
             return View();
         }
 
         // POST: Import sinh viên từ Excel
         [HttpPost]
-        public async Task<IActionResult> ImportStudents(IFormFile excelFile)
+        public async Task<IActionResult> ImportStudents(IFormFile excelFile, int? administrativeClassId)
         {
+            var currentFacultyId = GetCurrentFacultyId();
+            if (currentFacultyId == null)
+            {
+                TempData["ErrorMessage"] = "Không xác định được khoa của bạn! Vui lòng đăng nhập lại.";
+                return RedirectToAction("Index", "Home");
+            }
+
             if (excelFile == null || excelFile.Length == 0)
             {
                 TempData["ErrorMessage"] = "Vui lòng chọn file Excel!";
-                return View();
+                return RedirectToAction("ImportStudents");
             }
 
             try
             {
-                // TODO: Implement Excel import logic
-                // Có thể sử dụng thư viện EPPlus hoặc ClosedXML để đọc Excel
+                // Set license context for EPPlus
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
                 
-                TempData["SuccessMessage"] = "Import sinh viên thành công! (Chức năng sẽ được hoàn thiện sau)";
+                // Log FacultyId để debug
+                var faculty = await _context.Faculties.FindAsync(currentFacultyId.Value);
+                Console.WriteLine($"[Import] Faculty Admin đang import cho khoa: {faculty?.Name} (ID: {currentFacultyId})");
+
+                var importResults = new List<string>();
+                var successCount = 0;
+                var errorCount = 0;
+
+                using (var stream = new MemoryStream())
+                {
+                    await excelFile.CopyToAsync(stream);
+                    using (var package = new ExcelPackage(stream))
+                    {
+                        var worksheet = package.Workbook.Worksheets[0];
+                        var rowCount = worksheet.Dimension?.Rows ?? 0;
+                        var colCount = worksheet.Dimension?.Columns ?? 0;
+
+                        if (rowCount < 2)
+                        {
+                            TempData["ErrorMessage"] = "File Excel không có dữ liệu!";
+                            return RedirectToAction("ImportStudents");
+                        }
+
+                        // Kiểm tra định dạng file (header) - chỉ check 3 cột bắt buộc
+                        var requiredHeaders = new[] { "Mã sinh viên", "Họ tên", "Email" };
+                        for (int col = 1; col <= requiredHeaders.Length; col++)
+                        {
+                            var headerCell = worksheet.Cells[1, col].Value?.ToString()?.Trim();
+                            if (string.IsNullOrEmpty(headerCell))
+                            {
+                                TempData["ErrorMessage"] = $"Cột {col} không có tiêu đề. Vui lòng kiểm tra lại file Excel!";
+                                return RedirectToAction("ImportStudents");
+                            }
+                            // Kiểm tra tương đối (contains) thay vì tuyệt đối
+                            if (!headerCell.Contains("Mã") && !headerCell.Contains("SV") && col == 1)
+                            {
+                                TempData["ErrorMessage"] = $"Cột 1 phải là cột Mã sinh viên (hiện tại: '{headerCell}')";
+                                return RedirectToAction("ImportStudents");
+                            }
+                            if (!headerCell.Contains("tên") && !headerCell.Contains("Tên") && col == 2)
+                            {
+                                TempData["ErrorMessage"] = $"Cột 2 phải là cột Họ tên (hiện tại: '{headerCell}')";
+                                return RedirectToAction("ImportStudents");
+                            }
+                            if (!headerCell.Contains("Email") && !headerCell.Contains("email") && col == 3)
+                            {
+                                TempData["ErrorMessage"] = $"Cột 3 phải là cột Email (hiện tại: '{headerCell}')";
+                                return RedirectToAction("ImportStudents");
+                            }
+                        }
+
+                        // Lấy danh sách chuyên ngành và lớp hành chính CỦA KHOA HIỆN TẠI
+                        var departments = await _context.Departments
+                            .Where(d => d.FacultyId == currentFacultyId.Value && d.IsActive == true && d.DeletedAt == null)
+                            .ToListAsync();
+                        
+                        // Lấy TẤT CẢ departments để kiểm tra xem có chuyên ngành nào khớp nhưng thuộc khoa khác không
+                        var allDepartments = await _context.Departments
+                            .Include(d => d.Faculty)
+                            .Where(d => d.IsActive == true && d.DeletedAt == null)
+                            .ToListAsync();
+
+                        var administrativeClasses = await _context.AdministrativeClasses
+                            .Where(ac => ac.FacultyId == currentFacultyId.Value && ac.IsActive == true && ac.DeletedAt == null)
+                            .ToListAsync();
+
+                        // Xử lý từng dòng
+                        for (int row = 2; row <= rowCount; row++)
+                        {
+                            try
+                            {
+                                // Đọc giá trị từ các cell
+                                var cell1 = worksheet.Cells[row, 1].Value;
+                                var cell2 = worksheet.Cells[row, 2].Value;
+                                var cell3 = worksheet.Cells[row, 3].Value;
+                                var cell4 = worksheet.Cells[row, 4].Value;
+                                var cell5 = worksheet.Cells[row, 5].Value;
+
+                                // Bỏ qua dòng trống hoàn toàn
+                                if (cell1 == null && cell2 == null && cell3 == null)
+                                {
+                                    continue;
+                                }
+
+                                var studentId = cell1?.ToString()?.Trim();
+                                var fullName = cell2?.ToString()?.Trim();
+                                var email = cell3?.ToString()?.Trim();
+                                var phone = cell4?.ToString()?.Trim();
+                                var studentClass = cell5?.ToString()?.Trim();
+                                
+                                // Hỗ trợ cả file 7 cột (cũ) và 8 cột (mới)
+                                string facultyCode = null;
+                                string facultyName = null;
+                                string departmentName = null;
+                                
+                                if (colCount >= 8)
+                                {
+                                    // File mới: có cột Mã khoa
+                                    facultyCode = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
+                                    facultyName = worksheet.Cells[row, 7].Value?.ToString()?.Trim();
+                                    departmentName = worksheet.Cells[row, 8].Value?.ToString()?.Trim();
+                                }
+                                else if (colCount >= 7)
+                                {
+                                    // File cũ: không có cột Mã khoa
+                                    facultyName = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
+                                    departmentName = worksheet.Cells[row, 7].Value?.ToString()?.Trim();
+                                }
+
+                                // Dừng lại nếu gặp dòng hướng dẫn (bắt đầu bằng "Lưu ý", "-", hoặc không phải dữ liệu)
+                                if (!string.IsNullOrEmpty(studentId) && 
+                                    (studentId.StartsWith("Lưu ý", StringComparison.OrdinalIgnoreCase) ||
+                                     studentId.StartsWith("-") ||
+                                     studentId.StartsWith("Chú ý", StringComparison.OrdinalIgnoreCase) ||
+                                     studentId.StartsWith("Ghi chú", StringComparison.OrdinalIgnoreCase) ||
+                                     studentId.Contains("cột bắt buộc", StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    break; // Dừng import, phần còn lại là hướng dẫn
+                                }
+
+                                // Validate
+                                if (string.IsNullOrEmpty(studentId) || string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email))
+                                {
+                                    importResults.Add($"Dòng {row}: Thiếu thông tin bắt buộc (Mã SV, Họ tên, Email)");
+                                    errorCount++;
+                                    continue;
+                                }
+
+                                // Kiểm tra trùng lặp - check tất cả user (kể cả đã xóa) vì có UNIQUE constraint
+                                var existingUser = await _context.Users
+                                    .FirstOrDefaultAsync(u => u.Email == email || u.MssvMgv == studentId);
+
+                                if (existingUser != null)
+                                {
+                                    // Nếu user đã bị xóa, có thể khôi phục hoặc bỏ qua
+                                    if (existingUser.DeletedAt != null)
+                                    {
+                                        importResults.Add($"Dòng {row}: Email hoặc Mã SV đã tồn tại (đã xóa trước đó) ({email}, {studentId})");
+                                    }
+                                    else
+                                    {
+                                        importResults.Add($"Dòng {row}: Email hoặc Mã SV đã tồn tại ({email}, {studentId})");
+                                    }
+                                    errorCount++;
+                                    continue;
+                                }
+
+                                // Tìm hoặc tạo lớp hành chính
+                                int? finalAdminClassId = administrativeClassId;
+                                string classSearchInfo = "";
+                                if (!string.IsNullOrEmpty(studentClass))
+                                {
+                                    // Tìm lớp hành chính hiện có
+                                    var adminClass = administrativeClasses.FirstOrDefault(ac =>
+                                        ac.Code.Equals(studentClass, StringComparison.OrdinalIgnoreCase));
+                                    
+                                    if (adminClass != null)
+                                    {
+                                        finalAdminClassId = adminClass.AdministrativeClassId;
+                                        classSearchInfo = $"Tìm thấy lớp {adminClass.Name}";
+                                    }
+                                    else
+                                    {
+                                        // TỰ ĐỘNG TẠO lớp hành chính mới nếu chưa tồn tại
+                                        try
+                                        {
+                                            // Trích xuất năm từ mã lớp (VD: CNTT2026C -> 2026)
+                                            var yearMatch = System.Text.RegularExpressions.Regex.Match(studentClass, @"(\d{4})");
+                                            var academicYear = yearMatch.Success ? yearMatch.Groups[1].Value : DateTime.Now.Year.ToString();
+                                            
+                                            // Lấy UserId từ session, nếu không có thì để null
+                                            int? createdById = null;
+                                            var userIdStr = HttpContext.Session.GetString("UserId");
+                                            if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out var userId))
+                                            {
+                                                createdById = userId;
+                                            }
+                                            
+                                            var newAdminClass = new AdministrativeClass
+                                            {
+                                                Code = studentClass,
+                                                Name = studentClass, // Có thể tùy chỉnh format name
+                                                FacultyId = currentFacultyId.Value,
+                                                AcademicYear = academicYear,
+                                                MaxStudents = 50, // Mặc định
+                                                CurrentStudents = 0,
+                                                IsActive = true,
+                                                CreatedAt = DateTime.Now,
+                                                CreatedBy = createdById
+                                            };
+                                            
+                                            _context.AdministrativeClasses.Add(newAdminClass);
+                                            await _context.SaveChangesAsync();
+                                            
+                                            // Thêm vào danh sách để các dòng sau có thể dùng
+                                            administrativeClasses.Add(newAdminClass);
+                                            
+                                            finalAdminClassId = newAdminClass.AdministrativeClassId;
+                                            classSearchInfo = $"Đã tạo mới lớp '{studentClass}'";
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            classSearchInfo = $"Không thể tạo lớp '{studentClass}': {ex.Message}";
+                                            finalAdminClassId = null;
+                                        }
+                                    }
+                                }
+
+                                // Tìm chuyên ngành
+                                int? departmentId = null;
+                                string departmentSearchInfo = "";
+                                
+                                if (!string.IsNullOrEmpty(departmentName))
+                                {
+                                    // Thử tìm TRONG KHOA HIỆN TẠI trước
+                                    var department = departments.FirstOrDefault(d =>
+                                        d.Name.Equals(departmentName, StringComparison.OrdinalIgnoreCase) ||
+                                        d.Code.Equals(departmentName, StringComparison.OrdinalIgnoreCase));
+                                    
+                                    // Nếu không tìm thấy, thử tìm kiếm gần đúng TRONG KHOA HIỆN TẠI
+                                    if (department == null)
+                                    {
+                                        department = departments.FirstOrDefault(d =>
+                                            d.Name.Contains(departmentName, StringComparison.OrdinalIgnoreCase) ||
+                                            departmentName.Contains(d.Name, StringComparison.OrdinalIgnoreCase) ||
+                                            d.Code.Contains(departmentName, StringComparison.OrdinalIgnoreCase));
+                                    }
+                                    
+                                    if (department != null)
+                                    {
+                                        departmentId = department.DepartmentId;
+                                        departmentSearchInfo = $"Tìm thấy: {department.Name}";
+                                    }
+                                    else
+                                    {
+                                        // Kiểm tra xem có chuyên ngành này trong khoa khác không
+                                        var deptInOtherFaculty = allDepartments.FirstOrDefault(d =>
+                                            d.FacultyId != currentFacultyId.Value &&
+                                            (d.Name.Contains(departmentName, StringComparison.OrdinalIgnoreCase) ||
+                                             departmentName.Contains(d.Name, StringComparison.OrdinalIgnoreCase) ||
+                                             d.Code.Contains(departmentName, StringComparison.OrdinalIgnoreCase)));
+                                        
+                                        if (deptInOtherFaculty != null)
+                                        {
+                                            departmentSearchInfo = $"Không tìm thấy '{departmentName}' trong khoa của bạn (tìm thấy ở {deptInOtherFaculty.Faculty?.Name})";
+                                        }
+                                        else
+                                        {
+                                            departmentSearchInfo = $"Không tìm thấy '{departmentName}'";
+                                        }
+                                    }
+                                }
+
+                                // Nếu không có chuyên ngành HOẶC không tìm thấy, tự động phân đều
+                                if (!departmentId.HasValue && departments.Any())
+                                {
+                                    var deptStudentCounts = await _context.Users
+                                        .Where(u => u.RoleId == 4 && u.FacultyId == currentFacultyId.Value && u.DepartmentId.HasValue)
+                                        .GroupBy(u => u.DepartmentId)
+                                        .Select(g => new { DeptId = g.Key, Count = g.Count() })
+                                        .ToListAsync();
+
+                                    var targetDept = departments
+                                        .Select(d => new
+                                        {
+                                            Dept = d,
+                                            StudentCount = deptStudentCounts.FirstOrDefault(c => c.DeptId == d.DepartmentId)?.Count ?? 0
+                                        })
+                                        .OrderBy(x => x.StudentCount)
+                                        .First().Dept;
+
+                                    departmentId = targetDept.DepartmentId;
+                                }
+
+                                // Tạo user mới
+                                var newUser = new User
+                                {
+                                    MssvMgv = studentId,
+                                    FullName = fullName,
+                                    Email = email,
+                                    Phone = phone,
+                                    StudentClass = studentClass,
+                                    AdministrativeClassId = finalAdminClassId,
+                                    RoleId = 4, // Sinh viên
+                                    FacultyId = currentFacultyId.Value,
+                                    DepartmentId = departmentId,
+                                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456"),
+                                    Status = "Active",
+                                    CreatedAt = DateTime.Now,
+                                    UpdatedAt = DateTime.Now
+                                };
+
+                                _context.Users.Add(newUser);
+                                await _context.SaveChangesAsync();
+
+                                // Cập nhật số lượng sinh viên trong lớp hành chính
+                                if (finalAdminClassId.HasValue)
+                                {
+                                    var adminClass = await _context.AdministrativeClasses.FindAsync(finalAdminClassId.Value);
+                                    if (adminClass != null)
+                                    {
+                                        adminClass.CurrentStudents = await _context.Users
+                                            .CountAsync(u => u.AdministrativeClassId == finalAdminClassId.Value && u.DeletedAt == null);
+                                        await _context.SaveChangesAsync();
+                                    }
+                                }
+
+                                var deptInfo = departmentId.HasValue ?
+                                    departments.FirstOrDefault(d => d.DepartmentId == departmentId)?.Name ?? "Tự động phân" :
+                                    "Tự động phân";
+                                var classInfo = !string.IsNullOrEmpty(studentClass) ? studentClass : "Không có";
+                                
+                                // Thêm thông tin tìm kiếm
+                                var detailInfo = "";
+                                if (!string.IsNullOrEmpty(departmentSearchInfo))
+                                {
+                                    detailInfo += $" [CN: {departmentSearchInfo}]";
+                                }
+                                if (!string.IsNullOrEmpty(classSearchInfo))
+                                {
+                                    detailInfo += $" [Lớp: {classSearchInfo}]";
+                                }
+
+                                importResults.Add($"Dòng {row}: Thành công - {fullName} ({studentId}) - Lớp: {classInfo}, Chuyên ngành: {deptInfo}{detailInfo}");
+                                successCount++;
+                            }
+                            catch (Exception ex)
+                            {
+                                importResults.Add($"Dòng {row}: Lỗi - {ex.Message}");
+                                errorCount++;
+                            }
+                        }
+                    }
+                }
+
+                // Tạo thông báo kết quả
+                TempData["SuccessMessage"] = $"Import thành công {successCount} sinh viên, {errorCount} dòng lỗi.";
+                TempData["ImportDetails"] = string.Join("<br>", importResults.Take(11));
+
                 return RedirectToAction("StudentManagement");
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Lỗi khi import sinh viên: {ex.Message}";
-                return View();
+                TempData["ErrorMessage"] = $"Lỗi khi import: {ex.Message}";
+                return RedirectToAction("ImportStudents");
+            }
+        }
+
+        // GET: Tải file Excel mẫu để import sinh viên
+        public IActionResult DownloadImportTemplate()
+        {
+            try
+            {
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+                using (var package = new ExcelPackage())
+                {
+                    var worksheet = package.Workbook.Worksheets.Add("Danh sách sinh viên");
+
+                    // Header
+                    worksheet.Cells[1, 1].Value = "Mã sinh viên";
+                    worksheet.Cells[1, 2].Value = "Họ tên";
+                    worksheet.Cells[1, 3].Value = "Email";
+                    worksheet.Cells[1, 4].Value = "Số điện thoại";
+                    worksheet.Cells[1, 5].Value = "Lớp hành chính";
+                    worksheet.Cells[1, 6].Value = "Mã khoa";
+                    worksheet.Cells[1, 7].Value = "Khoa";
+                    worksheet.Cells[1, 8].Value = "Chuyên ngành";
+
+                    // Style header
+                    using (var range = worksheet.Cells[1, 1, 1, 8])
+                    {
+                        range.Style.Font.Bold = true;
+                        range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                        range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
+                        range.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                        range.Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                    }
+
+                    // Dữ liệu mẫu
+                    worksheet.Cells[2, 1].Value = "SV001";
+                    worksheet.Cells[2, 2].Value = "Nguyễn Văn An";
+                    worksheet.Cells[2, 3].Value = "an.nguyen@student.lms.edu.vn";
+                    worksheet.Cells[2, 4].Value = "0901234567";
+                    worksheet.Cells[2, 5].Value = "CNTT2021A";
+                    worksheet.Cells[2, 6].Value = "CNTT";
+                    worksheet.Cells[2, 7].Value = "Khoa Công nghệ Thông tin";
+                    worksheet.Cells[2, 8].Value = "Công nghệ Phần mềm";
+
+                    worksheet.Cells[3, 1].Value = "SV002";
+                    worksheet.Cells[3, 2].Value = "Trần Thị Bình";
+                    worksheet.Cells[3, 3].Value = "binh.tran@student.lms.edu.vn";
+                    worksheet.Cells[3, 4].Value = "0912345678";
+                    worksheet.Cells[3, 5].Value = "CNTT2021A";
+                    worksheet.Cells[3, 6].Value = "CNTT";
+                    worksheet.Cells[3, 7].Value = "Khoa Công nghệ Thông tin";
+                    worksheet.Cells[3, 8].Value = "Hệ thống Thông tin";
+
+                    worksheet.Cells[4, 1].Value = "SV003";
+                    worksheet.Cells[4, 2].Value = "Lê Văn Cường";
+                    worksheet.Cells[4, 3].Value = "cuong.le@student.lms.edu.vn";
+                    worksheet.Cells[4, 4].Value = "0923456789";
+                    worksheet.Cells[4, 5].Value = "CNTT2021B";
+                    worksheet.Cells[4, 6].Value = "CNTT";
+                    worksheet.Cells[4, 7].Value = "Khoa Công nghệ Thông tin";
+                    worksheet.Cells[4, 8].Value = "Khoa học Máy tính";
+
+                    // Auto fit columns
+                    worksheet.Cells.AutoFitColumns();
+
+                    // Thêm note (để cách 1 dòng)
+                    worksheet.Cells[5, 1].Value = "Lưu ý:";
+                    worksheet.Cells[5, 1].Style.Font.Bold = true;
+                    worksheet.Cells[5, 1].Style.Font.Color.SetColor(System.Drawing.Color.Red);
+                    
+                    worksheet.Cells[6, 1].Value = "- Các cột bắt buộc: Mã sinh viên, Họ tên, Email";
+                    worksheet.Cells[7, 1].Value = "- Mật khẩu mặc định của sinh viên là: 123456";
+                    worksheet.Cells[8, 1].Value = "- Lớp hành chính: Mã của lớp hành chính (VD: CNTT2021A)";
+                    worksheet.Cells[9, 1].Value = "- Mã khoa: Mã viết tắt của khoa (VD: CNTT, KT, QTKD)";
+                    worksheet.Cells[10, 1].Value = "- Khoa: Tên đầy đủ khoa (có thể bỏ trống)";
+                    worksheet.Cells[11, 1].Value = "- Chuyên ngành: Tên chuyên ngành/bộ môn (phải trùng khớp với tên trong hệ thống)";
+                    worksheet.Cells[12, 1].Value = "- Nếu không điền chuyên ngành, hệ thống sẽ tự động phân đều";
+                    worksheet.Cells[13, 1].Value = "- Xóa các dòng hướng dẫn này trước khi import hoặc để nguyên, hệ thống sẽ tự động bỏ qua";
+                    
+                    worksheet.Cells[6, 1, 13, 1].Style.WrapText = true;
+                    worksheet.Cells[6, 1, 13, 1].Style.Font.Italic = true;
+                    worksheet.Cells[6, 1, 13, 1].Style.Font.Color.SetColor(System.Drawing.Color.Gray);
+
+                    var stream = new MemoryStream(package.GetAsByteArray());
+                    var fileName = $"Import-Students-Template-{DateTime.Now:yyyyMMdd}.xlsx";
+
+                    return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi khi tạo file mẫu: {ex.Message}";
+                return RedirectToAction("ImportStudents");
             }
         }
 
@@ -694,9 +1199,18 @@ namespace LMS.Controllers
                 .OrderBy(u => u.FullName)
                 .ToListAsync();
 
+            // Load danh sách học kỳ đã được cấu hình
+            var semesters = await _context.SemesterConfigs
+                .Where(s => s.IsActive == true)
+                .OrderByDescending(s => s.AcademicYear)
+                .ThenBy(s => s.SemesterNumber)
+                .ToListAsync();
+
             ViewBag.Courses = new SelectList(courses, "CourseId", "Name");
             ViewBag.Teachers = new SelectList(teachers, "UserId", "FullName");
+            ViewBag.Semesters = semesters;
             ViewBag.CurrentFacultyId = currentFacultyId.Value;
+            ViewBag.CoursesData = courses.Select(c => new { c.CourseId, c.Name, c.Credits }).ToList();
 
             var faculty = await _context.Faculties.FindAsync(currentFacultyId.Value);
             ViewBag.FacultyName = faculty?.Name ?? "";
@@ -759,12 +1273,8 @@ namespace LMS.Controllers
             }
         }
 
-        // =====================================================
-        // QUẢN LÝ LỚP HÀNH CHÍNH
-        // =====================================================
-
-        // GET: Danh sách lớp hành chính
-        public async Task<IActionResult> AdministrativeClassManagement()
+        // GET: Chỉnh sửa lớp học
+        public async Task<IActionResult> EditClass(int id)
         {
             if (!CheckFacultyAccess())
             {
@@ -778,263 +1288,132 @@ namespace LMS.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            var administrativeClasses = await _context.AdministrativeClasses
-                .Include(ac => ac.Faculty)
-                .Include(ac => ac.Department)
-                .Include(ac => ac.Advisor)
-                .Where(ac => ac.FacultyId == currentFacultyId.Value && ac.DeletedAt == null)
-                .OrderByDescending(ac => ac.AcademicYear)
-                .ThenBy(ac => ac.Code)
-                .ToListAsync();
+            var classModel = await _context.Classes
+                .Include(c => c.Course)
+                .Include(c => c.Instructor)
+                .FirstOrDefaultAsync(c => c.ClassId == id);
 
-            var faculty = await _context.Faculties.FindAsync(currentFacultyId.Value);
-            ViewBag.FacultyName = faculty?.Name ?? "";
-            ViewBag.UserName = HttpContext.Session.GetString("UserName");
-
-            return View(administrativeClasses);
-        }
-
-        // GET: Tạo lớp hành chính mới
-        public async Task<IActionResult> CreateAdministrativeClass()
-        {
-            if (!CheckFacultyAccess())
+            if (classModel == null || classModel.DeletedAt != null)
             {
-                return RedirectToAction("Login", "Home");
+                TempData["ErrorMessage"] = "Không tìm thấy lớp học!";
+                return RedirectToAction("ClassManagement");
             }
 
-            var currentFacultyId = GetCurrentFacultyId();
-            if (currentFacultyId == null)
-            {
-                TempData["ErrorMessage"] = "Không xác định được khoa của bạn!";
-                return RedirectToAction("Index", "Home");
-            }
-
-            // Lấy danh sách bộ môn của khoa
-            var departments = await _context.Departments
-                .Where(d => d.FacultyId == currentFacultyId.Value && d.IsActive == true && d.DeletedAt == null)
+            // Load courses của khoa
+            var courses = await _context.Courses
+                .Where(c => c.FacultyId == currentFacultyId.Value && c.DeletedAt == null && c.IsActive == true)
+                .OrderBy(c => c.Name)
                 .ToListAsync();
 
-            // Lấy danh sách giảng viên của khoa để chọn GVCN
+            // Load giảng viên của khoa
             var teachers = await _context.Users
                 .Where(u => u.FacultyId == currentFacultyId.Value && u.RoleId == 3 && u.DeletedAt == null)
                 .OrderBy(u => u.FullName)
                 .ToListAsync();
 
-            ViewBag.Departments = new SelectList(departments, "DepartmentId", "Name");
-            ViewBag.Teachers = new SelectList(teachers, "UserId", "FullName");
+            // Load danh sách học kỳ đã được cấu hình
+            var semesters = await _context.SemesterConfigs
+                .Where(s => s.IsActive == true)
+                .OrderByDescending(s => s.AcademicYear)
+                .ThenBy(s => s.SemesterNumber)
+                .ToListAsync();
+
+            // Tìm học kỳ hiện tại dựa trên trường Semester của Class
+            int? currentSemesterId = null;
+            if (!string.IsNullOrEmpty(classModel.Semester))
+            {
+                // Tạo pattern tương tự: "Học kỳ 1 - Năm học 2025 - 2026"
+                var matchingSemester = semesters.FirstOrDefault(s => 
+                    classModel.Semester.Contains($"Học kỳ {s.SemesterNumber}") && 
+                    classModel.Semester.Contains(s.AcademicYear));
+                
+                if (matchingSemester != null)
+                {
+                    currentSemesterId = matchingSemester.SemesterConfigId;
+                }
+            }
+
+            ViewBag.Courses = new SelectList(courses, "CourseId", "Name", classModel.CourseId);
+            ViewBag.Teachers = new SelectList(teachers, "UserId", "FullName", classModel.InstructorId);
+            ViewBag.Semesters = semesters;
+            ViewBag.CurrentSemesterId = currentSemesterId;
             ViewBag.CurrentFacultyId = currentFacultyId.Value;
 
             var faculty = await _context.Faculties.FindAsync(currentFacultyId.Value);
             ViewBag.FacultyName = faculty?.Name ?? "";
             ViewBag.UserName = HttpContext.Session.GetString("UserName");
 
-            return View();
+            return View(classModel);
         }
 
-        // POST: Tạo lớp hành chính mới
+        // POST: Chỉnh sửa lớp học
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateAdministrativeClass(AdministrativeClass administrativeClass)
+        public async Task<IActionResult> EditClass(int id, Class classModel)
         {
+            if (id != classModel.ClassId)
+            {
+                TempData["ErrorMessage"] = "Dữ liệu không hợp lệ!";
+                return RedirectToAction("ClassManagement");
+            }
+
             try
             {
-                var currentFacultyId = GetCurrentFacultyId();
-                var currentUserId = int.Parse(HttpContext.Session.GetString("UserId") ?? "0");
-
-                // Set required fields
-                administrativeClass.FacultyId = currentFacultyId.Value;
-                administrativeClass.CreatedAt = DateTime.Now;
-                administrativeClass.CreatedBy = currentUserId;
-                administrativeClass.IsActive = administrativeClass.IsActive ?? true;
-                administrativeClass.MaxStudents = administrativeClass.MaxStudents ?? 40;
-                administrativeClass.CurrentStudents = 0;
-                administrativeClass.DeletedAt = null;
-
-                // Auto-generate code if empty
-                if (string.IsNullOrWhiteSpace(administrativeClass.Code))
+                var existingClass = await _context.Classes.FindAsync(id);
+                if (existingClass == null)
                 {
-                    var faculty = await _context.Faculties.FindAsync(currentFacultyId.Value);
-                    var year = administrativeClass.AcademicYear?.Split('-')[0] ?? DateTime.Now.Year.ToString();
-                    var lastTwoDigits = year.Length >= 2 ? year.Substring(year.Length - 2) : year;
-                    
-                    var count = await _context.AdministrativeClasses
-                        .Where(ac => ac.FacultyId == currentFacultyId.Value && ac.AcademicYear == administrativeClass.AcademicYear)
-                        .CountAsync();
-                    
-                    var letter = (char)('A' + count);
-                    administrativeClass.Code = $"{faculty?.Code}{lastTwoDigits}{letter}";
+                    TempData["ErrorMessage"] = "Không tìm thấy lớp học!";
+                    return RedirectToAction("ClassManagement");
                 }
 
-                _context.AdministrativeClasses.Add(administrativeClass);
+                // Update fields
+                existingClass.Name = classModel.Name;
+                existingClass.Code = classModel.Code;
+                existingClass.CourseId = classModel.CourseId;
+                existingClass.InstructorId = classModel.InstructorId;
+                existingClass.MaxStudents = classModel.MaxStudents;
+                existingClass.Credits = classModel.Credits;
+                existingClass.CourseType = classModel.CourseType;
+                existingClass.StartDate = classModel.StartDate;
+                existingClass.EndDate = classModel.EndDate;
+                existingClass.StartTime = classModel.StartTime;
+                existingClass.EndTime = classModel.EndTime;
+                existingClass.Semester = classModel.Semester;
+                existingClass.Session = classModel.Session;
+                existingClass.DayOfWeek = classModel.DayOfWeek;
+                existingClass.Description = classModel.Description;
+                existingClass.Objectives = classModel.Objectives;
+                existingClass.IntroVideoUrl = classModel.IntroVideoUrl;
+                existingClass.SlidesUrl = classModel.SlidesUrl;
+                existingClass.LectureVideoUrl = classModel.LectureVideoUrl;
+                existingClass.MissionTitle = classModel.MissionTitle;
+                existingClass.IsActive = classModel.IsActive;
+
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = $"Tạo lớp hành chính '{administrativeClass.Name}' ({administrativeClass.Code}) thành công!";
-                return RedirectToAction("AdministrativeClassManagement");
+                TempData["SuccessMessage"] = $"Cập nhật lớp '{existingClass.Name}' thành công!";
+                return RedirectToAction("ClassManagement");
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Lỗi khi tạo lớp hành chính: {ex.Message}";
+                TempData["ErrorMessage"] = $"Lỗi khi cập nhật: {ex.Message}";
                 
                 // Reload dropdown data
                 var currentFacultyId = GetCurrentFacultyId();
-                var departments = await _context.Departments
-                    .Where(d => d.FacultyId == currentFacultyId && d.IsActive == true && d.DeletedAt == null)
+                var courses = await _context.Courses
+                    .Where(c => c.FacultyId == currentFacultyId && c.DeletedAt == null && c.IsActive == true)
                     .ToListAsync();
                 
                 var teachers = await _context.Users
                     .Where(u => u.FacultyId == currentFacultyId && u.RoleId == 3 && u.DeletedAt == null)
                     .ToListAsync();
 
-                ViewBag.Departments = new SelectList(departments, "DepartmentId", "Name");
+                ViewBag.Courses = new SelectList(courses, "CourseId", "Name");
                 ViewBag.Teachers = new SelectList(teachers, "UserId", "FullName");
                 ViewBag.CurrentFacultyId = currentFacultyId;
 
-                return View(administrativeClass);
+                return View(classModel);
             }
-        }
-
-        // GET: Chỉnh sửa lớp hành chính
-        public async Task<IActionResult> EditAdministrativeClass(int id)
-        {
-            if (!CheckFacultyAccess())
-            {
-                return RedirectToAction("Login", "Home");
-            }
-
-            var administrativeClass = await _context.AdministrativeClasses
-                .Include(ac => ac.Faculty)
-                .Include(ac => ac.Department)
-                .Include(ac => ac.Advisor)
-                .FirstOrDefaultAsync(ac => ac.AdministrativeClassId == id);
-
-            if (administrativeClass == null || administrativeClass.DeletedAt != null)
-            {
-                TempData["ErrorMessage"] = "Không tìm thấy lớp hành chính!";
-                return RedirectToAction("AdministrativeClassManagement");
-            }
-
-            // Lấy danh sách bộ môn và giảng viên
-            var departments = await _context.Departments
-                .Where(d => d.FacultyId == administrativeClass.FacultyId && d.IsActive == true && d.DeletedAt == null)
-                .ToListAsync();
-            
-            var teachers = await _context.Users
-                .Where(u => u.FacultyId == administrativeClass.FacultyId && u.RoleId == 3 && u.DeletedAt == null)
-                .ToListAsync();
-
-            ViewBag.Departments = new SelectList(departments, "DepartmentId", "Name", administrativeClass.DepartmentId);
-            ViewBag.Teachers = new SelectList(teachers, "UserId", "FullName", administrativeClass.AdvisorId);
-            ViewBag.FacultyName = administrativeClass.Faculty.Name;
-            ViewBag.UserName = HttpContext.Session.GetString("UserName");
-
-            return View(administrativeClass);
-        }
-
-        // POST: Chỉnh sửa lớp hành chính
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditAdministrativeClass(int id, AdministrativeClass administrativeClass)
-        {
-            if (id != administrativeClass.AdministrativeClassId)
-            {
-                TempData["ErrorMessage"] = "Dữ liệu không hợp lệ!";
-                return RedirectToAction("AdministrativeClassManagement");
-            }
-
-            try
-            {
-                var existingClass = await _context.AdministrativeClasses.FindAsync(id);
-                if (existingClass == null)
-                {
-                    TempData["ErrorMessage"] = "Không tìm thấy lớp hành chính!";
-                    return RedirectToAction("AdministrativeClassManagement");
-                }
-
-                // Update fields
-                existingClass.Name = administrativeClass.Name;
-                existingClass.Code = administrativeClass.Code;
-                existingClass.DepartmentId = administrativeClass.DepartmentId;
-                existingClass.AcademicYear = administrativeClass.AcademicYear;
-                existingClass.Intake = administrativeClass.Intake;
-                existingClass.MaxStudents = administrativeClass.MaxStudents;
-                existingClass.AdvisorId = administrativeClass.AdvisorId;
-                existingClass.IsActive = administrativeClass.IsActive;
-                existingClass.UpdatedAt = DateTime.Now;
-
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = $"Cập nhật lớp '{existingClass.Name}' thành công!";
-                return RedirectToAction("AdministrativeClassManagement");
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"Lỗi khi cập nhật: {ex.Message}";
-                return RedirectToAction("EditAdministrativeClass", new { id });
-            }
-        }
-
-        // POST: Xóa lớp hành chính (soft delete)
-        [HttpPost]
-        public async Task<IActionResult> DeleteAdministrativeClass(int id)
-        {
-            try
-            {
-                var administrativeClass = await _context.AdministrativeClasses.FindAsync(id);
-                if (administrativeClass == null)
-                {
-                    return Json(new { success = false, message = "Không tìm thấy lớp hành chính!" });
-                }
-
-                // Kiểm tra có sinh viên không
-                var studentCount = await _context.Users
-                    .CountAsync(u => u.AdministrativeClassId == id && u.DeletedAt == null);
-
-                if (studentCount > 0)
-                {
-                    return Json(new { success = false, message = $"Không thể xóa! Lớp còn {studentCount} sinh viên." });
-                }
-
-                // Soft delete
-                administrativeClass.DeletedAt = DateTime.Now;
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = $"Đã xóa lớp '{administrativeClass.Name}' thành công!" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Lỗi: {ex.Message}" });
-            }
-        }
-
-        // GET: Danh sách sinh viên trong lớp hành chính
-        public async Task<IActionResult> AdministrativeClassStudents(int id)
-        {
-            if (!CheckFacultyAccess())
-            {
-                return RedirectToAction("Login", "Home");
-            }
-
-            var administrativeClass = await _context.AdministrativeClasses
-                .Include(ac => ac.Faculty)
-                .Include(ac => ac.Advisor)
-                .FirstOrDefaultAsync(ac => ac.AdministrativeClassId == id);
-
-            if (administrativeClass == null)
-            {
-                TempData["ErrorMessage"] = "Không tìm thấy lớp hành chính!";
-                return RedirectToAction("AdministrativeClassManagement");
-            }
-
-            var students = await _context.Users
-                .Where(u => u.AdministrativeClassId == id && u.RoleId == 4 && u.DeletedAt == null)
-                .OrderBy(u => u.MssvMgv)
-                .ToListAsync();
-
-            ViewBag.AdministrativeClass = administrativeClass;
-            ViewBag.FacultyName = administrativeClass.Faculty.Name;
-            ViewBag.UserName = HttpContext.Session.GetString("UserName");
-
-            return View(students);
         }
 
         // EXPORT/IMPORT EXCEL

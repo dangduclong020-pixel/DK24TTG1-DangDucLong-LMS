@@ -75,6 +75,91 @@ namespace LMS.Migrations
                     b.ToTable("ActivityLogs");
                 });
 
+            modelBuilder.Entity("LMS.Models.AdministrativeClass", b =>
+                {
+                    b.Property<int>("AdministrativeClassId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("AdministrativeClassID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AdministrativeClassId"));
+
+                    b.Property<string>("AcademicYear")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("AdvisorId")
+                        .HasColumnType("int")
+                        .HasColumnName("AdvisorID");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<int?>("CurrentStudents")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("int")
+                        .HasColumnName("DepartmentID");
+
+                    b.Property<int>("FacultyId")
+                        .HasColumnType("int")
+                        .HasColumnName("FacultyID");
+
+                    b.Property<string>("Intake")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool?>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<int?>("MaxStudents")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(40);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("AdministrativeClassId")
+                        .HasName("PK__Administ__ClassID");
+
+                    b.HasIndex("AdvisorId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("FacultyId");
+
+                    b.HasIndex(new[] { "Code" }, "UQ__AdmClass__Code")
+                        .IsUnique();
+
+                    b.ToTable("AdministrativeClasses", (string)null);
+                });
+
             modelBuilder.Entity("LMS.Models.Assignment", b =>
                 {
                     b.Property<int>("AssignmentId")
@@ -133,6 +218,9 @@ namespace LMS.Migrations
                         .HasColumnType("decimal(5, 2)")
                         .HasDefaultValue(0m);
 
+                    b.Property<int?>("LessonId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("MaxAttempts")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
@@ -156,9 +244,125 @@ namespace LMS.Migrations
                     b.HasKey("AssignmentId")
                         .HasName("PK__Assignme__32499E578DC51EF0");
 
+                    b.HasIndex("LessonId");
+
                     b.HasIndex(new[] { "ClassId" }, "idx_assignments_classid");
 
                     b.ToTable("Assignments");
+                });
+
+            modelBuilder.Entity("LMS.Models.Attendance", b =>
+                {
+                    b.Property<int>("AttendanceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AttendanceId"));
+
+                    b.Property<bool>("AllowCodeAttendance")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("AttendanceCode")
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
+
+                    b.Property<bool>("AutoClose")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ClassId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<int?>("LessonId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Open");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("AttendanceId")
+                        .HasName("PK__Attendan__8B69263C");
+
+                    b.HasIndex("ClassId");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("LessonId");
+
+                    b.ToTable("Attendances");
+                });
+
+            modelBuilder.Entity("LMS.Models.AttendanceRecord", b =>
+                {
+                    b.Property<int>("RecordId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RecordId"));
+
+                    b.Property<int>("AttendanceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CheckInMethod")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("CheckInTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Absent");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("RecordId")
+                        .HasName("PK__Attendan__FBDF78C9");
+
+                    b.HasIndex("AttendanceId");
+
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("AttendanceRecords");
                 });
 
             modelBuilder.Entity("LMS.Models.Class", b =>
@@ -179,43 +383,85 @@ namespace LMS.Migrations
                         .HasColumnType("int")
                         .HasColumnName("CourseID");
 
+                    b.Property<string>("CourseType")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int?>("Credits")
+                        .HasColumnType("int");
 
                     b.Property<int?>("CurrentStudents")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
+                    b.Property<string>("DayOfWeek")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateOnly?>("EndDate")
                         .HasColumnType("date");
 
+                    b.Property<TimeOnly?>("EndTime")
+                        .HasColumnType("time");
+
                     b.Property<int>("InstructorId")
                         .HasColumnType("int")
                         .HasColumnName("InstructorID");
+
+                    b.Property<string>("IntroVideoUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool?>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
+                    b.Property<string>("LectureVideoUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("MaxStudents")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(100);
+
+                    b.Property<string>("MissionTitle")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("Objectives")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Room")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Semester")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Session")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SlidesUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateOnly?>("StartDate")
                         .HasColumnType("date");
+
+                    b.Property<TimeOnly?>("StartTime")
+                        .HasColumnType("time");
 
                     b.HasKey("ClassId")
                         .HasName("PK__Classes__CB1927A0E4194600");
@@ -508,8 +754,23 @@ namespace LMS.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<int?>("LessonId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxAttempts")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("MaxScore")
                         .HasColumnType("decimal(5, 2)");
+
+                    b.Property<bool?>("ShowAnswers")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("ShowScore")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("ShowSubmission")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime");
@@ -526,6 +787,8 @@ namespace LMS.Migrations
                         .HasName("PK__Exams__297521A7892536B4");
 
                     b.HasIndex("ClassId");
+
+                    b.HasIndex("LessonId");
 
                     b.ToTable("Exams");
                 });
@@ -797,6 +1060,9 @@ namespace LMS.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("VideoUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Week")
                         .HasColumnType("int");
@@ -1092,6 +1358,55 @@ namespace LMS.Migrations
                     b.ToTable("Schedules");
                 });
 
+            modelBuilder.Entity("LMS.Models.SemesterConfig", b =>
+                {
+                    b.Property<int>("SemesterConfigId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SemesterConfigId"));
+
+                    b.Property<string>("AcademicYear")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int>("DurationMonths")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DurationWeeks")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SemesterName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("SemesterNumber")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("SemesterConfigId");
+
+                    b.ToTable("SemesterConfigs", (string)null);
+                });
+
             modelBuilder.Entity("LMS.Models.StudentGrade", b =>
                 {
                     b.Property<int>("GradeId")
@@ -1259,6 +1574,9 @@ namespace LMS.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
 
+                    b.Property<int?>("AdministrativeClassId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Avatar")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -1329,6 +1647,8 @@ namespace LMS.Migrations
                     b.HasKey("UserId")
                         .HasName("PK__Users__1788CCAC14867206");
 
+                    b.HasIndex("AdministrativeClassId");
+
                     b.HasIndex("DepartmentId");
 
                     b.HasIndex("FacultyId");
@@ -1341,7 +1661,12 @@ namespace LMS.Migrations
                     b.HasIndex(new[] { "MssvMgv" }, "UQ__Users__EF82EA0678B2B854")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", t =>
+                        {
+                            t.HasTrigger("TR_Users_Activity");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("RolePermission", b =>
@@ -1372,6 +1697,31 @@ namespace LMS.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LMS.Models.AdministrativeClass", b =>
+                {
+                    b.HasOne("LMS.Models.User", "Advisor")
+                        .WithMany("AdvisedClasses")
+                        .HasForeignKey("AdvisorId")
+                        .HasConstraintName("FK__AdmClass__Advisor");
+
+                    b.HasOne("LMS.Models.Department", "Department")
+                        .WithMany("AdministrativeClasses")
+                        .HasForeignKey("DepartmentId")
+                        .HasConstraintName("FK__AdmClass__Department");
+
+                    b.HasOne("LMS.Models.Faculty", "Faculty")
+                        .WithMany("AdministrativeClasses")
+                        .HasForeignKey("FacultyId")
+                        .IsRequired()
+                        .HasConstraintName("FK__AdmClass__Faculty");
+
+                    b.Navigation("Advisor");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Faculty");
+                });
+
             modelBuilder.Entity("LMS.Models.Assignment", b =>
                 {
                     b.HasOne("LMS.Models.Class", "Class")
@@ -1380,7 +1730,60 @@ namespace LMS.Migrations
                         .IsRequired()
                         .HasConstraintName("FK__Assignmen__Class__02FC7413");
 
+                    b.HasOne("LMS.Models.Lesson", "Lesson")
+                        .WithMany()
+                        .HasForeignKey("LessonId");
+
                     b.Navigation("Class");
+
+                    b.Navigation("Lesson");
+                });
+
+            modelBuilder.Entity("LMS.Models.Attendance", b =>
+                {
+                    b.HasOne("LMS.Models.Class", "Class")
+                        .WithMany("Attendances")
+                        .HasForeignKey("ClassId")
+                        .IsRequired()
+                        .HasConstraintName("FK__Attendance__ClassId");
+
+                    b.HasOne("LMS.Models.User", "Creator")
+                        .WithMany("CreatedAttendances")
+                        .HasForeignKey("CreatedBy")
+                        .IsRequired()
+                        .HasConstraintName("FK__Attendance__CreatedBy");
+
+                    b.HasOne("LMS.Models.Lesson", "Lesson")
+                        .WithMany("Attendances")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK__Attendance__LessonId");
+
+                    b.Navigation("Class");
+
+                    b.Navigation("Creator");
+
+                    b.Navigation("Lesson");
+                });
+
+            modelBuilder.Entity("LMS.Models.AttendanceRecord", b =>
+                {
+                    b.HasOne("LMS.Models.Attendance", "Attendance")
+                        .WithMany("AttendanceRecords")
+                        .HasForeignKey("AttendanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__AttendanceRecord__AttendanceId");
+
+                    b.HasOne("LMS.Models.User", "Student")
+                        .WithMany("AttendanceRecords")
+                        .HasForeignKey("StudentId")
+                        .IsRequired()
+                        .HasConstraintName("FK__AttendanceRecord__StudentId");
+
+                    b.Navigation("Attendance");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("LMS.Models.Class", b =>
@@ -1470,7 +1873,13 @@ namespace LMS.Migrations
                         .IsRequired()
                         .HasConstraintName("FK__Exams__ClassID__1AD3FDA4");
 
+                    b.HasOne("LMS.Models.Lesson", "Lesson")
+                        .WithMany()
+                        .HasForeignKey("LessonId");
+
                     b.Navigation("Class");
+
+                    b.Navigation("Lesson");
                 });
 
             modelBuilder.Entity("LMS.Models.ExamAnswer", b =>
@@ -1674,6 +2083,11 @@ namespace LMS.Migrations
 
             modelBuilder.Entity("LMS.Models.User", b =>
                 {
+                    b.HasOne("LMS.Models.AdministrativeClass", "AdministrativeClass")
+                        .WithMany("Students")
+                        .HasForeignKey("AdministrativeClassId")
+                        .HasConstraintName("FK__Users__AdmClass");
+
                     b.HasOne("LMS.Models.Department", "Department")
                         .WithMany("Users")
                         .HasForeignKey("DepartmentId")
@@ -1688,6 +2102,8 @@ namespace LMS.Migrations
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
                         .HasConstraintName("FK__Users__RoleID__5165187F");
+
+                    b.Navigation("AdministrativeClass");
 
                     b.Navigation("Department");
 
@@ -1711,14 +2127,26 @@ namespace LMS.Migrations
                         .HasConstraintName("FK__RolePermi__RoleI__3D5E1FD2");
                 });
 
+            modelBuilder.Entity("LMS.Models.AdministrativeClass", b =>
+                {
+                    b.Navigation("Students");
+                });
+
             modelBuilder.Entity("LMS.Models.Assignment", b =>
                 {
                     b.Navigation("Submissions");
                 });
 
+            modelBuilder.Entity("LMS.Models.Attendance", b =>
+                {
+                    b.Navigation("AttendanceRecords");
+                });
+
             modelBuilder.Entity("LMS.Models.Class", b =>
                 {
                     b.Navigation("Assignments");
+
+                    b.Navigation("Attendances");
 
                     b.Navigation("ClassStudents");
 
@@ -1740,6 +2168,8 @@ namespace LMS.Migrations
 
             modelBuilder.Entity("LMS.Models.Department", b =>
                 {
+                    b.Navigation("AdministrativeClasses");
+
                     b.Navigation("Users");
                 });
 
@@ -1762,6 +2192,8 @@ namespace LMS.Migrations
 
             modelBuilder.Entity("LMS.Models.Faculty", b =>
                 {
+                    b.Navigation("AdministrativeClasses");
+
                     b.Navigation("Courses");
 
                     b.Navigation("Departments");
@@ -1773,6 +2205,8 @@ namespace LMS.Migrations
 
             modelBuilder.Entity("LMS.Models.Lesson", b =>
                 {
+                    b.Navigation("Attendances");
+
                     b.Navigation("LessonFiles");
 
                     b.Navigation("Schedules");
@@ -1794,11 +2228,17 @@ namespace LMS.Migrations
                 {
                     b.Navigation("ActivityLogs");
 
+                    b.Navigation("AdvisedClasses");
+
+                    b.Navigation("AttendanceRecords");
+
                     b.Navigation("ClassStudents");
 
                     b.Navigation("Classes");
 
                     b.Navigation("Courses");
+
+                    b.Navigation("CreatedAttendances");
 
                     b.Navigation("DeleteLogs");
 

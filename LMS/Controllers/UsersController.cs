@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Controllers
 {
-    public class UsersController : Controller
+    public class UsersController : BaseController
     {
         private readonly LmsSystemContext _context;
 

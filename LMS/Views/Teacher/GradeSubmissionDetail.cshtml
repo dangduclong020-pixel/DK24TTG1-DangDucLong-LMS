@@ -1,0 +1,536 @@
+@using System.IO
+@model LMS.Models.Assignment
+@{
+    ViewData["Title"] = "Chấm điểm bài tập";
+    var student = ViewBag.CurrentStudent as LMS.Models.User;
+    var submission = ViewBag.Submission as LMS.Models.Submission;
+    var currentIndex = ViewBag.CurrentIndex;
+    var totalStudents = ViewBag.TotalStudents;
+    var allStudents = ViewBag.AllStudents as List<LMS.Models.ClassStudent>;
+    
+    var daysRemaining = (Model.DueDate - DateTime.Now).TotalDays;
+    var hoursRemaining = (Model.DueDate - DateTime.Now).TotalHours % 24;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <style>
+        :root {
+            --primary-blue: #118ab2;
+            --border-color: #ddd;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #eee;
+        }
+
+        /* 1. Header */
+        .header {
+            background: #fff;
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info { text-align: center; }
+        .user-info img { width: 40px; height: 40px; border-radius: 50%; background: #ddd; }
+
+        /* 2. Main Content Area */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .pdf-viewer {
+            flex: 7;
+            background: #999;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .toolbar {
+            background: #f1f1f1;
+            padding: 5px;
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toolbar button {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            background: white;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .toolbar button:hover {
+            background: #e0e0e0;
+        }
+
+        .pdf-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-style: italic;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .file-preview {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .file-preview i {
+            font-size: 64px;
+            color: #118ab2;
+            margin-bottom: 15px;
+        }
+
+        .file-preview a {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #118ab2;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .grading-panel {
+            flex: 3;
+            background: #fff;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-weight: bold;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        .grade-input { 
+            width: 100px; 
+            padding: 8px; 
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .feedback-area {
+            width: 100%;
+            min-height: 100px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-not-graded { background: #ffeaea; color: #d32f2f; }
+        .status-graded { background: #e8f5e9; color: #388e3c; }
+        .status-not-submitted { background: #fff3e0; color: #f57c00; }
+
+        /* 3. Footer */
+        .footer {
+            background: #fff;
+            border-top: 1px solid var(--border-color);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: flex-end; 
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn-group { display: flex; gap: 8px; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-blue { background-color: #118ab2; }
+        .btn-cyan { background-color: #17a2b8; }
+        .btn-gray { background-color: #6c757d; }
+
+        .notify-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+        }
+
+        .student-selector {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            min-width: 200px;
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .submission-info {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .submission-info p {
+            margin: 5px 0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <div style="font-size: 12px; color: #666;">Khoá học: @Model.Class.Course.Name</div>
+            <div style="font-weight: bold;">Bài tập: @Model.Title</div>
+        </div>
+        <div class="user-info">
+            <div style="font-weight: bold;">@student.FullName</div>
+            <div style="font-size: 11px;">@student.Email</div>
+        </div>
+        <div style="text-align: right;">
+            <select class="student-selector" id="studentSelector">
+                @foreach(var cs in allStudents)
+                {
+                    var isSelected = cs.StudentId == student.UserId;
+                    <option value="@cs.StudentId" selected="@isSelected">
+                        @cs.Student.FullName (@cs.Student.UserId)
+                    </option>
+                }
+            </select>
+            <div class="info-text">@currentIndex of @totalStudents 👤</div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="pdf-viewer">
+            <div class="toolbar">
+                @if (submission != null && !string.IsNullOrEmpty(submission.FilePath))
+                {
+                    <a href="@submission.FilePath" target="_blank" class="btn btn-blue" style="text-decoration: none;">
+                        📥 Tải file xuống
+                    </a>
+                    <a href="@submission.FilePath" target="_blank" class="btn btn-gray" style="text-decoration: none;">
+                        👁️ Xem file
+                    </a>
+                }
+            </div>
+            <div class="pdf-content">
+                @if (submission != null && !string.IsNullOrEmpty(submission.FilePath))
+                {
+                    var fileExtension = System.IO.Path.GetExtension(submission.FilePath)?.ToLower() ?? "";
+                    
+                    if (fileExtension == ".pdf")
+                    {
+                        <iframe src="@submission.FilePath" style="width: 100%; height: 100%; border: none;"></iframe>
+                    }
+                    else if (fileExtension == ".jpg" || fileExtension == ".jpeg" || fileExtension == ".png" || fileExtension == ".gif" || fileExtension == ".bmp")
+                    {
+                        <div style="width: 100%; height: 100%; overflow: auto; display: flex; justify-content: center; align-items: center; background: #f5f5f5;">
+                            <img src="@submission.FilePath" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="@submission.FileName" />
+                        </div>
+                    }
+                    else if (fileExtension == ".doc" || fileExtension == ".docx" || fileExtension == ".xls" || fileExtension == ".xlsx" || fileExtension == ".ppt" || fileExtension == ".pptx")
+                    {
+                        <div class="file-preview">
+                            <i class="fas fa-file-alt"></i>
+                            <h3>@submission.FileName</h3>
+                            <p style="color: #666; font-size: 14px;">
+                                Loại file: @(submission.Mimetype ?? "Không xác định")
+                            </p>
+                            <p style="color: #666; font-size: 13px;">
+                                Nộp lúc: @submission.SubmittedAt?.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                            <p style="color: #f57c00; font-size: 14px; margin-top: 10px;">
+                                ⚠️ File Office không thể xem trực tiếp. Vui lòng tải xuống để xem.
+                            </p>
+                            <a href="@submission.FilePath" target="_blank" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: #118ab2; color: white; text-decoration: none; border-radius: 4px;">
+                                📂 Mở file trong tab mới
+                            </a>
+                            <a href="@submission.FilePath" download style="display: inline-block; margin-top: 15px; margin-left: 10px; padding: 10px 20px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;">
+                                📥 Tải file xuống
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="file-preview">
+                            <i class="fas fa-file-alt"></i>
+                            <h3>@submission.FileName</h3>
+                            <p style="color: #666; font-size: 14px;">
+                                Loại file: @(submission.Mimetype ?? "Không xác định")
+                            </p>
+                            <p style="color: #666; font-size: 13px;">
+                                Nộp lúc: @submission.SubmittedAt?.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                            <a href="@submission.FilePath" target="_blank" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: #118ab2; color: white; text-decoration: none; border-radius: 4px;">
+                                📂 Mở file trong tab mới
+                            </a>
+                            <a href="@submission.FilePath" download style="display: inline-block; margin-top: 15px; margin-left: 10px; padding: 10px 20px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;">
+                                📥 Tải file xuống
+                            </a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="file-preview">
+                        <i class="fas fa-exclamation-circle" style="color: #f57c00;"></i>
+                        <h3 style="color: #333;">Chưa có bài nộp</h3>
+                        <p style="color: #666;">Sinh viên chưa nộp bài tập này</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="grading-panel">
+            <div class="section-title">Bài nộp</div>
+            
+            @if (submission != null)
+            {
+                <span class="status-badge @(submission.Status == "Graded" ? "status-graded" : "status-not-graded")">
+                    @(submission.Status == "Graded" ? "Đã chấm điểm" : "Chưa chấm điểm")
+                </span>
+                
+                <div class="submission-info">
+                    <p><strong>Lần nộp:</strong> @(submission.AttemptNumber ?? 1)</p>
+                    @if (submission.SubmittedAt.HasValue)
+                    {
+                        <p><strong>Thời gian nộp:</strong> @submission.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                    }
+                    @if (submission.GradedAt.HasValue)
+                    {
+                        <p><strong>Đã chấm lúc:</strong> @submission.GradedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                    }
+                </div>
+            }
+            else
+            {
+                <span class="status-badge status-not-submitted">Chưa nộp</span>
+            }
+            
+            <p class="info-text">
+                @if (daysRemaining > 0)
+                {
+                    <span>Còn lại @Math.Floor(daysRemaining) ngày @Math.Floor(hoursRemaining) giờ</span>
+                }
+                else
+                {
+                    <span style="color: red;">Đã quá hạn</span>
+                }
+            </p>
+            
+            <div class="section-title" style="margin-top: 30px;">Điểm</div>
+            <label style="font-size: 13px;">Điểm (Tối đa: @Model.MaxScore)</label><br>
+            <input type="number" class="grade-input" id="scoreInput" 
+                   placeholder="0.0" 
+                   min="0" 
+                   max="@Model.MaxScore" 
+                   step="0.1"
+                   value="@(submission?.Score)">
+
+            <div class="section-title" style="margin-top: 30px;">Nhận xét</div>
+            <textarea class="feedback-area" id="feedbackInput" placeholder="Nhập nhận xét cho sinh viên...">@(submission?.Feedback)</textarea>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="notify-checkbox">
+            <input type="checkbox" id="notifyStudent" checked>
+            <label for="notifyStudent">Thông báo tới học viên</label>
+            <span title="Gửi thông báo khi chấm điểm xong">❓</span>
+        </div>
+        
+        <div class="btn-group">
+            <button class="btn btn-blue" onclick="saveGrade()">Lưu những thay đổi</button>
+            <button class="btn btn-cyan" onclick="saveAndNext()">Lưu và xem trang tiếp theo</button>
+            <button class="btn btn-gray" onclick="resetGrade()">TÁI LẬP</button>
+        </div>
+    </div>
+
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script>
+        const assignmentId = @Model.AssignmentId;
+        let currentStudentId = @student.UserId;
+        const originalScore = @(submission?.Score?.ToString("F1") ?? "null");
+        const originalFeedback = '@Html.Raw(submission?.Feedback?.Replace("'", "\\'") ?? "")';
+        const hasSubmission = @((submission != null).ToString().ToLower());
+        const submissionId = @(submission?.SubmissionId ?? 0);
+
+        console.log('Assignment ID:', assignmentId);
+        console.log('Student ID:', currentStudentId);
+        console.log('Has Submission:', hasSubmission);
+        console.log('Submission ID:', submissionId);
+
+        // Chuyển đổi sinh viên
+        document.getElementById('studentSelector').addEventListener('change', function() {
+            const studentId = this.value;
+            window.location.href = `/Teacher/GradeSubmissionDetail/0?assignmentId=${assignmentId}&studentId=${studentId}`;
+        });
+
+        // Lưu điểm
+        function saveGrade() {
+            const score = parseFloat(document.getElementById('scoreInput').value);
+            const feedback = document.getElementById('feedbackInput').value;
+            const notifyStudent = document.getElementById('notifyStudent').checked;
+
+            if (!score && score !== 0) {
+                alert('Vui lòng nhập điểm!');
+                return;
+            }
+
+            if (score < 0 || score > @Model.MaxScore) {
+                alert('Điểm phải từ 0 đến @Model.MaxScore!');
+                return;
+            }
+
+            if (!hasSubmission || submissionId === 0) {
+                alert('Sinh viên chưa nộp bài!');
+                return;
+            }
+
+            console.log('Saving grade...', {
+                submissionId: submissionId,
+                score: score,
+                feedback: feedback,
+                notifyStudent: notifyStudent
+            });
+            
+            fetch('/Teacher/GradeSubmission', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    submissionId: submissionId,
+                    score: score,
+                    feedback: feedback,
+                    notifyStudent: notifyStudent
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response:', data);
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra: ' + error);
+            });
+        }
+
+        // Lưu và chuyển sang sinh viên tiếp theo
+        function saveAndNext() {
+            const score = parseFloat(document.getElementById('scoreInput').value);
+            const feedback = document.getElementById('feedbackInput').value;
+            const notifyStudent = document.getElementById('notifyStudent').checked;
+
+            // Kiểm tra nếu có submission và có nhập điểm
+            if (hasSubmission && submissionId > 0) {
+                if (!score && score !== 0) {
+                    if (!confirm('Bạn chưa nhập điểm. Chuyển sang sinh viên tiếp theo?')) {
+                        return;
+                    }
+                }
+
+                if (score && (score < 0 || score > @Model.MaxScore)) {
+                    alert('Điểm phải từ 0 đến @Model.MaxScore!');
+                    return;
+                }
+            }
+
+            fetch('/Teacher/SaveAndNext', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    assignmentId: assignmentId,
+                    studentId: currentStudentId,
+                    score: score,
+                    feedback: feedback,
+                    notifyStudent: notifyStudent
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.hasNext) {
+                        window.location.href = `/Teacher/GradeSubmissionDetail/0?assignmentId=${assignmentId}&studentId=${data.nextStudentId}`;
+                    } else {
+                        alert(data.message);
+                        window.location.href = `/Teacher/AssignmentSubmissions/${assignmentId}`;
+                    }
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                alert('Có lỗi xảy ra: ' + error);
+            });
+        }
+
+        // Tái lập về giá trị ban đầu
+        function resetGrade() {
+            if (confirm('Bạn có chắc muốn tái lập về giá trị ban đầu?')) {
+                document.getElementById('scoreInput').value = originalScore !== null ? originalScore : '';
+                document.getElementById('feedbackInput').value = originalFeedback;
+            }
+        }
+    </script>
+</body>
+</html>

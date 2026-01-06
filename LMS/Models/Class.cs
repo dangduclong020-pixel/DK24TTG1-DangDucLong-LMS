@@ -23,6 +23,34 @@ public partial class Class
 
     public DateOnly? EndDate { get; set; }
 
+    public string? Description { get; set; }
+
+    public string? Objectives { get; set; }
+
+    public string? IntroVideoUrl { get; set; }
+
+    public string? SlidesUrl { get; set; }
+
+    public string? LectureVideoUrl { get; set; }
+
+    public string? MissionTitle { get; set; }
+
+    public TimeOnly? StartTime { get; set; }
+
+    public TimeOnly? EndTime { get; set; }
+
+    public string? Semester { get; set; }
+
+    public string? Session { get; set; }
+
+    public string? DayOfWeek { get; set; }
+
+    public string? Room { get; set; }
+
+    public int? Credits { get; set; }
+
+    public string? CourseType { get; set; }
+
     public bool? IsActive { get; set; }
 
     public DateTime? CreatedAt { get; set; }
@@ -30,6 +58,8 @@ public partial class Class
     public DateTime? DeletedAt { get; set; }
 
     public virtual ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
+
+    public virtual ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
 
     public virtual ICollection<ClassStudent> ClassStudents { get; set; } = new List<ClassStudent>();
 

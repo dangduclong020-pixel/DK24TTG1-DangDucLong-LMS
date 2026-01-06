@@ -1,0 +1,3097 @@
+@model LMS.Models.Class
+@using LMS.Models
+@{
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    ViewBag.Title = $"{Model.Code} - {Model.Course?.Name}";
+    var userRole = Context.Session.GetString("UserRole");
+    var loggedInUserId = Context.Session.GetString("UserId");
+    var isTeacher = !string.IsNullOrEmpty(loggedInUserId) && 
+                    int.TryParse(loggedInUserId, out var userId) && 
+                    userId == Model.InstructorId;
+}
+
+@section Styles {
+<style>
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+
+    .course-header h1 {
+        color: #0056b3;
+        border-bottom: 2px solid #0056b3;
+        padding-bottom: 10px;
+        margin-top: 0;
+    }
+
+    .breadcrumb-custom {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .breadcrumb-custom a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .breadcrumb-custom a:hover {
+        text-decoration: underline;
+    }
+
+    .section {
+        margin-bottom: 25px;
+    }
+
+    .section h2, .section h3 {
+        color: #0056b3;
+    }
+
+    .course-description, .course-objectives {
+        line-height: 1.6;
+    }
+
+    .course-description h1, .course-description h2, .course-description h3,
+    .course-objectives h1, .course-objectives h2, .course-objectives h3 {
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+
+    .course-description ul, .course-description ol,
+    .course-objectives ul, .course-objectives ol {
+        margin-left: 20px;
+        margin-bottom: 10px;
+    }
+
+    .course-description p, .course-objectives p {
+        margin-bottom: 10px;
+    }
+
+    .lesson-content-html {
+        line-height: 1.6;
+    }
+
+    .lesson-content-html h1, .lesson-content-html h2, .lesson-content-html h3 {
+        margin-top: 15px;
+        margin-bottom: 10px;
+        color: #0056b3;
+    }
+
+    .lesson-content-html ul, .lesson-content-html ol {
+        margin-left: 20px;
+        margin-bottom: 10px;
+    }
+
+    .lesson-content-html p {
+        margin-bottom: 10px;
+    }
+
+    .info-box {
+        border-left: 4px solid #0056b3;
+        padding-left: 15px;
+        background: #f0f7ff;
+        padding: 10px 15px;
+        margin-top: 10px;
+    }
+
+    .info-box p {
+        margin: 8px 0;
+    }
+
+    /* Video Button Styles */
+    .video-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .video-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .video-btn i {
+        font-size: 18px;
+    }
+
+    /* Modal Styles */
+    .video-modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.9);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .video-modal-content {
+        position: relative;
+        margin: 2% auto;
+        width: 70%;
+        max-width: 900px;
+        animation: slideDown 0.3s ease;
+    }
+
+    .video-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: #333;
+        color: white;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .video-modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+    }
+
+    .modal-close {
+        color: white;
+        font-size: 32px;
+        font-weight: bold;
+        cursor: pointer;
+        background: none;
+        border: none;
+        line-height: 1;
+        transition: color 0.3s;
+    }
+
+    .modal-close:hover {
+        color: #ff4444;
+    }
+
+    .video-modal-body {
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        background: #000;
+        border-radius: 0 0 8px 8px;
+    }
+
+    .video-modal-body iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 0 0 8px 8px;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Chapter Styles */
+    .chapter-card {
+        border: 1px solid #ddd;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .chapter-header {
+        padding: 12px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .chapter-header:hover {
+        opacity: 0.9;
+    }
+
+    .chapter-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .bg-gray { background-color: #e9ecef; }
+    .bg-red { background-color: #ffe3e3; color: #d93025; }
+    .bg-blue { background-color: #e3f2fd; color: #1976d2; }
+    .bg-green { background-color: #e8f5e9; color: #388e3c; }
+    .bg-orange { background-color: #fff3e0; color: #f57c00; }
+
+    .chapter-content {
+        padding: 15px 25px;
+        border-top: 1px solid #ddd;
+        display: block;
+    }
+
+    .chapter-content.collapsed {
+        display: none;
+    }
+
+    .resource-list {
+        list-style: none;
+        padding: 0;
+        margin: 10px 0;
+    }
+
+    .resource-list li {
+        padding: 8px 0;
+        border-bottom: 1px dashed #eee;
+    }
+
+    .resource-list li:last-child {
+        border-bottom: none;
+    }
+
+    .resource-list a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .resource-list a:hover {
+        text-decoration: underline;
+    }
+
+    .text-blue { color: #007bff; }
+    .text-green { color: #28a745; }
+    .text-orange { color: #fd7e14; }
+    .text-red { color: #dc3545; }
+
+    .learning-outcomes {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+    }
+
+    .learning-outcomes h4 {
+        margin-bottom: 10px;
+        color: #555;
+        font-size: 1rem;
+    }
+
+    .learning-outcomes ul {
+        margin: 5px 0;
+        padding-left: 20px;
+    }
+
+    .learning-outcomes li {
+        margin-bottom: 5px;
+    }
+
+    .complete-check {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .expand-icon {
+        transition: transform 0.3s ease;
+        margin-left: 10px;
+    }
+
+    .expand-icon.rotated {
+        transform: rotate(180deg);
+    }
+
+    /* Mission Section Styles */
+    .mission-section {
+        background: #f8f9fa;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 0;
+        margin-top: 30px;
+    }
+
+    .mission-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 6px 6px 0 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .mission-header i {
+        font-size: 24px;
+    }
+
+    .mission-header h4 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+
+    /* Edit Button Styles */
+    .btn-edit-inline {
+        margin-left: 15px;
+        color: #007bff;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: color 0.3s ease;
+    }
+
+    .btn-edit-inline:hover {
+        color: #0056b3;
+    }
+
+    .btn-edit-icon {
+        color: #ffc107;
+        text-decoration: none;
+        font-size: 1rem;
+        padding: 5px 8px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-edit-icon:hover {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ff9800;
+    }
+
+    .btn-edit-small {
+        color: #007bff;
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .btn-edit-small:hover {
+        background: rgba(0, 123, 255, 0.1);
+        color: #0056b3;
+    }
+
+    .btn-add-icon {
+        color: white;
+        text-decoration: none;
+        font-size: 1.2rem;
+        padding: 5px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .btn-add-icon:hover {
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
+
+    /* Teacher Dropdown Styles */
+    .dropdown-toggle-custom {
+        background: white;
+        border: 2px solid #6c757d;
+        border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .dropdown-toggle-custom:hover {
+        background: #6c757d;
+        color: white;
+        transform: rotate(90deg);
+        border-color: #6c757d;
+    }
+
+    .dropdown-toggle-custom i {
+        font-size: 18px;
+    }
+
+    .dropdown-menu-custom {
+        position: absolute;
+        top: 45px;
+        right: 0;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        min-width: 250px;
+        z-index: 1000;
+        padding: 8px 0;
+        border: 1px solid #e0e0e0;
+    }
+
+    .dropdown-item-custom {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 20px;
+        width: 100%;
+        text-align: left;
+        border: none;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .dropdown-item-custom:hover {
+        background: #f8f9fa;
+    }
+
+    .dropdown-item-custom i {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+    }
+
+    .dropdown-divider-custom {
+        height: 1px;
+        background: #e0e0e0;
+        margin: 8px 0;
+    }
+
+    /* Edit Mode Styles */
+    body:not(.edit-mode) .edit-control {
+        display: none !important;
+    }
+
+    .edit-mode-indicator {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        z-index: 999;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        animation: slideIn 0.3s ease;
+    }
+
+    body.edit-mode .edit-mode-indicator {
+        display: flex;
+    }
+
+    @@keyframes slideIn {
+        from {
+            transform: translateX(100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+
+    .edit-mode .dropdown-item-custom.edit-mode-toggle {
+        background: #e8f5e9;
+        color: #2e7d32;
+        font-weight: bold;
+    }
+</style>
+}
+
+<a href="@(userRole == "Teacher" || userRole == "Instructor" ? Url.Action("MyClasses", "Teacher") : Url.Action("MyCourses", "Home"))" class="back-link">
+    <i class="fas fa-arrow-left"></i> Quay lại danh sách khóa học
+</a>
+
+<header class="course-header">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <h1 id="className">@Model.Name</h1>
+            @if (isTeacher || userRole?.ToLower() == "teacher" || userRole?.ToLower() == "instructor" || userRole?.ToLower() == "giảng viên")
+            {
+                <button type="button" 
+                        class="btn btn-sm btn-warning edit-control" 
+                        onclick="openEditClassTitleModal('@Model.ClassId', '@(Model.Code?.Replace("'", "\\'")){12}', '@(Model.Course?.Code?.Replace("'", "\\'"))' , '@(Model.Course?.Name?.Replace("'", "\\'"))' , '@(Model.Name?.Replace("'", "\\'"))')"
+                        title="Tùy chỉnh tên lớp">
+                    <i class="fas fa-edit"></i> Sửa tên
+                </button>
+            }
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            @* Nút điểm danh cho sinh viên *@
+            @if (!(isTeacher || userRole?.ToLower() == "teacher" || userRole?.ToLower() == "instructor" || userRole?.ToLower() == "giảng viên"))
+            {
+                <a href="@Url.Action("StudentAttendance", "Home", new { classId = Model.ClassId })" 
+                   class="btn btn-primary btn-sm"
+                   title="Xem và điểm danh">
+                    <i class="fas fa-user-check"></i> Điểm danh
+                </a>
+            }
+            
+            @if (isTeacher || userRole?.ToLower() == "teacher" || userRole?.ToLower() == "instructor" || userRole?.ToLower() == "giảng viên")
+            {
+                <div class="dropdown d-inline-block">
+                    <button type="button" 
+                            class="btn btn-outline-secondary btn-sm dropdown-toggle-custom" 
+                            id="teacherActionsDropdown"
+                            onclick="toggleTeacherDropdown(event)"
+                            title="Quản lý khóa học">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="dropdown-menu-custom" id="teacherDropdownMenu" style="display: none;">
+                        <button type="button" class="dropdown-item-custom edit-mode-toggle" onclick="toggleEditMode()">
+                            <i class="fas fa-edit text-success"></i>
+                            <span id="editModeButtonText">Bật chế độ chỉnh sửa</span>
+                        </button>
+                        <div class="dropdown-divider-custom"></div>
+                        <button type="button" class="dropdown-item-custom" onclick="window.location.href='@Url.Action("GradeManagement", "Teacher", new { id = Model.ClassId })'">
+                            <i class="fas fa-chart-line text-primary"></i> Quản lý điểm
+                        </button>
+                        <button type="button" class="dropdown-item-custom" onclick="exportToExcel()">
+                            <i class="fas fa-file-excel text-success"></i> Xuất danh sách SV
+                        </button>
+                        <button type="button" class="dropdown-item-custom" onclick="window.location.href='@Url.Action("ManageStudents", "Teacher", new { classId = Model.ClassId })'">
+                            <i class="fas fa-users text-info"></i> Quản lý sinh viên
+                        </button>
+                        <button type="button" class="dropdown-item-custom" onclick="window.location.href='@Url.Action("SendNotification", "Teacher", new { classId = Model.ClassId })'">
+                            <i class="fas fa-bell text-warning"></i> Gửi thông báo
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <nav class="breadcrumb-custom">
+        <a href="@Url.Action("Index", "Home")">Trang chủ</a> / 
+        <a href="#">Khối đào tạo</a> / 
+        <a href="#">@(Model.Course?.Faculty?.Name ?? "Khoa")</a> / 
+        @Model.Course?.Name
+    </nav>
+</header>
+</header>
+
+<!-- Edit Mode Indicator -->
+<div class="edit-mode-indicator">
+    <i class="fas fa-edit"></i>
+    <span>Chế độ chỉnh sửa đang BẬT</span>
+    <button type="button" onclick="toggleEditMode()" style="background: rgba(255,255,255,0.3); border: 1px solid white; color: white; padding: 5px 15px; border-radius: 15px; cursor: pointer; margin-left: 10px;">
+        <i class="fas fa-times"></i> Tắt
+    </button>
+</div>
+
+<section class="section overview">
+    <h2>
+        <i class="fas fa-book-open"></i> TỔNG QUAN KHÓA HỌC
+        @if (userRole == "Teacher" || userRole == "Instructor")
+        {
+            <a href="@Url.Action("EditClass", "Teacher", new { id = Model.ClassId })" class="btn-edit-inline edit-control" title="Chỉnh sửa tổng quan">
+                <i class="fas fa-edit"></i>
+            </a>
+        }
+    </h2>
+    
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <div class="course-description">
+            @Html.Raw(Model.Description)
+        </div>
+    }
+    else
+    {
+        <p>Mô tả học phần sẽ được cập nhật sớm.</p>
+    }
+    
+    @if (!string.IsNullOrEmpty(Model.Objectives))
+    {
+        <div class="course-objectives mt-3">
+            <strong>Mục tiêu:</strong>
+            @Html.Raw(Model.Objectives)
+        </div>
+    }
+    
+    @* Hiển thị tất cả các section (OrderNumber = 0) *@
+    @{
+        // Lấy tất cả các section có OrderNumber = 0 (bao gồm điểm danh, tài liệu, video...)
+        var lessonSections = Model.Lessons?.Where(l => l.OrderNumber == 0)
+                                .OrderBy(l => l.CreatedAt).ToList();
+    }
+    
+    @if (lessonSections != null && lessonSections.Any())
+    {
+        foreach (var lessonSection in lessonSections)
+        {
+            var lessonAttendances = Model.Attendances?.Where(a => a.LessonId == lessonSection.LessonId).OrderByDescending(a => a.StartTime).ToList();
+            var lessonFiles = lessonSection.LessonFiles?.OrderBy(f => f.FileId).ToList();
+            var hasContent = (lessonAttendances != null && lessonAttendances.Any()) || (lessonFiles != null && lessonFiles.Any()) || !string.IsNullOrEmpty(lessonSection.VideoUrl);
+            
+            // Kiểm tra xem section có phải là section điểm danh không (title chứa "điểm danh" hoặc "attendance")
+            var isAttendanceSection = lessonSection.Title.ToLower().Contains("điểm danh") || lessonSection.Title.ToLower().Contains("attendance");
+            
+            <div class="mt-4 mb-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h5 class="mb-0">
+                        @if (userRole == "Teacher" || userRole == "Instructor")
+                        {
+                            @if (isAttendanceSection)
+                            {
+                                <a href="@Url.Action("ManageAttendance", "Teacher", new { lessonId = lessonSection.LessonId })" 
+                                   style="color: inherit; text-decoration: none; display: flex; align-items: center; padding: 8px 12px; border-radius: 8px; transition: all 0.3s ease; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"
+                                   onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)';"
+                                   onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';">
+                                    @Html.Raw(lessonSection.Title)
+                                    <span class="badge bg-light text-dark ms-2" style="font-size: 0.7rem;">Click để quản lý</span>
+                                    <i class="fas fa-arrow-right ms-2" style="font-size: 0.9rem;"></i>
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="@Url.Action("ManageAttendance", "Teacher", new { lessonId = lessonSection.LessonId })" style="color: inherit; text-decoration: none;">
+                                    @Html.Raw(lessonSection.Title)
+                                </a>
+                            }
+                        }
+                        else
+                        {
+                            @if (isAttendanceSection)
+                            {
+                                <a href="@Url.Action("StudentAttendance", "Home", new { classId = Model.ClassId })" 
+                                   style="color: inherit; text-decoration: none; display: flex; align-items: center; padding: 8px 12px; border-radius: 8px; transition: all 0.3s ease; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"
+                                   onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)';"
+                                   onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';">
+                                    @Html.Raw(lessonSection.Title)
+                                    <span class="badge bg-light text-dark ms-2" style="font-size: 0.7rem;">Click để xem</span>
+                                    <i class="fas fa-arrow-right ms-2" style="font-size: 0.9rem;"></i>
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="@Url.Action("StudentAttendance", "Home", new { classId = Model.ClassId })" style="color: inherit; text-decoration: none;">
+                                    @Html.Raw(lessonSection.Title)
+                                </a>
+                            }
+                        }
+                    </h5>
+                    @if (userRole == "Teacher" || userRole == "Instructor")
+                    {
+                        @if (!isAttendanceSection)
+                        {
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-success dropdown-toggle edit-control" data-bs-toggle="dropdown" title="Thêm nội dung">
+                                <i class="fas fa-plus"></i> Thêm
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <button class="dropdown-item" onclick="showAddSlideModalForSection(@lessonSection.LessonId)">
+                                        <i class="fas fa-file text-primary"></i> Thêm tài liệu
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item" onclick="showAddVideoModalForSection(@lessonSection.LessonId)">
+                                        <i class="fas fa-video text-danger"></i> Thêm video
+                                    </button>
+                                </li>
+                            </ul>
+                            <button onclick="showEditResourceTitleModal(@lessonSection.LessonId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lessonSection.Title))')" 
+                                    class="btn btn-sm btn-secondary edit-control" title="Sửa tiêu đề section">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteSection(@lessonSection.LessonId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lessonSection.Title))', @(hasContent ? "true" : "false"))" 
+                                    class="btn btn-sm btn-danger edit-control" title="Xóa section">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        }
+                        else
+                        {
+                            <button onclick="showEditResourceTitleModal(@lessonSection.LessonId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lessonSection.Title))')" 
+                                    class="btn btn-sm btn-secondary edit-control me-2" title="Sửa tiêu đề section">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteSection(@lessonSection.LessonId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lessonSection.Title))', @(hasContent ? "true" : "false"))" 
+                                    class="btn btn-sm btn-danger edit-control" title="Xóa section">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        }
+                    }
+                </div>
+                
+                @* Chỉ hiển thị nội dung nếu KHÔNG phải section điểm danh *@
+                @if (!isAttendanceSection)
+                {
+                @if (!string.IsNullOrEmpty(lessonSection.VideoUrl))
+                {
+                    <div class="mb-2">
+                        <button onclick="openVideoModal('@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lessonSection.Title))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lessonSection.VideoUrl))')" class="video-btn">
+                            <i class="fas fa-play-circle"></i>
+                            Xem video bài giảng
+                        </button>
+                    </div>
+                }
+                
+                @* Hiển thị tài liệu nếu có *@
+                @if (lessonFiles != null && lessonFiles.Any())
+                {
+                    <ul class="resource-list" style="list-style: none; padding-left: 0;">
+                        @foreach (var file in lessonFiles)
+                        {
+                            <li class="mb-2 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <a href="@file.FilePath" target="_blank">@Html.Raw(file.FileName)</a>
+                                </div>
+                                @if (userRole == "Teacher" || userRole == "Instructor")
+                                {
+                                    <div>
+                                        <button onclick="showEditFileModal(@file.FileId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(file.FileName))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(file.FilePath))')" class="btn btn-sm btn-warning me-1 edit-control">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button onclick="deleteFile(@file.FileId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(file.FileName))')" class="btn btn-sm btn-danger edit-control">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                
+                @* Hiển thị phiên điểm danh nếu có - hiển thị đơn giản như tài liệu *@
+                @if (lessonAttendances != null && lessonAttendances.Any())
+                {
+                    <ul class="resource-list" style="list-style: none; padding-left: 0;">
+                        @foreach (var attendance in lessonAttendances)
+                        {
+                            <li class="mb-2 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <i class="fas fa-clipboard-check text-success"></i>
+                                    @if (userRole == "Teacher" || userRole == "Instructor")
+                                    {
+                                        <a href="@Url.Action("ManageAttendance", "Teacher", new { lessonId = lessonSection.LessonId })">
+                                            @Html.Raw(attendance.Title)
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a href="@Url.Action("StudentAttendance", "Home", new { classId = Model.ClassId })">
+                                            @Html.Raw(attendance.Title)
+                                        </a>
+                                    }
+                                </div>
+                                @if (userRole == "Teacher" || userRole == "Instructor")
+                                {
+                                    <div>
+                                        <button onclick="deleteAttendance(@attendance.AttendanceId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(attendance.Title))')" class="btn btn-sm btn-danger edit-control">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                
+                @* Thông báo nếu section trống *@
+                @if (!hasContent)
+                {
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Chưa có nội dung nào trong section này.
+                        @if (userRole == "Teacher" || userRole == "Instructor")
+                        {
+                            <span class="alert-link">Nhấn nút "Thêm" ở trên để thêm nội dung.</span>
+                        }
+                    </div>
+                }
+                } @* Đóng if (!isAttendanceSection) *@
+            </div>
+        }
+    }
+    
+    @* Hiển thị các hoạt động không thuộc chương nào (LessonId = null) *@
+    @{
+        var generalUserIdStr2 = Context.Session.GetString("UserId");
+        int.TryParse(generalUserIdStr2, out var generalCurrentUserId2);
+        
+        var generalAssignments = Model.Assignments?.Where(a => a.LessonId == null && a.DeletedAt == null && (a.IsPublished == true || userRole == "Teacher" || userRole == "Instructor")).OrderByDescending(a => a.DueDate).ToList();
+        var generalExams = Model.Exams?.Where(e => e.LessonId == null && e.DeletedAt == null).OrderByDescending(e => e.StartTime).ToList();
+        var generalAttendances = Model.Attendances?.Where(at => at.LessonId == null).OrderByDescending(at => at.StartTime).ToList();
+        
+        var hasGeneralActivities = (generalAssignments != null && generalAssignments.Any()) || 
+                                   (generalExams != null && generalExams.Any()) || 
+                                   (generalAttendances != null && generalAttendances.Any());
+    }
+    
+    @if (hasGeneralActivities)
+    {
+        <div class="mt-4 mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="mb-0" style="display: flex; align-items: center;">
+                    <i class="fas fa-list-check me-2" style="color: #007bff;"></i>
+                    Hoạt Động
+                </h5>
+            </div>
+            @* Hiển thị bài tập *@
+            @if (generalAssignments != null && generalAssignments.Any())
+            {
+                foreach (var assignment in generalAssignments)
+                {
+                    var hasSubmitted = assignment.Submissions?.Any(s => s.StudentId == generalCurrentUserId2) ?? false;
+                    
+                    <div class="assignment-item mb-3 p-3" style="border: 1px solid #e0e0e0; border-radius: 8px; background: white;">
+                        <div class="d-flex align-items-start gap-3">
+                            <div>
+                                <input type="checkbox" @(hasSubmitted ? "checked" : "") disabled style="width: 20px; height: 20px;" />
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <i class="fas fa-file-alt" style="color: #ff6b6b;"></i>
+                                    <h6 class="mb-0">
+                                        <a href="@Url.Action("AssignmentDetail", "Home", new { id = assignment.AssignmentId })" style="color: #0066cc; text-decoration: none;">
+                                            @assignment.Title
+                                        </a>
+                                        <span class="badge bg-success ms-2">Bài tập</span>
+                                        @if (assignment.IsPublished != true && (userRole == "Teacher" || userRole == "Instructor"))
+                                        {
+                                            <span class="badge bg-warning text-dark ms-2">Nháp</span>
+                                        }
+                                    </h6>
+                                </div>
+                                <div style="font-size: 0.9em; color: #666;">
+                                    <i class="fas fa-clock"></i> Hạn nộp: @assignment.DueDate.ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            </div>
+                            <div>
+                                @if (userRole == "Teacher" || userRole == "Instructor")
+                                {
+                                    <a href="@Url.Action("EditAssignment", "Teacher", new { id = assignment.AssignmentId })" class="btn btn-sm btn-warning me-2 edit-control">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button onclick="deleteAssignment(@assignment.AssignmentId, '@assignment.Title')" class="btn btn-sm btn-danger edit-control">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            
+            @* Hiển thị kiểm tra *@
+            @if (generalExams != null && generalExams.Any())
+            {
+                foreach (var exam in generalExams)
+                {
+                    var examResult = exam.ExamResults?.FirstOrDefault(er => er.StudentId == generalCurrentUserId2);
+                    var hasCompleted = examResult != null;
+                    
+                    <div class="assignment-item mb-3 p-3" style="border: 1px solid #e0e0e0; border-radius: 8px; background: white;">
+                        <div class="d-flex align-items-start gap-3">
+                            <div>
+                                <input type="checkbox" @(hasCompleted ? "checked" : "") disabled style="width: 20px; height: 20px;" />
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <i class="fas fa-file-alt" style="color: #4CAF50;"></i>
+                                    <h6 class="mb-0">
+                                        <a href="@Url.Action("ExamDetail", "Home", new { id = exam.ExamId })" style="color: #0066cc; text-decoration: none;">
+                                            @exam.Title
+                                        </a>
+                                        <span class="badge bg-info ms-2">Kiểm tra</span>
+                                    </h6>
+                                </div>
+                                <div style="font-size: 0.9em; color: #666;">
+                                    <i class="fas fa-clock"></i> @exam.StartTime.ToString("dd/MM/yyyy HH:mm") - @exam.EndTime.ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            </div>
+                            <div>
+                                @if (userRole == "Teacher" || userRole == "Instructor")
+                                {
+                                    <a href="@Url.Action("EditExam", "Teacher", new { id = exam.ExamId })" class="btn btn-sm btn-warning me-2 edit-control">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button onclick="deleteExam(@exam.ExamId, '@exam.Title')" class="btn btn-sm btn-danger edit-control">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            
+            @* Hiển thị mục điểm danh tổng hợp *@
+            @if (generalAttendances != null && generalAttendances.Any())
+            {
+                var totalAttendances = generalAttendances.Count();
+                var openAttendances = generalAttendances.Count(a => a.Status != "Closed");
+                var totalStudents = Model.ClassStudents?.Count() ?? 0;
+                
+                // Tính tỉ lệ điểm danh trung bình cho sinh viên
+                int myPresentCount = 0;
+                if (userRole == "Student")
+                {
+                    foreach (var att in generalAttendances)
+                    {
+                        var myRecord = att.AttendanceRecords?.FirstOrDefault(ar => ar.StudentId == generalCurrentUserId2);
+                        if (myRecord?.Status == "Present")
+                        {
+                            myPresentCount++;
+                        }
+                    }
+                }
+                
+                <div class="assignment-item mb-3 p-3" style="border: 1px solid #e0e0e0; border-radius: 8px; background: white;">
+                    <div class="d-flex align-items-start gap-3">
+                        <div>
+                            @if (userRole == "Student")
+                            {
+                                <input type="checkbox" @(myPresentCount > 0 ? "checked" : "") disabled style="width: 20px; height: 20px;" />
+                            }
+                            else
+                            {
+                                <i class="fas fa-user-check" style="font-size: 20px; color: #28a745;"></i>
+                            }
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <h6 class="mb-0">
+                                    <a href="@Url.Action("StudentAttendance", "Home", new { classId = Model.ClassId })" style="color: #0066cc; text-decoration: none;">
+                                        Điểm danh
+                                    </a>
+                                    <span class="badge bg-warning text-dark ms-2">@totalAttendances buổi</span>
+                                    @if (openAttendances > 0)
+                                    {
+                                        <span class="badge bg-success ms-2">@openAttendances đang mở</span>
+                                    }
+                                </h6>
+                            </div>
+                            <div class="d-flex align-items-center gap-3" style="font-size: 0.9em; color: #666;">
+                                @if (userRole == "Student")
+                                {
+                                    var attendancePercent = totalAttendances > 0 ? (myPresentCount * 100.0 / totalAttendances) : 0;
+                                    <span><i class="fas fa-chart-line"></i> Bạn đã điểm danh: @myPresentCount/@totalAttendances buổi (@attendancePercent.ToString("F1")%)</span>
+                                }
+                                else if (userRole == "Teacher" || userRole == "Instructor")
+                                {
+                                    <span><i class="fas fa-calendar-check"></i> Tổng số buổi: @totalAttendances</span>
+                                    @if (openAttendances > 0)
+                                    {
+                                        <span><i class="fas fa-clock"></i> @openAttendances buổi đang mở</span>
+                                    }
+                                }
+                            </div>
+                            <p class="mt-2 mb-0" style="font-size: 0.9em; color: #555;">
+                                Click để xem chi tiết tất cả các buổi điểm danh và thực hiện điểm danh
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    
+    @* Menu quản lý khóa học - chỉ giảng viên thấy (đặt ở cuối session) *@
+    @if (userRole == "Teacher" || userRole == "Instructor")
+    {
+        <div class="mt-4 edit-control">
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-lg" type="button" id="courseManagementMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-cog"></i> Quản lý khóa học
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="courseManagementMenu" style="min-width: 280px;">
+                    <li><h6 class="dropdown-header"><i class="fas fa-graduation-cap"></i> Thêm Hoạt Động</h6></li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="createAndGoToAttendance(); return false;">
+                            <i class="fas fa-user-check text-success"></i> Tạo section Điểm danh
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="@Url.Action("CreateAssignment", "Teacher", new { classId = Model.ClassId })">
+                            <i class="fas fa-tasks text-primary"></i> Tạo bài tập mới
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="@Url.Action("CreateExam", "Teacher", new { classId = Model.ClassId })">
+                            <i class="fas fa-file-alt text-info"></i> Tạo bài kiểm tra
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="showCreateSectionModal(); return false;">
+                            <i class="fas fa-folder-plus text-warning"></i> Tạo section mới
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header"><i class="fas fa-book"></i> Tài Nguyên Học Tập</h6></li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="showAddSlideModal(); return false;">
+                            <i class="fas fa-info-circle text-primary"></i> Thêm thông tin khóa học
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="@Url.Action("EditClass", "Teacher", new { id = Model.ClassId })">
+                            <i class="fas fa-edit text-secondary"></i> Chỉnh sửa thông tin lớp
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="@Url.Action("CreateLesson", "Teacher", new { classId = Model.ClassId })">
+                            <i class="fas fa-folder-plus text-dark"></i> Thêm chương/bài học
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    }
+</section>
+
+<!-- Nội dung chính cần xem lại / Mission Section -->
+<section class="mission-section mt-4 mb-4">
+    <div class="mission-header">
+        <i class="fas fa-bullseye"></i>
+        <h4 id="missionTitle">@(string.IsNullOrEmpty(Model.MissionTitle) ? "NỘI DUNG CHÍNH CẦN XEM LẠI" : Model.MissionTitle)</h4>
+        @if (isTeacher || userRole?.ToLower() == "teacher" || userRole?.ToLower() == "instructor" || userRole?.ToLower() == "giảng viên")
+        {
+            <button onclick="openEditMissionTitleModal()" class="btn btn-sm btn-warning ms-2 edit-control" title="Sửa tiêu đề Mission">
+                <i class="fas fa-edit"></i> Sửa
+            </button>
+        }
+    </div>
+    
+    <div class="mission-content">
+        <!-- Lessons / Chapters -->
+        @if (Model.Lessons != null && Model.Lessons.Any())
+        {
+            var chapterColors = new[] { "bg-gray", "bg-blue", "bg-green", "bg-orange" };
+            var chapterIndex = 0;
+
+    foreach (var lesson in Model.Lessons.Where(l => l.OrderNumber != 0).OrderBy(l => l.OrderNumber))
+    {
+        var colorClass = chapterColors[chapterIndex % chapterColors.Length];
+        chapterIndex++;
+
+        <div class="chapter-card mb-3">
+            <div class="chapter-content" style="display: block;">
+                @if (isTeacher || userRole?.ToLower() == "teacher" || userRole?.ToLower() == "instructor" || userRole?.ToLower() == "giảng viên")
+                {
+                    <!-- Teacher Controls - Only visible in edit mode -->
+                    <div class="mb-3 p-2 border-bottom edit-control" style="background-color: #f8f9fa;">
+                        <button onclick="showAddVideoModal(@lesson.LessonId);" class="btn btn-sm btn-primary me-2">
+                            <i class="fas fa-video"></i> Thêm video
+                        </button>
+                        <button onclick="showEditLessonContentModal(@lesson.LessonId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lesson.Title))');" class="btn btn-sm btn-info me-2" title="Sửa nội dung chương">
+                            <i class="fas fa-file-edit"></i> Sửa nội dung
+                        </button>
+                        <button onclick="showEditLessonTitleModal(@lesson.LessonId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lesson.Title))');" class="btn btn-sm btn-warning me-2" title="Sửa tên chương">
+                            <i class="fas fa-edit"></i> Sửa tên
+                        </button>
+                        <button onclick="deleteLesson(@lesson.LessonId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lesson.Title))');" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash"></i> Xóa
+                        </button>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(lesson.Content))
+                {
+                    <div class="lesson-content-html">
+                        @Html.Raw(lesson.Content)
+                    </div>
+                }
+                else
+                {
+                    <p style="color: #6c757d; font-style: italic;">Nội dung bài học chưa được cập nhật.</p>
+                }
+
+                @* Hiển thị video bài giảng của chương *@
+                @if (!string.IsNullOrEmpty(lesson.VideoUrl))
+                {
+                    <div class="mt-4 mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <h5 class="mb-0"><i class="fas fa-video text-danger"></i> Video Bài Giảng</h5>
+                            <button class="video-btn" onclick="openVideoModal('Video Bài Giảng - @lesson.Title', '@lesson.VideoUrl')">
+                                <i class="fas fa-play-circle"></i>
+                                Xem video
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                @if (lesson.LessonFiles != null && lesson.LessonFiles.Any())
+                {
+                    <div class="mt-3">
+                        <strong><i class="fas fa-paperclip"></i> Tài liệu đính kèm:</strong>
+                        <ul class="resource-list">
+                            @foreach (var file in lesson.LessonFiles)
+                            {
+                                <li>
+                                    <a href="@file.FilePath" target="_blank">@Html.Raw(file.FileName)</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+                
+                @* Hiển thị bài tập của chương này *@
+                @{
+                    var lessonAssignments = Model.Assignments?.Where(a => a.LessonId == lesson.LessonId && a.DeletedAt == null && (a.IsPublished == true || userRole == "Teacher" || userRole == "Instructor")).OrderBy(a => a.DueDate).ToList();
+                    var userIdStr = Context.Session.GetString("UserId");
+                    int.TryParse(userIdStr, out var currentUserId);
+                }
+                @if (lessonAssignments != null && lessonAssignments.Any())
+                {
+                    <div class="mt-4">
+                        <h5 class="mb-3"><i class="fas fa-tasks text-primary"></i> Bài tập</h5>
+                        <div class="assignment-list">
+                            @foreach (var assignment in lessonAssignments)
+                            {
+                                var hasSubmitted = assignment.Submissions?.Any(s => s.StudentId == currentUserId) ?? false;
+                                var isOverdue = DateTime.Now > assignment.DueDate;
+                                
+                                <div class="assignment-item mb-3 p-3" style="border: 1px solid #e0e0e0; border-radius: 8px; background: white; @(assignment.IsPublished != true && (userRole == "Teacher" || userRole == "Instructor") ? "opacity: 0.6; border: 2px dashed #ffc107;" : "")">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div>
+                                            <input type="checkbox" @(hasSubmitted ? "checked" : "") disabled style="width: 20px; height: 20px; cursor: pointer;" />
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fas fa-file-alt" style="color: #ff6b6b;"></i>
+                                                <h6 class="mb-0">
+                                                    <a href="@Url.Action("AssignmentDetail", "Home", new { id = assignment.AssignmentId })" style="color: #0066cc; text-decoration: none;">
+                                                        @assignment.Title
+                                                    </a>
+                                                    @if (assignment.IsPublished != true && (userRole == "Teacher" || userRole == "Instructor"))
+                                                    {
+                                                        <span class="badge bg-warning text-dark ms-2">Nháp</span>
+                                                    }
+                                                </h6>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            @if (userRole == "Teacher" || userRole == "Instructor")
+                                            {
+                                                @if (assignment.IsPublished != true)
+                                                {
+                                                    <form method="post" action="@Url.Action("TogglePublishAssignment", "Teacher")" style="display: inline;">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="assignmentId" value="@assignment.AssignmentId" />
+                                                        <input type="hidden" name="isPublished" value="true" />
+                                                        <button type="submit" class="btn btn-sm btn-success" title="Công bố bài tập">
+                                                            <i class="fas fa-eye"></i> Công bố
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <form method="post" action="@Url.Action("TogglePublishAssignment", "Teacher")" style="display: inline;">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="assignmentId" value="@assignment.AssignmentId" />
+                                                        <input type="hidden" name="isPublished" value="false" />
+                                                        <button type="submit" class="btn btn-sm btn-secondary" title="Ẩn bài tập">
+                                                            <i class="fas fa-eye-slash"></i> Ẩn
+                                                        </button>
+                                                    </form>
+                                                }
+                                                <a href="@Url.Action("EditAssignment", "Teacher", new { id = assignment.AssignmentId })" 
+                                                   class="btn btn-sm btn-warning edit-control">
+                                                    <i class="fas fa-edit"></i> Sửa
+                                                </a>
+                                                <button onclick="deleteAssignment(@assignment.AssignmentId, '@assignment.Title')" 
+                                                        class="btn btn-sm btn-danger edit-control" title="Xóa bài tập">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <a href="@Url.Action("AssignmentDetail", "Home", new { id = assignment.AssignmentId })" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-info-circle"></i> Chi tiết
+                                                </a>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                
+                @* Hiển thị bài kiểm tra của chương này *@
+                @{
+                    var lessonExams = Model.Exams?.Where(e => e.LessonId == lesson.LessonId && e.DeletedAt == null).OrderBy(e => e.StartTime).ToList();
+                }
+                @if (lessonExams != null && lessonExams.Any())
+                {
+                    @foreach (var exam in lessonExams)
+                    {
+                        var examResult = exam.ExamResults?.FirstOrDefault(er => er.StudentId == currentUserId);
+                        var hasCompleted = examResult != null;
+                        
+                        <div class="assignment-item mb-3 p-3" style="border: 1px solid #e0e0e0; border-radius: 8px; background: white;">
+                            <div class="d-flex align-items-start gap-3">
+                                <div>
+                                    <input type="checkbox" @(hasCompleted ? "checked" : "") disabled style="width: 20px; height: 20px; cursor: pointer;" />
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <i class="fas fa-file-alt" style="color: #4CAF50;"></i>
+                                        <h6 class="mb-0">
+                                            <a href="@Url.Action("ExamDetail", "Home", new { id = exam.ExamId })" style="color: #0066cc; text-decoration: none;">
+                                                @exam.Title
+                                            </a>
+                                        </h6>
+                                    </div>
+                                    
+                                </div>
+                                <div>
+                                    @if (userRole == "Teacher" || userRole == "Instructor")
+                                    {
+                                        <a href="@Url.Action("EditExam", "Teacher", new { id = exam.ExamId })" 
+                                           class="btn btn-sm btn-warning me-2 edit-control">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </a>
+                                        <button onclick="deleteExam(@exam.ExamId, '@exam.Title')" 
+                                                class="btn btn-sm btn-danger edit-control" title="Xóa bài kiểm tra">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <a href="@Url.Action("ExamDetail", "Home", new { id = exam.ExamId })" 
+                                           class="btn btn-sm @(hasCompleted ? "btn-success" : "btn-primary")">
+                                            <i class="fas @(hasCompleted ? "fa-check" : "fa-pencil-alt")"></i> 
+                                            @(hasCompleted ? "Xem kết quả" : "Làm bài")
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                
+                @* Hiển thị điểm danh của chương này *@
+                @{
+                    var lessonAttendances = Model.Attendances?.Where(a => a.LessonId == lesson.LessonId).OrderByDescending(a => a.StartTime).ToList();
+                }
+                @if (lessonAttendances != null && lessonAttendances.Any())
+                {
+                    <div class="mt-4">
+                        <h5 class="mb-3"><i class="fas fa-user-check text-success"></i> Điểm danh</h5>
+                        <div class="attendance-list">
+                            @foreach (var attendance in lessonAttendances)
+                            {
+                                var totalStudents = Model.ClassStudents?.Count() ?? 0;
+                                var presentCount = attendance.AttendanceRecords?.Count(ar => ar.Status == "Present") ?? 0;
+                                var attendanceRate = totalStudents > 0 ? (presentCount * 100.0 / totalStudents) : 0;
+                                var isClosed = attendance.Status == "Closed";
+                                
+                                var myRecord = attendance.AttendanceRecords?.FirstOrDefault(ar => ar.StudentId == currentUserId);
+                                var myStatus = myRecord?.Status ?? "Absent";
+                                
+                                <div class="assignment-item mb-3 p-3" style="border: 1px solid #e0e0e0; border-radius: 8px; background: white;">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div>
+                                            @if (userRole == "Student")
+                                            {
+                                                <input type="checkbox" @(myStatus == "Present" ? "checked" : "") disabled style="width: 20px; height: 20px; cursor: pointer;" />
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-user-check" style="font-size: 20px; color: #28a745;"></i>
+                                            }
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <h6 class="mb-0">
+                                                    @if (userRole == "Teacher" || userRole == "Instructor")
+                                                    {
+                                                        <a href="@Url.Action("TakeAttendance", "Teacher", new { id = attendance.AttendanceId })" style="color: #0066cc; text-decoration: none;">
+                                                            @attendance.Title
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <a href="@Url.Action("StudentAttendance", "Home", new { classId = Model.ClassId })" style="color: #0066cc; text-decoration: none;">
+                                                            @attendance.Title
+                                                        </a>
+                                                    }
+                                                    @if (isClosed)
+                                                    {
+                                                        <span class="badge bg-secondary ms-2">Đã đóng</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success ms-2">Đang mở</span>
+                                                    }
+                                                    @if (userRole == "Student" && myStatus != "Absent")
+                                                    {
+                                                        @if (myStatus == "Present")
+                                                        {
+                                                            <span class="badge bg-success ms-2"><i class="fas fa-check"></i> Có mặt</span>
+                                                        }
+                                                        else if (myStatus == "Late")
+                                                        {
+                                                            <span class="badge bg-warning ms-2"><i class="fas fa-clock"></i> Muộn</span>
+                                                        }
+                                                        else if (myStatus == "Excused")
+                                                        {
+                                                            <span class="badge bg-info ms-2"><i class="fas fa-file-medical"></i> Có phép</span>
+                                                        }
+                                                    }
+                                                </h6>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-3" style="font-size: 0.9em; color: #666;">
+                                                <span><i class="fas fa-clock"></i> @attendance.StartTime.ToString("dd/MM/yyyy HH:mm") - @attendance.EndTime.ToString("dd/MM/yyyy HH:mm")</span>
+                                                @if (userRole == "Teacher" || userRole == "Instructor")
+                                                {
+                                                    <span><i class="fas fa-users"></i> @presentCount/@totalStudents (@attendanceRate.ToString("F1")%)</span>
+                                                    @if (attendance.AllowCodeAttendance && !string.IsNullOrEmpty(attendance.AttendanceCode))
+                                                    {
+                                                        <span><i class="fas fa-key"></i> Mã: <strong>@attendance.AttendanceCode</strong></span>
+                                                    }
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(attendance.Description))
+                                            {
+                                                <p class="mt-2 mb-0" style="font-size: 0.9em; color: #555;">@attendance.Description</p>
+                                            }
+                                        </div>
+                                        <div>
+                                            @if (userRole == "Teacher" || userRole == "Instructor")
+                                            {
+                                                <a href="@Url.Action("ShowAttendanceQR", "Teacher", new { id = attendance.AttendanceId })" 
+                                                   class="btn btn-sm btn-success me-1">
+                                                    <i class="fas fa-qrcode"></i> QR Code
+                                                </a>
+                                                <a href="@Url.Action("TakeAttendance", "Teacher", new { id = attendance.AttendanceId })" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-list"></i> Danh sách
+                                                </a>
+                                            }
+                                            @if (userRole == "Student" && !isClosed && myStatus != "Present")
+                                            {
+                                                <button onclick="openAttendanceCodeModal(@attendance.AttendanceId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(attendance.Title))')" 
+                                                        class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-keyboard"></i> Nhập mã
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                
+                @* Menu quản lý khóa học cho từng chương *@
+                @if (userRole == "Teacher" || userRole == "Instructor")
+                {
+                    <div class="mt-4 border-top pt-3 edit-control">
+                        <button class="btn btn-outline-primary btn-sm" type="button" onclick="openLessonManagementModal(@lesson.LessonId)">
+                            <i class="fas fa-cog"></i> Quản lý khóa học
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+    </div> <!-- End mission-content -->
+</section> <!-- End mission-section -->
+
+<!-- Video Modal -->
+<div id="videoModal" class="video-modal">
+    <div class="video-modal-content">
+        <div class="video-modal-header">
+            <h3 id="videoModalTitle">Video</h3>
+            <button class="modal-close" onclick="closeVideoModal()">&times;</button>
+        </div>
+        <div class="video-modal-body">
+            <iframe id="videoModalIframe" 
+                    src="" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+</div>
+
+@* Modal for editing file *@
+<div id="editFileModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Sửa Tài Liệu</h5>
+                <button type="button" class="btn-close" onclick="closeEditFileModal()"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editFileForm">
+                    <input type="hidden" id="editFileId" />
+                    <div class="mb-3">
+                        <label for="editFileTitle" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editFileTitle" required>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Nhập tên hiển thị cho tài liệu<br>
+                            <strong>Có thể dùng icon:</strong> <code>&lt;i class="fas fa-users"&gt;&lt;/i&gt; Tiêu đề</code>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFileUrl" class="form-label">URL <span class="text-danger">*</span></label>
+                        <input type="url" class="form-control" id="editFileUrl" required>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Đường dẫn đến tài liệu
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditFileModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitEditFile()">
+                    <i class="fas fa-check"></i> Lưu thay đổi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal for editing resource section title *@
+<div id="editResourceTitleModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Sửa Tiêu Đề Section</h5>
+                <button type="button" class="btn-close" onclick="closeEditResourceTitleModal()"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editResourceTitleForm">
+                    <input type="hidden" id="resourceLessonId" />
+                    <div class="mb-3">
+                        <label for="editSectionIconSelect" class="form-label">Icon (Tùy chọn)</label>
+                        <div class="icon-picker-grid-edit" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-bottom: 10px;">
+                            <button type="button" class="icon-picker-item-edit" data-icon="" title="Không dùng icon" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <span style="font-size: 20px; color: #999;">—</span>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-folder" title="Folder" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-folder" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-book" title="Book" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-book" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-file-alt" title="Document" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-file-alt" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-video" title="Video" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-video" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-user-check" title="Attendance" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-user-check" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-tasks" title="Tasks" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-tasks" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-clipboard-list" title="List" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-clipboard-list" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-star" title="Star" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-star" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-graduation-cap" title="Education" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-graduation-cap" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-lightbulb" title="Idea" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-lightbulb" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-pencil-alt" title="Edit" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-pencil-alt" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-chart-line" title="Chart" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-chart-line" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-code" title="Code" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-code" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-calendar" title="Calendar" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-calendar" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item-edit" data-icon="fas fa-clock" title="Time" style="border: 2px solid #ddd; background: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-clock" style="font-size: 20px;"></i>
+                            </button>
+                        </div>
+                        <input type="hidden" id="selectedIconEdit" value="">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Chọn icon để hiển thị ở đầu tiêu đề section (không bắt buộc)
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="resourceSectionTitle" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="resourceSectionTitle" required 
+                               placeholder="VD: Tài liệu, Tài nguyên học tập, Resources, 学習資料...">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Nhập tiêu đề hiển thị cho section
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditResourceTitleModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitEditResourceTitle()">
+                    <i class="fas fa-check"></i> Lưu thay đổi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal for creating section *@
+<div id="createSectionModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-folder-plus"></i> Tạo Section Mới</h5>
+                <button type="button" class="btn-close" onclick="closeCreateSectionModal()"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createSectionForm">
+                    <div class="mb-3">
+                        <label for="createSectionIconSelect" class="form-label">Icon (Tùy chọn)</label>
+                        <div class="icon-picker-grid" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-bottom: 10px;">
+                            <button type="button" class="icon-picker-item" data-icon="" title="Không dùng icon">
+                                <span style="font-size: 20px; color: #999;">—</span>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-folder" title="Folder">
+                                <i class="fas fa-folder" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-book" title="Book">
+                                <i class="fas fa-book" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-file-alt" title="Document">
+                                <i class="fas fa-file-alt" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-video" title="Video">
+                                <i class="fas fa-video" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-user-check" title="Attendance">
+                                <i class="fas fa-user-check" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-tasks" title="Tasks">
+                                <i class="fas fa-tasks" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-clipboard-list" title="List">
+                                <i class="fas fa-clipboard-list" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-star" title="Star">
+                                <i class="fas fa-star" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-graduation-cap" title="Education">
+                                <i class="fas fa-graduation-cap" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-lightbulb" title="Idea">
+                                <i class="fas fa-lightbulb" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-pencil-alt" title="Edit">
+                                <i class="fas fa-pencil-alt" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-chart-line" title="Chart">
+                                <i class="fas fa-chart-line" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-code" title="Code">
+                                <i class="fas fa-code" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-calendar" title="Calendar">
+                                <i class="fas fa-calendar" style="font-size: 20px;"></i>
+                            </button>
+                            <button type="button" class="icon-picker-item" data-icon="fas fa-clock" title="Time">
+                                <i class="fas fa-clock" style="font-size: 20px;"></i>
+                            </button>
+                        </div>
+                        <input type="hidden" id="selectedIcon" value="">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Chọn icon để hiển thị ở đầu tiêu đề section (không bắt buộc)
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sectionTitle" class="form-label">Tiêu đề Section <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="sectionTitle" 
+                               placeholder="VD: Hoạt Động, Điểm danh, Tài liệu, Resources..." required>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Nhập tên hiển thị cho section
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Lưu ý:</strong> Section này sẽ được tạo và hiển thị trong trang khóa học. 
+                        Sau đó bạn có thể thêm điểm danh, tài liệu, video vào section này.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateSectionModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitCreateSection()">
+                    <i class="fas fa-check"></i> Tạo Section
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal for adding slide *@
+<div id="addSlideModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-info-circle"></i> Thêm Thông Tin Khóa Học</h5>
+                <button type="button" class="btn-close" onclick="closeAddSlideModal()"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addSlideForm">
+                    <input type="hidden" id="targetLessonId" />
+                    <div class="mb-3" id="sectionSelectDiv">
+                        <label class="form-label">Chọn Section</label>
+                        <select class="form-select" id="sectionSelect" onchange="toggleSectionInput()">
+                            <option value="new">-- Tạo section mới --</option>
+                            @if (Model.Lessons != null && Model.Lessons.Any())
+                            {
+                                foreach (var lesson in Model.Lessons.Where(l => l.OrderNumber == 0).OrderBy(l => l.Title))
+                                {
+                                    <option value="@lesson.LessonId">@lesson.Title</option>
+                                }
+                            }
+                        </select>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Chọn section có sẵn hoặc tạo mới
+                        </div>
+                    </div>
+                    <div class="mb-3" id="newSectionTitleDiv">
+                        <label for="sectionTitle" class="form-label">Tiêu đề Section Mới</label>
+                        <input type="text" class="form-control" id="sectionTitle" 
+                               placeholder="VD: Tài liệu, Tài nguyên học tập, Resources, 学習資料...">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Để trống sẽ dùng tiêu đề mặc định "Tài liệu chung"
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="slideTitle" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="slideTitle" required 
+                               placeholder="VD: Slide Bài giảng, Study sources, Tài liệu tham khảo...">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Nhập tên hiển thị cho thông tin (hỗ trợ đa ngôn ngữ)<br>
+                            <strong>Có thể dùng icon:</strong> <code>&lt;i class="fas fa-users"&gt;&lt;/i&gt; Tiêu đề</code>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="slideUrl" class="form-label">URL <span class="text-danger">*</span></label>
+                        <input type="url" class="form-control" id="slideUrl" required 
+                               placeholder="VD: https://docs.google.com/..., https://drive.google.com/...">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Nhập đường dẫn liên kết (Slides, PDF, Video, Website...)
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAddSlideModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitSlide()">
+                    <i class="fas fa-check"></i> Thêm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal for Lesson Management *@
+<div id="lessonManagementModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title"><i class="fas fa-cog"></i> Quản Lý Khóa Học</h5>
+                <button type="button" class="btn-close btn-close-white" onclick="closeLessonManagementModal()"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="list-group list-group-flush">
+                    <a id="linkAddAssignment" href="#" class="list-group-item list-group-item-action py-3">
+                        <i class="fas fa-tasks text-success me-3" style="font-size: 1.2em;"></i>
+                        <strong>Thêm bài tập</strong>
+                        <small class="d-block text-muted mt-1">Tạo bài tập mới cho chương này</small>
+                    </a>
+                    <a id="linkAddExam" href="#" class="list-group-item list-group-item-action py-3">
+                        <i class="fas fa-file-alt text-info me-3" style="font-size: 1.2em;"></i>
+                        <strong>Thêm bài kiểm tra</strong>
+                        <small class="d-block text-muted mt-1">Tạo bài kiểm tra mới cho chương này</small>
+                    </a>
+                    <button type="button" onclick="openAddVideoModal()" class="list-group-item list-group-item-action py-3 border-0 text-start w-100">
+                        <i class="fas fa-video text-danger me-3" style="font-size: 1.2em;"></i>
+                        <strong>Thêm video bài giảng</strong>
+                        <small class="d-block text-muted mt-1">Thêm link video YouTube/Google Drive cho chương này</small>
+                    </button>
+                    <div class="dropdown-divider m-0"></div>
+                    <a id="linkEditLesson" href="#" class="list-group-item list-group-item-action py-3">
+                        <i class="fas fa-edit text-primary me-3" style="font-size: 1.2em;"></i>
+                        <strong>Chỉnh sửa chương</strong>
+                        <small class="d-block text-muted mt-1">Sửa nội dung, tiêu đề của chương này</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal for editing mission title *@
+<div id="editMissionTitleModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Sửa Tiêu Đề Section</h5>
+                <button type="button" class="btn-close" onclick="closeEditMissionTitleModal()"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editMissionTitleForm">
+                    <div class="mb-3">
+                        <label for="missionTitleInput" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="missionTitleInput" required 
+                               placeholder="VD: NỘI DUNG CHÍNH CẦN XEM LẠI">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Đây là tiêu đề của section chứa tất cả các bài học
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditMissionTitleModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitMissionTitle()">
+                    <i class="fas fa-save"></i> Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal for editing lesson title *@
+<div id="editLessonTitleModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Sửa Tên Chương</h5>
+                <button type="button" class="btn-close" onclick="closeEditLessonTitleModal()"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editLessonTitleForm">
+                    <input type="hidden" id="editLessonId" />
+                    <div class="mb-3">
+                        <label for="lessonTitleInput" class="form-label">Tên chương <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="lessonTitleInput" required 
+                               placeholder="VD: Chương 1 - Giới thiệu">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> Nhập tên chương bạn muốn hiển thị
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditLessonTitleModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitLessonTitle()">
+                    <i class="fas fa-save"></i> Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal for editing lesson content *@
+<div id="editLessonContentModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width: 90%;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Sửa Nội Dung Chương</h5>
+                <button type="button" class="btn-close" onclick="closeLessonContentModal()"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editLessonContentForm">
+                    <input type="hidden" id="editContentLessonId" />
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chương:</label>
+                        <p id="editContentLessonTitle" class="text-primary fw-bold"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lessonContentEditor" class="form-label">Nội dung <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="lessonContentEditor" rows="15"></textarea>
+                        <div class="form-text mt-2">
+                            <i class="fas fa-info-circle"></i> Sử dụng trình soạn thảo để định dạng nội dung. Hỗ trợ: tiêu đề, đoạn văn, danh sách, bảng, hình ảnh, v.v.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeLessonContentModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitLessonContent()">
+                    <i class="fas fa-save"></i> Lưu Nội Dung
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal for adding video *@
+<div id="addVideoModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: white;">
+                <h5 class="modal-title"><i class="fas fa-video"></i> Thêm Video Bài Giảng</h5>
+                <button type="button" class="btn-close btn-close-white" onclick="closeAddVideoModal()"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="videoLessonId" />
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Chương:</label>
+                    <p id="videoLessonTitle" class="text-primary fw-bold"></p>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="videoUrl" class="form-label fw-bold">Link Video <span class="text-danger">*</span></label>
+                    <input type="url" class="form-control" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." required>
+                    <div class="form-text">
+                        <i class="fas fa-info-circle"></i> Hỗ trợ: YouTube, Google Drive, Vimeo, Dailymotion
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mb-0">
+                    <strong><i class="fab fa-youtube me-2"></i>YouTube:</strong> https://www.youtube.com/watch?v=ABC123<br>
+                    <strong><i class="fab fa-google-drive me-2"></i>Google Drive:</strong> https://drive.google.com/file/d/ABC123/view<br>
+                    <strong><i class="fab fa-vimeo me-2"></i>Vimeo:</strong> https://vimeo.com/123456789
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAddVideoModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-danger" onclick="submitVideoUrl()">
+                    <i class="fas fa-save"></i> Lưu Video
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal for attendance code input *@
+<div id="attendanceCodeModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-check"></i> Điểm Danh Bằng Mã</h5>
+                <button type="button" class="btn-close" onclick="closeAttendanceCodeModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <p class="fw-bold text-primary"><i class="fas fa-clipboard-check"></i> <span id="modalAttendanceTitle"></span></p>
+                    <label for="attendanceCodeInput" class="form-label">Nhập mã điểm danh <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="attendanceCodeInput" placeholder="Nhập mã từ giảng viên" required>
+                    <input type="hidden" id="modalAttendanceId">
+                    <div class="form-text">
+                        <i class="fas fa-info-circle"></i> Vui lòng nhập mã điểm danh được cung cấp bởi giảng viên
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAttendanceCodeModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-success" onclick="submitAttendanceCode()">
+                    <i class="fas fa-check"></i> Xác Nhận
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal for editing class title *@
+<div id="editClassTitleModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Tùy Chỉnh Tên Lớp Học</h5>
+                <button type="button" class="btn-close" onclick="closeEditClassTitleModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Mã lớp học:</label>
+                    <p id="displayClassCode" class="text-muted"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Mã môn học:</label>
+                    <p id="displayCourseCode" class="text-muted"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tên môn học:</label>
+                    <p id="displayOriginalName" class="text-muted"></p>
+                </div>
+                <div class="mb-3">
+                    <label for="classTitleInput" class="form-label">Tên hiển thị <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="classTitleInput" placeholder="Nhập tên hiển thị cho lớp học" required>
+                    <input type="hidden" id="editClassId">
+                    <div class="form-text">Tên này sẽ hiển thị thay vì tên gốc của lớp học</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditClassTitleModal()">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitClassTitle()">
+                    <i class="fas fa-save"></i> Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+<!-- CKEditor 5 CDN -->
+<script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js"></script>
+<script>
+    // ============ CKEditor Instance ============
+    let lessonContentEditorInstance = null;
+
+    // ============ Teacher Dropdown Menu ============
+    function toggleTeacherDropdown(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('teacherDropdownMenu');
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('teacherDropdownMenu');
+        const button = document.getElementById('teacherActionsDropdown');
+        
+        if (dropdown && button && !button.contains(event.target) && !dropdown.contains(event.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // Export to Excel function
+    function exportToExcel() {
+        window.location.href = '@Url.Action("ExportStudentsToExcel", "Teacher", new { classId = Model.ClassId })';
+    }
+
+    // ============ Toggle Edit Mode ============
+    function toggleEditMode() {
+        const body = document.body;
+        const isEditMode = body.classList.toggle('edit-mode');
+        const buttonText = document.getElementById('editModeButtonText');
+        
+        if (isEditMode) {
+            buttonText.textContent = 'Tắt chế độ chỉnh sửa';
+            // Close dropdown
+            document.getElementById('teacherDropdownMenu').style.display = 'none';
+        } else {
+            buttonText.textContent = 'Bật chế độ chỉnh sửa';
+        }
+    }
+
+    // ============ Chapter Toggle ============
+    function toggleChapter(header) {
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('.expand-icon');
+        
+        if (content.style.display === "none") {
+            content.style.display = "block";
+            icon.classList.remove('rotated');
+        } else {
+            content.style.display = "none";
+            icon.classList.add('rotated');
+        }
+    }
+
+    // Thông báo khi hoàn thành bài học
+    document.querySelectorAll('.complete-check').forEach(check => {
+        check.addEventListener('change', function() {
+            if(this.checked) {
+                alert("Chúc mừng bạn đã hoàn thành chương này!");
+            }
+        });
+    });
+
+    // Video Modal Functions
+    function convertToEmbedUrl(videoUrl) {
+        // YouTube
+        if (videoUrl.includes('youtube.com/watch?v=')) {
+            const videoId = videoUrl.split('v=')[1].split('&')[0];
+            return `https://www.youtube.com/embed/${videoId}`;
+        }
+        if (videoUrl.includes('youtu.be/')) {
+            const videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
+            return `https://www.youtube.com/embed/${videoId}`;
+        }
+        
+        // Vimeo
+        if (videoUrl.includes('vimeo.com/')) {
+            const videoId = videoUrl.split('vimeo.com/')[1].split('?')[0];
+            return `https://player.vimeo.com/video/${videoId}`;
+        }
+        
+        // Dailymotion
+        if (videoUrl.includes('dailymotion.com/video/')) {
+            const videoId = videoUrl.split('video/')[1].split('?')[0];
+            return `https://www.dailymotion.com/embed/video/${videoId}`;
+        }
+        
+        // Google Drive
+        if (videoUrl.includes('drive.google.com/file/d/')) {
+            const fileId = videoUrl.split('/d/')[1].split('/')[0];
+            return `https://drive.google.com/file/d/${fileId}/preview`;
+        }
+        
+        // Nếu không match format nào, trả về URL gốc
+        return videoUrl;
+    }
+
+    function openVideoModal(title, videoUrl) {
+        const modal = document.getElementById('videoModal');
+        const iframe = document.getElementById('videoModalIframe');
+        const modalTitle = document.getElementById('videoModalTitle');
+        
+        // Convert URL to embed format
+        const embedUrl = convertToEmbedUrl(videoUrl);
+        
+        modalTitle.textContent = title;
+        iframe.src = embedUrl;
+        modal.style.display = 'block';
+        
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeVideoModal() {
+        const modal = document.getElementById('videoModal');
+        const iframe = document.getElementById('videoModalIframe');
+        
+        // Stop video by clearing src
+        iframe.src = '';
+        modal.style.display = 'none';
+        
+        // Restore body scroll
+        document.body.style.overflow = 'auto';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('videoModal');
+        if (event.target == modal) {
+            closeVideoModal();
+        }
+    }
+
+    // Close modal on ESC key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeVideoModal();
+        }
+    });
+
+    // Delete assignment function
+    function deleteAssignment(assignmentId, assignmentTitle) {
+        if (confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignmentTitle}"?\n\nLưu ý: Tất cả bài nộp của sinh viên sẽ bị xóa theo!`)) {
+            fetch('@Url.Action("DeleteAssignment", "Teacher")?id=' + assignmentId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                alert('Có lỗi xảy ra: ' + error);
+            });
+        }
+    }
+
+    // Delete exam function
+    function deleteExam(examId, examTitle) {
+        if (confirm(`Bạn có chắc chắn muốn xóa bài kiểm tra "${examTitle}"?\n\nLưu ý: Tất cả kết quả thi của sinh viên sẽ bị xóa theo!`)) {
+            fetch('@Url.Action("DeleteExam", "Teacher")?id=' + examId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                alert('Có lỗi xảy ra: ' + error);
+            });
+        }
+    }
+
+    // Show modal for adding slide
+    function showAddSlideModal() {
+        document.getElementById('addSlideModal').style.display = 'block';
+        document.getElementById('sectionSelectDiv').style.display = 'block';
+        document.getElementById('targetLessonId').value = '';
+        document.getElementById('sectionSelect').value = 'new';
+        toggleSectionInput(); // Set initial state
+    }
+    
+    // Show modal for adding slide to specific section
+    function showAddSlideModalForSection(lessonId) {
+        document.getElementById('addSlideModal').style.display = 'block';
+        document.getElementById('sectionSelectDiv').style.display = 'none';
+        document.getElementById('newSectionTitleDiv').style.display = 'none';
+        document.getElementById('targetLessonId').value = lessonId;
+    }
+    
+    // Show modal for adding video to specific section
+    function showAddVideoModalForSection(lessonId) {
+        document.getElementById('videoLessonId').value = lessonId;
+        document.getElementById('videoUrl').value = '';
+        document.getElementById('addVideoModal').style.display = 'block';
+    }
+
+    // Close modal for adding slide
+    function closeAddSlideModal() {
+        document.getElementById('addSlideModal').style.display = 'none';
+        document.getElementById('addSlideForm').reset();
+    }
+
+    // Toggle section title input based on selection
+    function toggleSectionInput() {
+        var select = document.getElementById('sectionSelect');
+        var newSectionDiv = document.getElementById('newSectionTitleDiv');
+        
+        if (select.value === 'new') {
+            newSectionDiv.style.display = 'block';
+        } else {
+            newSectionDiv.style.display = 'none';
+        }
+    }
+
+    // Show modal for creating section
+    function showCreateSectionModal() {
+        document.getElementById('createSectionModal').style.display = 'block';
+        // Reset selected icon
+        document.getElementById('selectedIcon').value = '';
+        document.querySelectorAll('.icon-picker-item').forEach(btn => {
+            btn.style.borderColor = '#ddd';
+            btn.style.background = 'white';
+        });
+    }
+
+    // Close modal for creating section
+    function closeCreateSectionModal() {
+        document.getElementById('createSectionModal').style.display = 'none';
+        document.getElementById('createSectionForm').reset();
+        document.getElementById('selectedIcon').value = '';
+    }
+
+    // Hiển thị modal để tạo section điểm danh mới (không tạo phiên điểm danh)
+    function showCreateAttendanceSectionModal() {
+        var sectionName = prompt('Nhập tên section (vd: Điểm danh, Attendance):', 'Điểm danh');
+        
+        if (!sectionName || sectionName.trim() === '') {
+            return; // User cancelled or entered empty name
+        }
+
+        var formData = new FormData();
+        formData.append('classId', '@Model.ClassId');
+        formData.append('sectionTitle', '<i class="fas fa-user-check" style="color: #28a745;"></i> ' + sectionName.trim());
+
+        fetch('@Url.Action("CreateSection", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Chuyển hướng đến trang quản lý attendance để thêm các buổi điểm danh
+                window.location.href = '@Url.Action("ManageAttendance", "Teacher")' + '?lessonId=' + data.lessonId;
+            } else {
+                alert(data.message || 'Có lỗi xảy ra khi tạo section!');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi tạo section điểm danh!');
+        });
+    }
+
+    // Show modal for creating attendance
+    function showCreateAttendanceModal(lessonId) {
+        document.getElementById('attendanceLessonId').value = lessonId;
+        document.getElementById('attendanceTitle').value = '';
+        document.getElementById('createAttendanceModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    // Close modal for creating attendance
+    function closeCreateAttendanceModal() {
+        document.getElementById('createAttendanceModal').style.display = 'none';
+        document.getElementById('createAttendanceForm').reset();
+        document.body.style.overflow = 'auto';
+    }
+
+    // Submit create attendance
+    // Tạo section điểm danh và chuyển hướng đến trang quản lý attendance
+    function createAndGoToAttendance() {
+        // Mở modal tạo section và đặt flag để chuyển hướng sau khi tạo xong
+        window.shouldRedirectToAttendance = true;
+        showCreateSectionModal();
+    }
+
+    // Tạo section điểm danh (chỉ tạo container, chưa tạo phiên điểm danh)
+    function createAttendanceSection() {
+        // Kiểm tra xem đã có section điểm danh chưa
+        if (confirm('Bạn có muốn tạo section "Điểm danh" để quản lý các buổi điểm danh không?\n\nSau khi tạo xong, bạn có thể click vào section để thêm các phiên điểm danh cụ thể.')) {
+            var formData = new FormData();
+            formData.append('classId', '@Model.ClassId');
+            formData.append('sectionTitle', '<i class="fas fa-user-check" style="color: #28a745;"></i> Điểm danh');
+
+            fetch('@Url.Action("CreateSection", "Teacher")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Tạo section "Điểm danh" thành công!\n\nBạn có thể click vào section để thêm các phiên điểm danh.');
+                    location.reload();
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra khi tạo section!');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi tạo section điểm danh!');
+            });
+        }
+    }
+
+    // Submit create section
+    function submitCreateSection() {
+        var sectionTitle = document.getElementById('sectionTitle').value.trim();
+        var selectedIcon = document.getElementById('selectedIcon').value;
+
+        // Validate
+        if (!sectionTitle) {
+            alert('Vui lòng nhập tiêu đề cho section!');
+            return;
+        }
+
+        // Nếu có icon được chọn, thêm icon vào đầu title
+        var fullTitle = sectionTitle;
+        if (selectedIcon) {
+            fullTitle = '<i class="' + selectedIcon + '"></i> ' + sectionTitle;
+        }
+
+        // Tạo section mới
+        var formData = new FormData();
+        formData.append('classId', '@Model.ClassId');
+        formData.append('sectionTitle', fullTitle);
+
+        fetch('@Url.Action("CreateSection", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeCreateSectionModal();
+                
+                // Kiểm tra xem có cần chuyển hướng đến trang quản lý attendance không
+                if (window.shouldRedirectToAttendance) {
+                    window.shouldRedirectToAttendance = false; // Reset flag
+                    window.location.href = '@Url.Action("ManageAttendance", "Teacher")' + '?lessonId=' + data.lessonId;
+                } else {
+                    alert(data.message);
+                    location.reload(); // Reload trang để hiển thị section mới
+                }
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // Show modal for editing file
+    function showEditFileModal(fileId, fileName, filePath) {
+        document.getElementById('editFileId').value = fileId;
+        document.getElementById('editFileTitle').value = fileName;
+        document.getElementById('editFileUrl').value = filePath;
+        document.getElementById('editFileModal').style.display = 'block';
+    }
+
+    // Close modal for editing file
+    function closeEditFileModal() {
+        document.getElementById('editFileModal').style.display = 'none';
+        document.getElementById('editFileForm').reset();
+    }
+
+    // Show modal for editing resource section title
+    function showEditResourceTitleModal(lessonId, currentTitle) {
+        document.getElementById('resourceLessonId').value = lessonId;
+        document.getElementById('resourceSectionTitle').value = currentTitle;
+        
+        // Reset selected icon
+        document.getElementById('selectedIconEdit').value = '';
+        document.querySelectorAll('.icon-picker-item-edit').forEach(btn => {
+            btn.style.borderColor = '#ddd';
+            btn.style.background = 'white';
+        });
+        
+        document.getElementById('editResourceTitleModal').style.display = 'block';
+    }
+
+    // Close modal for editing resource section title
+    function closeEditResourceTitleModal() {
+        document.getElementById('editResourceTitleModal').style.display = 'none';
+        document.getElementById('editResourceTitleForm').reset();
+        document.getElementById('selectedIconEdit').value = '';
+    }
+
+    // Submit edit resource section title
+    function submitEditResourceTitle() {
+        var lessonId = document.getElementById('resourceLessonId').value;
+        var title = document.getElementById('resourceSectionTitle').value.trim();
+        var selectedIcon = document.getElementById('selectedIconEdit').value;
+
+        if (!title) {
+            alert('Vui lòng nhập tiêu đề!');
+            return;
+        }
+
+        // Nếu có icon được chọn, thêm icon vào đầu title
+        var fullTitle = title;
+        if (selectedIcon) {
+            fullTitle = '<i class="' + selectedIcon + '"></i> ' + title;
+        }
+
+        var formData = new FormData();
+        formData.append('lessonId', lessonId);
+        formData.append('title', fullTitle);
+
+        fetch('@Url.Action("UpdateLessonTitle", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                closeEditResourceTitleModal();
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // Submit edit file
+    function submitEditFile() {
+        var fileId = document.getElementById('editFileId').value;
+        var title = document.getElementById('editFileTitle').value.trim();
+        var url = document.getElementById('editFileUrl').value.trim();
+
+        if (!title) {
+            alert('Vui lòng nhập tiêu đề!');
+            return;
+        }
+
+        if (!url) {
+            alert('Vui lòng nhập URL!');
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('fileId', fileId);
+        formData.append('title', title);
+        formData.append('url', url);
+
+        fetch('@Url.Action("EditFile", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // Delete file function
+    function deleteFile(fileId, fileName) {
+        if (confirm(`Bạn có chắc chắn muốn xóa tài liệu "${fileName}"?`)) {
+            fetch('@Url.Action("DeleteFile", "Teacher")?id=' + fileId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                alert('Có lỗi xảy ra: ' + error);
+            });
+        }
+    }
+
+    // Submit slide
+    function submitSlide() {
+        var targetLessonId = document.getElementById('targetLessonId').value;
+        var sectionSelect = document.getElementById('sectionSelect').value;
+        var sectionTitle = document.getElementById('sectionTitle').value.trim();
+        var title = document.getElementById('slideTitle').value.trim();
+        var url = document.getElementById('slideUrl').value.trim();
+
+        if (!title) {
+            alert('Vui lòng nhập tiêu đề cho slide!');
+            return;
+        }
+
+        if (!url) {
+            alert('Vui lòng nhập URL slide bài giảng!');
+            return;
+        }
+
+        // Create FormData
+        var formData = new FormData();
+        formData.append('classId', '@Model.ClassId');
+        
+        // Nếu có targetLessonId (thêm từ section cụ thể)
+        if (targetLessonId) {
+            formData.append('lessonId', targetLessonId);
+        } else {
+            // Nếu chọn section có sẵn
+            if (sectionSelect !== 'new') {
+                formData.append('lessonId', sectionSelect);
+            } else {
+                formData.append('lessonId', '');
+                formData.append('sectionTitle', sectionTitle || 'Tài liệu chung');
+            }
+        }
+        
+        formData.append('url', url);
+        formData.append('title', title);
+
+        // Submit via AJAX
+        fetch('@Url.Action("AddSlide", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload(); // Reload trang để hiển thị section mới
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // Delete section function
+    function deleteSection(lessonId, sectionTitle, hasContent) {
+        if (hasContent) {
+            if (!confirm(`Section "${sectionTitle}" có nội dung bên trong.\n\nBạn có chắc chắn muốn xóa section này?\n\nLưu ý: Tất cả nội dung (điểm danh, tài liệu, video) sẽ bị xóa!`)) {
+                return;
+            }
+        } else {
+            if (!confirm(`Bạn có chắc chắn muốn xóa section "${sectionTitle}"?`)) {
+                return;
+            }
+        }
+        
+        fetch('@Url.Action("DeleteSection", "Teacher")?lessonId=' + lessonId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // Delete attendance function
+    function deleteAttendance(attendanceId, attendanceTitle) {
+        if (confirm(`Bạn có chắc chắn muốn xóa phiên điểm danh "${attendanceTitle}"?\n\nLưu ý: Tất cả dữ liệu điểm danh của sinh viên sẽ bị xóa theo!`)) {
+            fetch('@Url.Action("DeleteAttendance", "Teacher")?id=' + attendanceId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                alert('Có lỗi xảy ra: ' + error);
+            });
+        }
+    }
+
+    // Mission Title Edit Functions
+    function openEditMissionTitleModal() {
+        const currentTitle = document.getElementById('missionTitle').innerText;
+        document.getElementById('missionTitleInput').value = currentTitle;
+        document.getElementById('editMissionTitleModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEditMissionTitleModal() {
+        document.getElementById('editMissionTitleModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    function submitMissionTitle() {
+        const title = document.getElementById('missionTitleInput').value.trim();
+
+        if (!title) {
+            alert('Vui lòng nhập tiêu đề!');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('classId', '@Model.ClassId');
+        formData.append('title', title);
+
+        fetch('@Url.Action("UpdateMissionTitle", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                // Cập nhật tiêu đề trên trang mà không cần reload
+                document.getElementById('missionTitle').innerText = title;
+                closeEditMissionTitleModal();
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // Lesson Title Edit Functions
+    function showEditLessonTitleModal(lessonId, currentTitle) {
+        document.getElementById('editLessonId').value = lessonId;
+        document.getElementById('lessonTitleInput').value = currentTitle;
+        document.getElementById('editLessonTitleModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEditLessonTitleModal() {
+        document.getElementById('editLessonTitleModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    function submitLessonTitle() {
+        const lessonId = document.getElementById('editLessonId').value;
+        const title = document.getElementById('lessonTitleInput').value.trim();
+
+        if (!title) {
+            alert('Vui lòng nhập tên chương!');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('lessonId', lessonId);
+        formData.append('title', title);
+
+        fetch('@Url.Action("UpdateLessonTitle", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload(); // Reload để cập nhật tên chương
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // Lesson Content Edit Functions
+    function showEditLessonContentModal(lessonId, lessonTitle) {
+        document.getElementById('editContentLessonId').value = lessonId;
+        document.getElementById('editContentLessonTitle').innerText = lessonTitle;
+        
+        // Fetch current content
+        fetch('@Url.Action("GetLessonContent", "Teacher")?lessonId=' + lessonId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Initialize CKEditor if not already initialized
+                    if (!lessonContentEditorInstance) {
+                        ClassicEditor
+                            .create(document.querySelector('#lessonContentEditor'), {
+                                toolbar: {
+                                    items: [
+                                        'heading', '|',
+                                        'bold', 'italic', 'underline', 'strikethrough', '|',
+                                        'fontSize', 'fontColor', 'fontBackgroundColor', '|',
+                                        'link', 'bulletedList', 'numberedList', '|',
+                                        'alignment', '|',
+                                        'indent', 'outdent', '|',
+                                        'insertTable', 'blockQuote', 'horizontalLine', '|',
+                                        'undo', 'redo'
+                                    ]
+                                },
+                                language: 'vi',
+                                heading: {
+                                    options: [
+                                        { model: 'paragraph', title: 'Đoạn văn', class: 'ck-heading_paragraph' },
+                                        { model: 'heading1', view: 'h1', title: 'Tiêu đề 1', class: 'ck-heading_heading1' },
+                                        { model: 'heading2', view: 'h2', title: 'Tiêu đề 2', class: 'ck-heading_heading2' },
+                                        { model: 'heading3', view: 'h3', title: 'Tiêu đề 3', class: 'ck-heading_heading3' }
+                                    ]
+                                }
+                            })
+                            .then(editor => {
+                                lessonContentEditorInstance = editor;
+                                editor.setData(data.content || '');
+                                document.getElementById('editLessonContentModal').style.display = 'block';
+                                document.body.style.overflow = 'hidden';
+                            })
+                            .catch(error => {
+                                console.error('CKEditor initialization error:', error);
+                                alert('Lỗi khởi tạo trình soạn thảo!');
+                            });
+                    } else {
+                        lessonContentEditorInstance.setData(data.content || '');
+                        document.getElementById('editLessonContentModal').style.display = 'block';
+                        document.body.style.overflow = 'hidden';
+                    }
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Có lỗi xảy ra khi tải nội dung: ' + error);
+            });
+    }
+
+    function closeLessonContentModal() {
+        document.getElementById('editLessonContentModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    function submitLessonContent() {
+        const lessonId = document.getElementById('editContentLessonId').value;
+        
+        if (!lessonContentEditorInstance) {
+            alert('Trình soạn thảo chưa được khởi tạo!');
+            return;
+        }
+
+        const content = lessonContentEditorInstance.getData().trim();
+
+        if (!content) {
+            alert('Vui lòng nhập nội dung cho chương!');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('lessonId', lessonId);
+        formData.append('content', content);
+
+        fetch('@Url.Action("UpdateLessonContent", "Teacher")', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                closeLessonContentModal();
+                location.reload(); // Reload để hiển thị nội dung mới
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        const missionModal = document.getElementById('editMissionTitleModal');
+        if (event.target == missionModal) {
+            closeEditMissionTitleModal();
+        }
+        
+        const lessonTitleModal = document.getElementById('editLessonTitleModal');
+        if (event.target == lessonTitleModal) {
+            closeEditLessonTitleModal();
+        }
+        
+        const lessonContentModal = document.getElementById('editLessonContentModal');
+        if (event.target == lessonContentModal) {
+            closeLessonContentModal();
+        }
+        
+        const lessonModal = document.getElementById('lessonManagementModal');
+        if (event.target == lessonModal) {
+            closeLessonManagementModal();
+        }
+    });
+
+    // ============ Quản lý khóa học cho chương ============
+    let currentLessonIdForVideo = null;
+    
+    function openLessonManagementModal(lessonId) {
+        currentLessonIdForVideo = lessonId;
+        const modal = document.getElementById('lessonManagementModal');
+        modal.style.display = 'block';
+        
+        // Cập nhật links với lessonId
+        document.getElementById('linkAddAssignment').href = '@Url.Action("CreateAssignment", "Teacher")' + '?classId=@Model.ClassId&lessonId=' + lessonId;
+        document.getElementById('linkAddExam').href = '@Url.Action("CreateExam", "Teacher")' + '?classId=@Model.ClassId&lessonId=' + lessonId;
+        document.getElementById('linkAddAttendance').href = '@Url.Action("CreateAttendance", "Teacher")' + '?classId=@Model.ClassId&lessonId=' + lessonId;
+        document.getElementById('linkEditLesson').href = '@Url.Action("EditLesson", "Teacher")' + '?id=' + lessonId;
+    }
+
+    function closeLessonManagementModal() {
+        document.getElementById('lessonManagementModal').style.display = 'none';
+    }
+
+    // ============ Điểm danh bằng mã code ============
+    function openAttendanceCodeModal(attendanceId, title) {
+        document.getElementById('attendanceCodeModal').style.display = 'block';
+        document.getElementById('modalAttendanceId').value = attendanceId;
+        document.getElementById('modalAttendanceTitle').innerText = title;
+        document.getElementById('attendanceCodeInput').value = '';
+        document.getElementById('attendanceCodeInput').focus();
+    }
+
+    function closeAttendanceCodeModal() {
+        document.getElementById('attendanceCodeModal').style.display = 'none';
+    }
+
+    function submitAttendanceCode() {
+        const attendanceId = document.getElementById('modalAttendanceId').value;
+        const code = document.getElementById('attendanceCodeInput').value.trim();
+
+        if (!code) {
+            alert('Vui lòng nhập mã điểm danh!');
+            return;
+        }
+
+        fetch('@Url.Action("SubmitAttendanceCode", "Home")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                attendanceId: attendanceId,
+                code: code
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Điểm danh thành công lúc ' + data.checkInTime);
+                closeAttendanceCodeModal();
+                location.reload();
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        const codeModal = document.getElementById('attendanceCodeModal');
+        if (event.target == codeModal) {
+            closeAttendanceCodeModal();
+        }
+    });
+
+    // Submit when pressing Enter
+    document.addEventListener('DOMContentLoaded', function() {
+        const codeInput = document.getElementById('attendanceCodeInput');
+        if (codeInput) {
+            codeInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    submitAttendanceCode();
+                }
+            });
+        }
+    });
+
+    // ============ Chỉnh sửa tên lớp học ============
+    function openEditClassTitleModal(classId, classCode, courseCode, courseName, currentTitle) {
+        document.getElementById('editClassId').value = classId;
+        document.getElementById('displayClassCode').innerText = classCode;
+        document.getElementById('displayCourseCode').innerText = courseCode;
+        document.getElementById('displayOriginalName').innerText = courseName;
+        document.getElementById('classTitleInput').value = currentTitle;
+        document.getElementById('editClassTitleModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEditClassTitleModal() {
+        document.getElementById('editClassTitleModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    function submitClassTitle() {
+        const classId = document.getElementById('editClassId').value;
+        const title = document.getElementById('classTitleInput').value.trim();
+
+        if (!title) {
+            alert('Vui lòng nhập tên hiển thị!');
+            return;
+        }
+
+        fetch('@Url.Action("UpdateClassTitle", "Teacher")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ClassId: classId,
+                MissionTitle: title
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || 'Cập nhật thành công!');
+                document.getElementById('className').innerText = title;
+                closeEditClassTitleModal();
+            } else {
+                alert('Lỗi: ' + (data.message || 'Không thể cập nhật'));
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // ============ Thêm video bài giảng ============
+    function openAddVideoModal() {
+        closeLessonManagementModal();
+        
+        const lessonId = currentLessonIdForVideo;
+        if (!lessonId) {
+            alert('Không tìm thấy thông tin chương!');
+            return;
+        }
+        
+        // Lấy tiêu đề chương từ DOM
+        const lessonTitle = document.querySelector(`[data-lesson-id="${lessonId}"]`)?.innerText || 'Chương này';
+        
+        document.getElementById('videoLessonId').value = lessonId;
+        document.getElementById('videoLessonTitle').innerText = lessonTitle;
+        document.getElementById('videoUrl').value = '';
+        document.getElementById('addVideoModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeAddVideoModal() {
+        document.getElementById('addVideoModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    function submitVideoUrl() {
+        const lessonId = document.getElementById('videoLessonId').value;
+        const videoUrl = document.getElementById('videoUrl').value.trim();
+
+        if (!videoUrl) {
+            alert('Vui lòng nhập link video!');
+            return;
+        }
+
+        // Kiểm tra URL hợp lệ
+        try {
+            new URL(videoUrl);
+        } catch {
+            alert('Link video không hợp lệ!');
+            return;
+        }
+
+        fetch('@Url.Action("AddLessonVideo", "Teacher")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                lessonId: lessonId,
+                videoUrl: videoUrl
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || 'Thêm video thành công!');
+                closeAddVideoModal();
+                location.reload();
+            } else {
+                alert('Lỗi: ' + (data.message || 'Không thể thêm video'));
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+
+    // ============ Icon Picker Handlers ============
+    document.addEventListener('DOMContentLoaded', function() {
+        // Xử lý icon picker cho modal tạo section
+        document.querySelectorAll('.icon-picker-item').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Reset all buttons
+                document.querySelectorAll('.icon-picker-item').forEach(function(b) {
+                    b.style.borderColor = '#ddd';
+                    b.style.background = 'white';
+                });
+                
+                // Highlight selected button
+                this.style.borderColor = '#0d6efd';
+                this.style.background = '#e7f1ff';
+                
+                // Save selected icon
+                var iconClass = this.getAttribute('data-icon');
+                document.getElementById('selectedIcon').value = iconClass;
+            });
+        });
+
+        // Xử lý icon picker cho modal sửa section
+        document.querySelectorAll('.icon-picker-item-edit').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Reset all buttons
+                document.querySelectorAll('.icon-picker-item-edit').forEach(function(b) {
+                    b.style.borderColor = '#ddd';
+                    b.style.background = 'white';
+                });
+                
+                // Highlight selected button
+                this.style.borderColor = '#0d6efd';
+                this.style.background = '#e7f1ff';
+                
+                // Save selected icon
+                var iconClass = this.getAttribute('data-icon');
+                document.getElementById('selectedIconEdit').value = iconClass;
+            });
+        });
+
+        // CSS cho hover effect
+        var style = document.createElement('style');
+        style.textContent = `
+            .icon-picker-item:hover,
+            .icon-picker-item-edit:hover {
+                border-color: #0d6efd !important;
+                background: #f8f9fa !important;
+                transform: scale(1.05);
+            }
+        `;
+        document.head.appendChild(style);
+    });
+</script>
+}

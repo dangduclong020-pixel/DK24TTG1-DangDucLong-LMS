@@ -1,85 +1,113 @@
 @model LMS.Models.Lesson
 @{
-    ViewData["Title"] = "Tạo bài học mới";
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    ViewBag.Title = "Tạo bài học mới";
     var classInfo = ViewBag.ClassInfo as LMS.Models.Class;
 }
 
-<div class="container mt-4">
+<div class="container-fluid">
     <div class="row">
-        <div class="col-md-10 offset-md-1">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Tạo chủ đề/chương học mới</h4>
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus"></i> Tạo bài học mới - Chương @Model.OrderNumber
+                    </h4>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <strong>Môn học:</strong> @classInfo?.Course?.Name | 
-                        <strong>Lớp:</strong> @classInfo?.Name (@classInfo?.Code)
-                    </div>
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
 
                     <form asp-action="CreateLesson" method="post" enctype="multipart/form-data">
-                        <input type="hidden" asp-for="ClassId" value="@classInfo?.ClassId" />
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ClassId" />
+                        <input type="hidden" asp-for="IsPublished" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Lớp học</label>
+                            <input type="text" class="form-control" value="@classInfo?.Code - @classInfo?.Name" readonly disabled />
+                        </div>
 
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label asp-for="Week" class="form-label">Tuần học <span class="text-danger">*</span></label>
-                                    <input asp-for="Week" class="form-control" type="number" min="1" value="@ViewBag.SuggestedWeek" required />
-                                    <small class="text-muted">Gợi ý: Tuần @ViewBag.SuggestedWeek</small>
-                                </div>
+                            <div class="col-md-3 mb-3">
+                                <label asp-for="OrderNumber" class="form-label fw-bold">Số thứ tự <span class="text-danger">*</span></label>
+                                <input asp-for="OrderNumber" type="number" class="form-control" min="1" required />
+                                <small class="text-muted">Chương thứ mấy trong khóa học</small>
+                                <span asp-validation-for="OrderNumber" class="text-danger"></span>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label asp-for="OrderNumber" class="form-label">Thứ tự <span class="text-danger">*</span></label>
-                                    <input asp-for="OrderNumber" class="form-control" type="number" min="1" value="1" required />
-                                    <small class="text-muted">Thứ tự bài học trong tuần</small>
-                                </div>
+                            <div class="col-md-3 mb-3">
+                                <label asp-for="Week" class="form-label fw-bold">Tuần</label>
+                                <input asp-for="Week" type="number" class="form-control" min="1" />
+                                <small class="text-muted">Tuần học (tùy chọn)</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Duration" class="form-label fw-bold">Thời lượng (phút)</label>
+                                <input asp-for="Duration" type="number" class="form-control" placeholder="VD: 180" />
+                                <small class="text-muted">Thời gian dự kiến hoàn thành</small>
                             </div>
                         </div>
 
-                        <div class="form-group mb-3">
-                            <label asp-for="Title" class="form-label">Tiêu đề bài học <span class="text-danger">*</span></label>
-                            <input asp-for="Title" class="form-control" placeholder="Ví dụ: Giới thiệu về lập trình hướng đối tượng" required />
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label fw-bold">Tiêu đề chương <span class="text-danger">*</span></label>
+                            <input asp-for="Title" class="form-control" placeholder="VD: Quyền Số Hữu Trí Tuệ và Vấn Đề Cấp Phép" required />
+                            <span asp-validation-for="Title" class="text-danger"></span>
                         </div>
 
-                        <div class="form-group mb-3">
-                            <label asp-for="Content" class="form-label">Nội dung bài học</label>
-                            <textarea asp-for="Content" class="form-control" rows="6" 
-                                      placeholder="Mô tả chi tiết nội dung bài học, mục tiêu, yêu cầu..."></textarea>
-                        </div>
+                        <hr class="my-4" />
 
-                        <div class="form-group mb-3">
-                            <label asp-for="Duration" class="form-label">Thời lượng (phút)</label>
-                            <input asp-for="Duration" class="form-control" type="number" min="1" value="60" />
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label class="form-label">
-                                <i class="fas fa-upload"></i> Upload tài liệu (Video, PDF, Slide, ...)
-                            </label>
-                            <input type="file" name="lessonFiles" class="form-control" multiple 
-                                   accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.avi,.mkv,.zip,.rar" />
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nội dung bài học <span class="text-danger">*</span></label>
+                            <textarea id="contentEditor" name="Content" class="form-control" rows="15"></textarea>
                             <small class="text-muted">
-                                Có thể chọn nhiều file. Hỗ trợ: PDF, PowerPoint, Word, Video, ZIP
+                                Nhập nội dung chi tiết cho chương này: mục đích, mục tiêu học tập, kết quả học tập, nhiệm vụ, liên hệ với bài học kế tiếp...
                             </small>
                         </div>
 
-                        <div class="form-check mb-3">
-                            <input asp-for="IsPublished" class="form-check-input" type="checkbox" checked />
-                            <label asp-for="IsPublished" class="form-check-label">
-                                Xuất bản ngay (Sinh viên có thể xem)
-                            </label>
+                        <div class="mb-3">
+                            <label asp-for="VideoUrl" class="form-label fw-bold"><i class="fas fa-video text-danger"></i> Video Bài Giảng (Link URL)</label>
+                            <input asp-for="VideoUrl" type="url" class="form-control" placeholder="https://www.youtube.com/watch?v=... hoặc Vimeo, Dailymotion..." />
+                            <small class="text-muted">
+                                Dán link video bài giảng cho chương này. <br/>
+                                <strong>Hỗ trợ:</strong> YouTube, Vimeo, Dailymotion, Google Drive, và các nền tảng khác hỗ trợ embed iframe.
+                            </small>
                         </div>
 
-                        <hr />
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tài liệu đính kèm</label>
+                            <input type="file" name="newFiles" class="form-control" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.zip" />
+                            <small class="text-muted">Có thể chọn nhiều file. Định dạng: PDF, DOC, DOCX, PPT, PPTX, ZIP</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Gợi ý cấu trúc nội dung:</strong>
+                            <ul class="mb-0">
+                                <li><strong>Mục đích (Why?):</strong> Tại sao cần học chương này?</li>
+                                <li><strong>Kết quả học tập (Learning outcome):</strong> Sinh viên sẽ đạt được gì sau khi hoàn thành?</li>
+                                <li><strong>Nhiệm vụ (Mission):</strong> Các hoạt động và bài tập cần thực hiện</li>
+                                <li><strong>Nội dung chính cần xem lại:</strong> Những kiến thức quan trọng</li>
+                                <li><strong>Liên hệ với bài học kế tiếp:</strong> Kết nối kiến thức</li>
+                            </ul>
+                        </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="@Url.Action("ClassLessons", new { classId = classInfo?.ClassId })" 
-                               class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Hủy
+                            <a href="@Url.Action("ClassDetails", new { id = Model.ClassId })" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Quay lại
                             </a>
                             <button type="submit" class="btn btn-success">
-                                <i class="fas fa-save"></i> Tạo bài học
+                                <i class="fas fa-plus"></i> Tạo bài học
                             </button>
                         </div>
                     </form>
@@ -90,16 +118,59 @@
 </div>
 
 @section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <!-- CKEditor 5 -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js"></script>
     <script>
-        $(document).ready(function() {
-            // Preview file names
-            $('input[type="file"]').change(function() {
-                var fileCount = this.files.length;
-                if (fileCount > 0) {
-                    var fileNames = Array.from(this.files).map(f => f.name).join(', ');
-                    console.log('Selected files: ' + fileNames);
-                }
+        ClassicEditor
+            .create(document.querySelector('#contentEditor'), {
+                toolbar: [
+                    'heading', '|',
+                    'bold', 'italic', '|',
+                    'bulletedList', 'numberedList', '|',
+                    'outdent', 'indent', '|',
+                    'link', '|',
+                    'undo', 'redo'
+                ]
+            })
+            .then(editor => {
+                window.contentEditor = editor;
+                
+                // Cho phép Tab để thêm khoảng trắng hoặc indent
+                const editorElement = editor.ui.view.editable.element;
+                editorElement.addEventListener('keydown', function(e) {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const selection = editor.model.document.selection;
+                        const hasSelection = !selection.isCollapsed;
+                        
+                        if (e.shiftKey) {
+                            editor.execute('outdent');
+                        } else {
+                            if (hasSelection) {
+                                editor.execute('indent');
+                            } else {
+                                const viewFragment = editor.data.processor.toView('&nbsp;&nbsp;&nbsp;&nbsp;');
+                                const modelFragment = editor.data.toModel(viewFragment);
+                                editor.model.insertContent(modelFragment);
+                            }
+                        }
+                    }
+                }, true);
+            })
+            .catch(error => {
+                console.error('Error initializing editor:', error);
             });
+
+        // Xử lý submit form
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (window.contentEditor) {
+                const content = window.contentEditor.getData();
+                document.querySelector('#contentEditor').value = content;
+            }
         });
     </script>
 }

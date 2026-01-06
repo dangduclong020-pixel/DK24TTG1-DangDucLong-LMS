@@ -1,0 +1,326 @@
+@model LMS.Models.Exam
+@{
+    ViewData["Title"] = "Tạo Đề Thi Mới";
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    var classInfo = ViewBag.ClassInfo as LMS.Models.Class;
+    var questionBank = ViewBag.QuestionBank as List<LMS.Models.QuestionBank>;
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-1"><i class="fas fa-file-signature text-success me-2"></i>Tạo Đề Thi Mới</h4>
+                            <p class="text-muted mb-0">
+                                Lớp: <strong>@classInfo.Name</strong> - Môn: <strong>@classInfo.Course?.Name</strong>
+                            </p>
+                        </div>
+                        <div>
+                            <a asp-action="ClassDetails" asp-route-id="@classInfo.ClassId" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Quay lại
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form asp-action="CreateExam" method="post" id="examForm">
+        <input type="hidden" name="ClassId" value="@classInfo.ClassId" />
+        @if (ViewBag.LessonId != null)
+        {
+            <input type="hidden" name="LessonId" value="@ViewBag.LessonId" />
+        }
+        
+        <div class="row">
+            <!-- Thông tin đề thi -->
+            <div class="col-md-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Thông Tin Đề Thi</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label asp-for="Title" class="form-label">Tiêu đề đề thi <span class="text-danger">*</span></label>
+                                <input asp-for="Title" class="form-control" required placeholder="VD: Kiểm tra giữa kỳ - Chương 1-5">
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label asp-for="Description" class="form-label">Mô tả</label>
+                                <textarea asp-for="Description" class="form-control" rows="3" 
+                                          placeholder="Mô tả nội dung, phạm vi kiến thức..."></textarea>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="StartTime" class="form-label">Thời gian bắt đầu <span class="text-danger">*</span></label>
+                                <input asp-for="StartTime" type="datetime-local" class="form-control" required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="EndTime" class="form-label">Thời gian kết thúc <span class="text-danger">*</span></label>
+                                <input asp-for="EndTime" type="datetime-local" class="form-control" required>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Duration" class="form-label">Thời gian làm bài (phút) <span class="text-danger">*</span></label>
+                                <input asp-for="Duration" type="number" class="form-control" required min="5" placeholder="VD: 90">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="MaxScore" class="form-label">Điểm tối đa <span class="text-danger">*</span></label>
+                                <input asp-for="MaxScore" type="number" step="0.5" class="form-control" required value="10">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Số câu đã chọn</label>
+                                <input type="text" class="form-control bg-light" id="selectedCount" readonly value="0">
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <div class="form-check">
+                                    <input name="AllowMultipleAttempts" class="form-check-input" type="checkbox" value="true">
+                                    <input name="AllowMultipleAttempts" type="hidden" value="false">
+                                    <label class="form-check-label">
+                                        Cho phép làm lại nhiều lần
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <div class="border rounded p-3 bg-light">
+                                    <h6 class="mb-3"><i class="fas fa-eye me-2"></i>Tùy chọn hiển thị sau khi nộp bài</h6>
+                                    <div class="form-check mb-2">
+                                        <input name="ShowScore" class="form-check-input" type="checkbox" value="true" checked>
+                                        <input name="ShowScore" type="hidden" value="false">
+                                        <label class="form-check-label">
+                                            <i class="fas fa-chart-bar text-primary me-1"></i>
+                                            Cho phép xem điểm ngay sau khi nộp
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input name="ShowSubmission" class="form-check-input" type="checkbox" value="true" checked>
+                                        <input name="ShowSubmission" type="hidden" value="false">
+                                        <label class="form-check-label">
+                                            <i class="fas fa-file-alt text-success me-1"></i>
+                                            Cho phép xem lại bài làm của mình
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input name="ShowAnswers" class="form-check-input" type="checkbox" value="true">
+                                        <input name="ShowAnswers" type="hidden" value="false">
+                                        <label class="form-check-label">
+                                            <i class="fas fa-check-circle text-warning me-1"></i>
+                                            Cho phép xem đáp án đúng
+                                        </label>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Sinh viên chỉ xem được đáp án sau khi hết thời gian thi
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="Conditions" class="form-label">Điều kiện tham gia</label>
+                                <textarea asp-for="Conditions" class="form-control" rows="2" 
+                                          placeholder="VD: Hoàn thành bài tập trước đề thi..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ngân hàng câu hỏi -->
+            <div class="col-md-4">
+                <div class="card shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Ngân Hàng Câu Hỏi</h5>
+                    </div>
+                    <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                        @if (questionBank == null || !questionBank.Any())
+                        {
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                <p>Chưa có câu hỏi nào trong ngân hàng cho môn học này.</p>
+                                <a asp-action="CreateQuestion" asp-route-courseId="@classInfo.CourseId" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-plus me-1"></i>Tạo câu hỏi
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- Filter -->
+                            <div class="mb-3">
+                                <div class="btn-group btn-group-sm w-100" role="group">
+                                    <button type="button" class="btn btn-outline-secondary active" onclick="filterQuestions('all')">
+                                        Tất cả (@questionBank.Count)
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success" onclick="filterQuestions('easy')">
+                                        Dễ
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning" onclick="filterQuestions('medium')">
+                                        TB
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="filterQuestions('hard')">
+                                        Khó
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Quick select -->
+                            <div class="mb-3">
+                                <label class="form-label small">Chọn nhanh:</label>
+                                <div class="btn-group btn-group-sm w-100">
+                                    <button type="button" class="btn btn-outline-primary" onclick="selectAll()">Chọn tất cả</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="deselectAll()">Bỏ chọn</button>
+                                </div>
+                            </div>
+
+                            <hr />
+
+                            <!-- Question list -->
+                            @foreach (var question in questionBank)
+                            {
+                                var difficulty = question.Difficulty?.LevelName?.ToLower() ?? "";
+                                var badgeClass = difficulty == "dễ" || difficulty == "easy" ? "success" : (difficulty == "khó" || difficulty == "hard" ? "danger" : "warning");
+                                
+                                <div class="form-check mb-3 p-3 border rounded question-item" data-difficulty="@difficulty">
+                                    <input class="form-check-input question-checkbox" type="checkbox" 
+                                           name="selectedQuestions" value="@question.QuestionId" 
+                                           id="q@question.QuestionId" onchange="updateSelectedCount()">
+                                    <label class="form-check-label w-100" for="q@question.QuestionId">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <strong>@question.Content.Substring(0, Math.Min(80, question.Content.Length))@(question.Content.Length > 80 ? "..." : "")</strong>
+                                                <br />
+                                                <small class="text-muted">
+                                                    <span class="badge bg-@badgeClass">@question.Difficulty?.LevelName</span>
+                                                    <span class="badge bg-secondary">@question.Type</span>
+                                                    <span class="badge bg-info">@question.MaxScore điểm</span>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit buttons -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="mb-0 text-muted">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Đã chọn <strong id="selectedCountText">0</strong> câu hỏi
+                                </p>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-save me-2"></i>Tạo Đề Thi
+                                </button>
+                                <a asp-action="ClassDetails" asp-route-id="@classInfo.ClassId" class="btn btn-secondary btn-lg ms-2">
+                                    <i class="fas fa-times me-2"></i>Hủy
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('.question-checkbox:checked');
+            const count = checkboxes.length;
+            document.getElementById('selectedCount').value = count;
+            document.getElementById('selectedCountText').textContent = count;
+        }
+
+        function selectAll() {
+            const checkboxes = document.querySelectorAll('.question-checkbox:visible');
+            checkboxes.forEach(cb => {
+                if (cb.closest('.question-item').style.display !== 'none') {
+                    cb.checked = true;
+                }
+            });
+            updateSelectedCount();
+        }
+
+        function deselectAll() {
+            document.querySelectorAll('.question-checkbox').forEach(cb => cb.checked = false);
+            updateSelectedCount();
+        }
+
+        function filterQuestions(difficulty) {
+            const items = document.querySelectorAll('.question-item');
+            
+            // Update active button
+            document.querySelectorAll('.btn-group button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            items.forEach(item => {
+                if (difficulty === 'all') {
+                    item.style.display = 'block';
+                } else {
+                    const itemDifficulty = item.dataset.difficulty;
+                    if (difficulty === 'easy' && itemDifficulty === 'dễ') {
+                        item.style.display = 'block';
+                    } else if (difficulty === 'medium' && (itemDifficulty === 'trung bình' || itemDifficulty === 'tb')) {
+                        item.style.display = 'block';
+                    } else if (difficulty === 'hard' && itemDifficulty === 'khó') {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // Validation
+        document.getElementById('examForm').addEventListener('submit', function(e) {
+            const selected = document.querySelectorAll('.question-checkbox:checked').length;
+            if (selected === 0) {
+                e.preventDefault();
+                alert('Vui lòng chọn ít nhất một câu hỏi cho đề thi!');
+                return false;
+            }
+
+            const startTime = new Date(document.querySelector('[name="StartTime"]').value);
+            const endTime = new Date(document.querySelector('[name="EndTime"]').value);
+            
+            if (endTime <= startTime) {
+                e.preventDefault();
+                alert('Thời gian kết thúc phải sau thời gian bắt đầu!');
+                return false;
+            }
+        });
+    </script>
+}

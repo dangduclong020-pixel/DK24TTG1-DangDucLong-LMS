@@ -1,0 +1,281 @@
+@{
+    var userRole = Context.Session.GetString("UserRole");
+    var userName = Context.Session.GetString("UserName");
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title - E-Learning TVU</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            color: white !important;
+            font-weight: 600;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hamburger-menu {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-right: 1rem;
+        }
+
+        .hamburger-menu:hover {
+            opacity: 0.8;
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 500px;
+            margin: 0 2rem;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .search-container input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-menu .dropdown-toggle {
+            background: none;
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-menu .dropdown-toggle::after {
+            margin-left: 0.5rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: -280px;
+            top: 70px;
+            width: 280px;
+            height: calc(100vh - 70px);
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            transition: left 0.3s ease;
+            z-index: 999;
+            overflow-y: auto;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-menu {
+            padding: 1rem 0;
+        }
+
+        .sidebar-menu h6 {
+            padding: 0.5rem 1.5rem;
+            color: #6c757d;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 1rem;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background: #f8f9fa;
+            color: #667eea;
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .sidebar-menu i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Layout */
+        .main-layout {
+            margin-top: 70px;
+            margin-left: 0;
+            transition: margin-left 0.3s ease;
+            min-height: calc(100vh - 70px);
+        }
+
+        .main-layout.sidebar-open {
+            margin-left: 280px;
+        }
+
+        /* Content Container */
+        .content-container {
+            max-width: 100%;
+            margin: 0;
+            padding: 30px 40px;
+        }
+    </style>
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="d-flex align-items-center" style="flex: 1;">
+            <button class="hamburger-menu" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a class="navbar-brand" href="@Url.Action("Index", "Home")">
+                <i class="fas fa-graduation-cap"></i>
+                E-Learning - Trường Đại học Trà Vinh
+            </a>
+        </div>
+
+        <div class="search-container">
+            <input type="text" class="form-control" placeholder="Tìm kiếm khóa học, bài học...">
+        </div>
+
+        <div class="user-menu">
+            <div class="dropdown">
+                <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-user-circle fa-lg"></i>
+                    <span>@userName</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="@Url.Action("Profile", "Users")"><i class="fas fa-user me-2"></i>Thông tin cá nhân</a></li>
+                    <li><a class="dropdown-item" href="@Url.Action("Settings", "Users")"><i class="fas fa-cog me-2"></i>Cài đặt</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="@Url.Action("Logout", "Users")"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-menu">
+            <h6>Menu chính</h6>
+            <a href="@Url.Action("Index", "Home")">
+                <i class="fas fa-home"></i>
+                <span>Trang chủ</span>
+            </a>
+            <a href="@(userRole == "Teacher" || userRole == "Instructor" ? Url.Action("MyClasses", "Teacher") : Url.Action("MyCourses", "Home"))">
+                <i class="fas fa-book"></i>
+                <span>Khóa học của tôi</span>
+            </a>
+            <a href="@(userRole == "Teacher" || userRole == "Instructor" ? Url.Action("Assignments", "Teacher") : Url.Action("Assignments", "Home"))">
+                <i class="fas fa-tasks"></i>
+                <span>Bài tập</span>
+            </a>
+            <a href="@(userRole == "Teacher" || userRole == "Instructor" ? Url.Action("Exams", "Teacher") : Url.Action("Exams", "Home"))">
+                <i class="fas fa-file-alt"></i>
+                <span>Kiểm tra</span>
+            </a>
+            <a href="@Url.Action("Grades", "Home")">
+                <i class="fas fa-chart-line"></i>
+                <span>Điểm số</span>
+            </a>
+
+            @if (userRole == "Teacher" || userRole == "Instructor")
+            {
+                <h6>Quản lý</h6>
+                <a href="@Url.Action("QuestionBank", "Teacher")">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Ngân hàng câu hỏi</span>
+                </a>
+            }
+
+            <h6>Tiện ích</h6>
+            <a href="@Url.Action("Calendar", "Home")">
+                <i class="fas fa-calendar"></i>
+                <span>Lịch học</span>
+            </a>
+            <a href="@Url.Action("Notifications", "Home")">
+                <i class="fas fa-bell"></i>
+                <span>Thông báo</span>
+            </a>
+
+            <h6>Hệ thống</h6>
+            <a href="@Url.Action("Logout", "Users")">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Đăng xuất</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-layout" id="mainLayout">
+        <div class="content-container">
+            @RenderBody()
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainLayout = document.getElementById('mainLayout');
+            sidebar.classList.toggle('open');
+            mainLayout.classList.toggle('sidebar-open');
+        }
+    </script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

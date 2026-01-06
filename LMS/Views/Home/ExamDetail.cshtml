@@ -1,0 +1,324 @@
+@model LMS.Models.Exam
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+}
+
+<style>
+    .exam-container {
+        display: flex;
+        gap: 20px;
+        max-width: 1200px;
+        margin: 20px auto;
+        font-family: Arial, sans-serif;
+    }
+
+    /* Sidebar bên trái */
+    .exam-sidebar {
+        width: 250px;
+        flex-shrink: 0;
+    }
+
+    .question-info {
+        background: white;
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+
+    .question-info h3 {
+        margin: 0 0 10px 0;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    .question-info p {
+        margin: 5px 0;
+        font-size: 14px;
+    }
+
+    .question-navigation {
+        background: white;
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
+
+    .question-navigation h4 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .grid-numbers {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 5px;
+        margin-top: 10px;
+    }
+
+    .num {
+        border: 1px solid #6c757d;
+        padding: 5px;
+        text-align: center;
+        cursor: pointer;
+        border-radius: 3px;
+        font-size: 14px;
+        color: #555;
+    }
+
+    .num.active {
+        border-bottom: 3px solid #333;
+        font-weight: bold;
+    }
+
+    .num.answered {
+        background-color: #d4edda;
+        border-color: #28a745;
+    }
+
+    .btn-new-attempt {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px;
+        width: 100%;
+        margin-top: 15px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .btn-new-attempt:hover {
+        background-color: #5a6268;
+    }
+
+    /* Nội dung câu hỏi bên phải */
+    .exam-main-content {
+        flex: 1;
+        background-color: #f0f2f5;
+        padding: 30px;
+        border-radius: 4px;
+    }
+
+    .question-container {
+        display: none;
+    }
+
+    .question-container.active {
+        display: block;
+    }
+
+    .question-text {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+
+    .options {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+    }
+
+    .option input[type="radio"] {
+        cursor: pointer;
+    }
+
+    .finish-link {
+        margin-top: 15px;
+        color: #6c757d;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    textarea {
+        width: 100%;
+        min-height: 200px;
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+    }
+</style>
+
+<div class="exam-container">
+    <div class="exam-sidebar">
+        <div class="question-info">
+            <h3 id="currentQuestionTitle">CÂU HỎI 1</h3>
+            <p id="questionStatus">Chưa trả lời</p>
+            <p>Điểm: <span id="currentQuestionScore">@(Model.ExamQuestions?.FirstOrDefault()?.QuestionScore ?? 1)</span></p>
+            <a href="#" style="color: #e91e63; text-decoration: none;">▶ Đánh dấu</a>
+        </div>
+        
+        <div class="question-navigation">
+            <h4>Bảng câu hỏi</h4>
+            <div class="grid-numbers" id="questionGrid"></div>
+            <p class="finish-link" onclick="confirmSubmit()" style="cursor: pointer; color: #007bff; text-decoration: underline;">Kết thúc bài làm</p>
+            <button type="button" class="btn-new-attempt" onclick="confirmSubmit()">
+                Nộp bài
+            </button>
+        </div>
+    </div>
+
+    <div class="exam-main-content">
+        <form asp-action="SaveExamProgress" method="post" id="examForm">
+            <input type="hidden" name="examId" value="@Model.ExamId" />
+            
+            @if (Model.ExamQuestions != null && Model.ExamQuestions.Any())
+            {
+                int questionNumber = 0;
+                foreach (var examQuestion in Model.ExamQuestions.OrderBy(eq => eq.QuestionId))
+                {
+                    questionNumber++;
+                    var question = examQuestion.Question;
+                    
+                    <div class="question-container @(questionNumber == 1 ? "active" : "")" id="question-@questionNumber" data-score="@examQuestion.QuestionScore">
+                        <div class="question-text">
+                            <strong>Câu @questionNumber:</strong> @Html.Raw(question.Content)
+                        </div>
+                        
+                        @if (question.Type == "TracNghiem")
+                        {
+                            <div class="options">
+                                @if (!string.IsNullOrEmpty(question.Options))
+                                {
+                                    var options = question.Options.Split('\n');
+                                    foreach (var option in options)
+                                    {
+                                        if (!string.IsNullOrWhiteSpace(option))
+                                        {
+                                            var parts = option.Split('|');
+                                            if (parts.Length >= 2)
+                                            {
+                                                var optionKey = parts[0].Trim();
+                                                var optionText = parts[1].Trim();
+                                                
+                                                <label class="option">
+                                                    <input type="radio" 
+                                                           name="question_@question.QuestionId" 
+                                                           value="@optionKey"
+                                                           onchange="markAnswered(@questionNumber)">
+                                                    <span>@optionKey. @optionText</span>
+                                                </label>
+                                            }
+                                        }
+                                    }
+                                }
+                            </div>
+                        }
+                        else if (question.Type == "TuLuan")
+                        {
+                            <div class="options">
+                                <textarea name="question_@question.QuestionId" 
+                                          placeholder="Nhập câu trả lời của bạn..."
+                                          onchange="markAnswered(@questionNumber)"></textarea>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <p>Không có câu hỏi nào trong bài kiểm tra này.</p>
+            }
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const totalQuestions = @(Model.ExamQuestions?.Count ?? 0);
+    let currentQuestion = 1;
+    const answeredQuestions = new Set();
+
+    // Khởi tạo grid câu hỏi
+    function initQuestionGrid() {
+        const grid = document.getElementById('questionGrid');
+        for (let i = 1; i <= totalQuestions; i++) {
+            const numDiv = document.createElement('div');
+            numDiv.className = 'num';
+            if (i === 1) numDiv.classList.add('active');
+            numDiv.textContent = i;
+            numDiv.onclick = function() { showQuestion(i); };
+            grid.appendChild(numDiv);
+        }
+    }
+
+    // Hiển thị câu hỏi
+    function showQuestion(num) {
+        if (num < 1 || num > totalQuestions) return;
+        
+        document.querySelectorAll('.question-container').forEach(q => {
+            q.classList.remove('active');
+        });
+        
+        document.getElementById('question-' + num).classList.add('active');
+        
+        document.querySelectorAll('.num').forEach((el, index) => {
+            if (index + 1 === num) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        });
+        
+        currentQuestion = num;
+        updateQuestionInfo(num);
+    }
+
+    // Cập nhật thông tin câu hỏi
+    function updateQuestionInfo(num) {
+        document.getElementById('currentQuestionTitle').textContent = 'CÂU HỎI ' + num;
+        const status = answeredQuestions.has(num) ? 'Đã trả lời' : 'Chưa trả lời';
+        document.getElementById('questionStatus').textContent = status;
+        
+        const questionDiv = document.getElementById('question-' + num);
+        const score = questionDiv.getAttribute('data-score');
+        document.getElementById('currentQuestionScore').textContent = score;
+    }
+
+    // Đánh dấu đã trả lời
+    function markAnswered(questionNum) {
+        answeredQuestions.add(questionNum);
+        const numElements = document.querySelectorAll('.num');
+        if (numElements[questionNum - 1]) {
+            numElements[questionNum - 1].classList.add('answered');
+        }
+        updateQuestionInfo(currentQuestion);
+    }
+
+    // Khởi tạo
+    document.addEventListener('DOMContentLoaded', function() {
+        initQuestionGrid();
+
+        window.addEventListener('beforeunload', function(e) {
+            e.preventDefault();
+            e.returnValue = '';
+        });
+    });
+
+    // Confirm submit
+    function confirmSubmit() {
+        const unanswered = totalQuestions - answeredQuestions.size;
+        let message = 'Bạn có muốn xem lại bài làm không?\n\n';
+        message += 'Đã trả lời: ' + answeredQuestions.size + '/' + totalQuestions + ' câu';
+        
+        if (unanswered > 0) {
+            message += '\nCòn ' + unanswered + ' câu chưa trả lời!';
+        }
+        
+        document.getElementById('examForm').submit();
+    }
+</script>
+}

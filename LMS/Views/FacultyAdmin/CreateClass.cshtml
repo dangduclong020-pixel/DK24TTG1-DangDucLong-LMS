@@ -53,10 +53,11 @@
 
                         <div class="mb-3">
                             <label for="CourseId" class="form-label">Khóa học <span class="text-danger">*</span></label>
-                            <select asp-for="CourseId" class="form-select" asp-items="ViewBag.Courses" required>
+                            <select asp-for="CourseId" class="form-select" asp-items="ViewBag.Courses" required id="courseSelect">
                                 <option value="">-- Chọn khóa học --</option>
                             </select>
                             <span asp-validation-for="CourseId" class="text-danger"></span>
+                            <small class="text-muted" id="creditsInfo"></small>
                         </div>
 
                         <div class="mb-3">
@@ -72,21 +73,145 @@
                             <input asp-for="MaxStudents" type="number" class="form-control" value="40" min="1" max="200" />
                             <span asp-validation-for="MaxStudents" class="text-danger"></span>
                         </div>
+                        
+                        <div class="mb-3">
+                            <label for="CourseType" class="form-label">Loại môn học</label>
+                            <select asp-for="CourseType" class="form-select" id="courseTypeSelect" onchange="updateCreditsInfo()">
+                                <option value="">-- Chọn loại môn học --</option>
+                                <option value="Lý thuyết">Lý thuyết (1 tín chỉ = 15 tiết)</option>
+                                <option value="Thực hành">Thực hành (1 tín chỉ = 30 tiết)</option>
+                                <option value="Hỗn hợp">Hỗn hợp</option>
+                            </select>
+                            <span asp-validation-for="CourseType" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="Credits" class="form-label">Số tiết học <span class="text-danger">*</span></label>
+                            <input asp-for="Credits" type="number" class="form-control" value="45" min="1" max="200" placeholder="VD: 45" />
+                            <span asp-validation-for="Credits" class="text-danger"></span>
+                            <small class="text-muted" id="creditsInfo">Số tiết học thực tế của môn (Lý thuyết: 1 TC = 15 tiết, Thực hành: 1 TC = 30 tiết)</small>
+                        </div>
                     </div>
 
                     <!-- Cột phải -->
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="StartDate" class="form-label">Ngày bắt đầu</label>
-                            <input asp-for="StartDate" type="date" class="form-control" />
-                            <span asp-validation-for="StartDate" class="text-danger"></span>
+                            <label for="SemesterId" class="form-label">Học kỳ <span class="text-danger">*</span></label>
+                            <select id="semesterSelect" class="form-select" onchange="showSemesterInfo()">
+                                <option value="">-- Chọn học kỳ --</option>
+                                @if (ViewBag.Semesters != null)
+                                {
+                                    foreach (var semester in ViewBag.Semesters)
+                                    {
+                                        <option value="@semester.SemesterConfigId" 
+                                                data-start="@semester.StartDate.ToString("yyyy-MM-dd")" 
+                                                data-end="@semester.EndDate.ToString("yyyy-MM-dd")"
+                                                data-semester="@semester.SemesterName">
+                                            @semester.SemesterName (@semester.StartDate.ToString("dd/MM/yyyy") - @semester.EndDate.ToString("dd/MM/yyyy"))
+                                        </option>
+                                    }
+                                }
+                            </select>
+                            <div id="semesterInfo" class="alert alert-info mt-2" style="display:none;">
+                                <i class="fas fa-info-circle"></i> 
+                                <strong>Khoảng thời gian học kỳ:</strong> <span id="semesterRange"></span>
+                                <br><small>Vui lòng chọn ngày bắt đầu và kết thúc của lớp học trong khoảng thời gian này</small>
+                            </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="EndDate" class="form-label">Ngày kết thúc</label>
-                            <input asp-for="EndDate" type="date" class="form-control" />
-                            <span asp-validation-for="EndDate" class="text-danger"></span>
+                            <label for="StartDate" class="form-label">Ngày bắt đầu lớp học <span class="text-danger">*</span></label>
+                            <input asp-for="StartDate" type="date" class="form-control" id="startDate" required />
+                            <span asp-validation-for="StartDate" class="text-danger"></span>
+                            <span id="startDateError" class="text-danger" style="display:none;"></span>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="EndDate" class="form-label">Ngày kết thúc lớp học <span class="text-danger">*</span></label>
+                            <input asp-for="EndDate" type="date" class="form-control" id="endDate" required />
+                            <span asp-validation-for="EndDate" class="text-danger"></span>
+                            <span id="endDateError" class="text-danger" style="display:none;"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="Session" class="form-label">Buổi học</label>
+                                <select asp-for="Session" class="form-select">
+                                    <option value="">-- Chọn buổi --</option>
+                                    <option value="Sáng">Sáng</option>
+                                    <option value="Chiều">Chiều</option>
+                                    <option value="Tối">Tối</option>
+                                </select>
+                                <span asp-validation-for="Session" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="DayOfWeek" class="form-label">Thứ</label>
+                                <select asp-for="DayOfWeek" class="form-select">
+                                    <option value="">-- Chọn thứ --</option>
+                                    <option value="Thứ 2">Thứ 2</option>
+                                    <option value="Thứ 3">Thứ 3</option>
+                                    <option value="Thứ 4">Thứ 4</option>
+                                    <option value="Thứ 5">Thứ 5</option>
+                                    <option value="Thứ 6">Thứ 6</option>
+                                    <option value="Thứ 7">Thứ 7</option>
+                                    <option value="Chủ nhật">Chủ nhật</option>
+                                </select>
+                                <span asp-validation-for="DayOfWeek" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Room" class="form-label">Phòng học</label>
+                            <input asp-for="Room" class="form-control" placeholder="VD: H1.302, C.202 (PM06)" />
+                            <span asp-validation-for="Room" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="StartSession" class="form-label">Tiết bắt đầu</label>
+                                <select class="form-select" id="StartSession" name="StartSession">
+                                    <option value="">-- Chọn tiết --</option>
+                                    <option value="1">Tiết 1 (7:00)</option>
+                                    <option value="2">Tiết 2 (7:51)</option>
+                                    <option value="3">Tiết 3 (9:00)</option>
+                                    <option value="4">Tiết 4 (9:51)</option>
+                                    <option value="5">Tiết 5 (10:41)</option>
+                                    <option value="6">Tiết 6 (12:30)</option>
+                                    <option value="7">Tiết 7 (13:21)</option>
+                                    <option value="8">Tiết 8 (14:30)</option>
+                                    <option value="9">Tiết 9 (15:21)</option>
+                                    <option value="10">Tiết 10 (16:11)</option>
+                                    <option value="11">Tiết 11 (17:30)</option>
+                                    <option value="12">Tiết 12 (18:21)</option>
+                                    <option value="13">Tiết 13 (19:11)</option>
+                                    <option value="14">Tiết 14 (20:01)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="EndSession" class="form-label">Tiết kết thúc</label>
+                                <select class="form-select" id="EndSession" name="EndSession">
+                                    <option value="">-- Chọn tiết --</option>
+                                    <option value="1">Tiết 1 (7:50)</option>
+                                    <option value="2">Tiết 2 (8:40)</option>
+                                    <option value="3">Tiết 3 (9:50)</option>
+                                    <option value="4">Tiết 4 (10:40)</option>
+                                    <option value="5">Tiết 5 (11:30)</option>
+                                    <option value="6">Tiết 6 (13:20)</option>
+                                    <option value="7">Tiết 7 (14:10)</option>
+                                    <option value="8">Tiết 8 (15:20)</option>
+                                    <option value="9">Tiết 9 (16:10)</option>
+                                    <option value="10">Tiết 10 (17:00)</option>
+                                    <option value="11">Tiết 11 (18:20)</option>
+                                    <option value="12">Tiết 12 (19:10)</option>
+                                    <option value="13">Tiết 13 (20:00)</option>
+                                    <option value="14">Tiết 14 (20:50)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Hidden fields để submit StartTime và EndTime -->
+                        <input type="hidden" asp-for="StartTime" id="hiddenStartTime" />
+                        <input type="hidden" asp-for="EndTime" id="hiddenEndTime" />
 
                         <div class="mb-3">
                             <div class="form-check">
@@ -126,6 +251,164 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        var coursesData = @Html.Raw(Json.Serialize(ViewBag.CoursesData ?? new List<object>()));
+        
+        // Mapping tiết học với thời gian
+        const sessionTimes = {
+            start: {
+                1: "07:00", 2: "07:51", 3: "09:00", 4: "09:51", 5: "10:41",
+                6: "12:30", 7: "13:21", 8: "14:30", 9: "15:21", 10: "16:11",
+                11: "17:30", 12: "18:21", 13: "19:11", 14: "20:01"
+            },
+            end: {
+                1: "07:50", 2: "08:40", 3: "09:50", 4: "10:40", 5: "11:30",
+                6: "13:20", 7: "14:10", 8: "15:20", 9: "16:10", 10: "17:00",
+                11: "18:20", 12: "19:10", 13: "20:00", 14: "20:50"
+            }
+        };
+        
+        document.getElementById('courseSelect').addEventListener('change', function() {
+            var courseId = parseInt(this.value);
+            var creditsInfo = document.getElementById('creditsInfo');
+            
+            if (courseId) {
+                var course = coursesData.find(c => c.courseId === courseId);
+                if (course) {
+                    creditsInfo.innerHTML = 'Số tín chỉ: <strong>' + course.credits + '</strong>';
+                } else {
+                    creditsInfo.innerHTML = '';
+                }
+            } else {
+                creditsInfo.innerHTML = '';
+            }
+        });
+
+        // Tự động cập nhật StartTime khi chọn Tiết bắt đầu
+        document.getElementById('StartSession').addEventListener('change', function() {
+            var session = parseInt(this.value);
+            if (session && sessionTimes.start[session]) {
+                document.getElementById('hiddenStartTime').value = sessionTimes.start[session];
+            }
+        });
+
+        // Tự động cập nhật EndTime khi chọn Tiết kết thúc
+        document.getElementById('EndSession').addEventListener('change', function() {
+            var session = parseInt(this.value);
+            if (session && sessionTimes.end[session]) {
+                document.getElementById('hiddenEndTime').value = sessionTimes.end[session];
+            }
+        });
+
+        // Validation: Tiết kết thúc phải sau tiết bắt đầu
+        document.querySelector('form').addEventListener('submit', function(e) {
+            var startSession = parseInt(document.getElementById('StartSession').value);
+            var endSession = parseInt(document.getElementById('EndSession').value);
+            
+            if (startSession && endSession && endSession < startSession) {
+                e.preventDefault();
+                alert('Tiết kết thúc phải sau hoặc bằng tiết bắt đầu!');
+            }
+        });
+        
+        // Cập nhật thông tin Credits info
+        function updateCreditsInfo() {
+            const courseType = document.getElementById('courseTypeSelect').value;
+            const creditsInfo = document.getElementById('creditsInfo');
+            
+            if (courseType === 'Lý thuyết') {
+                creditsInfo.innerHTML = 'Lý thuyết: 1 tín chỉ = 15 tiết học (VD: 3 TC = 45 tiết)';
+                creditsInfo.style.color = '#0066cc';
+            } else if (courseType === 'Thực hành') {
+                creditsInfo.innerHTML = 'Thực hành: 1 tín chỉ = 30 tiết học (VD: 3 TC = 90 tiết)';
+                creditsInfo.style.color = '#28a745';
+            } else if (courseType === 'Hỗn hợp') {
+                creditsInfo.innerHTML = 'Hỗn hợp: Nhập tổng số tiết học (lý thuyết + thực hành)';
+                creditsInfo.style.color = '#ff9800';
+            } else {
+                creditsInfo.innerHTML = 'Số tiết học thực tế của môn (Lý thuyết: 1 TC = 15 tiết, Thực hành: 1 TC = 30 tiết)';
+                creditsInfo.style.color = '#666';
+            }
+        }
+
+        // Hiển thị thông tin học kỳ và validate
+        let semesterStartDate = null;
+        let semesterEndDate = null;
+
+        function showSemesterInfo() {
+            const select = document.getElementById('semesterSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            const semesterInfo = document.getElementById('semesterInfo');
+            const semesterRange = document.getElementById('semesterRange');
+            
+            if (selectedOption.value) {
+                semesterStartDate = selectedOption.getAttribute('data-start');
+                semesterEndDate = selectedOption.getAttribute('data-end');
+                const semesterName = selectedOption.getAttribute('data-semester');
+                
+                // Hiển thị khoảng thời gian học kỳ
+                const startFormatted = new Date(semesterStartDate).toLocaleDateString('vi-VN');
+                const endFormatted = new Date(semesterEndDate).toLocaleDateString('vi-VN');
+                semesterRange.textContent = `${startFormatted} - ${endFormatted}`;
+                semesterInfo.style.display = 'block';
+                
+                // Set tên học kỳ
+                document.getElementById('semesterName').value = semesterName;
+                
+                // Set min/max cho date inputs
+                document.getElementById('startDate').setAttribute('min', semesterStartDate);
+                document.getElementById('startDate').setAttribute('max', semesterEndDate);
+                document.getElementById('endDate').setAttribute('min', semesterStartDate);
+                document.getElementById('endDate').setAttribute('max', semesterEndDate);
+            } else {
+                semesterInfo.style.display = 'none';
+                semesterStartDate = null;
+                semesterEndDate = null;
+                document.getElementById('semesterName').value = '';
+                document.getElementById('startDate').removeAttribute('min');
+                document.getElementById('startDate').removeAttribute('max');
+                document.getElementById('endDate').removeAttribute('min');
+                document.getElementById('endDate').removeAttribute('max');
+            }
+        }
+
+        // Validate ngày khi submit form
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const startError = document.getElementById('startDateError');
+            const endError = document.getElementById('endDateError');
+            
+            let hasError = false;
+            startError.style.display = 'none';
+            endError.style.display = 'none';
+            
+            // Validate với học kỳ đã chọn
+            if (semesterStartDate && semesterEndDate) {
+                if (startDate < semesterStartDate || startDate > semesterEndDate) {
+                    startError.textContent = 'Ngày bắt đầu phải nằm trong khoảng thời gian học kỳ!';
+                    startError.style.display = 'block';
+                    hasError = true;
+                }
+                if (endDate < semesterStartDate || endDate > semesterEndDate) {
+                    endError.textContent = 'Ngày kết thúc phải nằm trong khoảng thời gian học kỳ!';
+                    endError.style.display = 'block';
+                    hasError = true;
+                }
+            }
+            
+            // Validate ngày kết thúc sau ngày bắt đầu
+            if (startDate && endDate && endDate < startDate) {
+                endError.textContent = 'Ngày kết thúc phải sau ngày bắt đầu!';
+                endError.style.display = 'block';
+                hasError = true;
+            }
+            
+            if (hasError) {
+                e.preventDefault();
+            }
+        });
+    </script>
 }
 
 <style>

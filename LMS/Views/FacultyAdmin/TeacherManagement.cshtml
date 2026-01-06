@@ -6,24 +6,14 @@
 }
 
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0 text-success">
-                        <i class="fas fa-chalkboard-teacher"></i> Quản lý giảng viên
-                    </h1>
-                    <p class="text-muted mb-0">Danh sách giảng viên trong khoa</p>
-                </div>
-                <div>
-                    <a href="@Url.Action("AddTeacher", "FacultyAdmin")" class="btn btn-success">
-                        <i class="fas fa-user-plus"></i> Thêm giảng viên
-                    </a>
-                    <a href="@Url.Action("Index", "FacultyAdmin")" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Quay lại Dashboard
-                    </a>
-                </div>
-            </div>
+    <div class="row mb-3">
+        <div class="col-12 text-end">
+            <a href="@Url.Action("AddTeacher", "FacultyAdmin")" class="btn btn-success">
+                <i class="fas fa-user-plus"></i> Thêm giảng viên
+            </a>
+            <a href="@Url.Action("Index", "FacultyAdmin")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+            </a>
         </div>
     </div>
 

@@ -1,0 +1,1244 @@
+@model LMS.Models.Class
+@{
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    ViewBag.Title = "Chỉnh sửa thông tin lớp học";
+}
+
+<style>
+    .lesson-content-display {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .lesson-content-display h1, .lesson-content-display h2, .lesson-content-display h3 {
+        color: #333;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .lesson-content-display ul, .lesson-content-display ol {
+        padding-left: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .lesson-content-display p {
+        margin-bottom: 0.5rem;
+        line-height: 1.6;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                <strong>Gợi ý:</strong> Để xem đầy đủ nội dung lớp học (Tài liệu, Hoạt động, Điểm danh...), 
+                <a href="@Url.Action("ClassDetails", "Teacher", new { id = Model.ClassId })" class="alert-link">
+                    <i class="fas fa-eye"></i> nhấn vào đây
+                </a>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit"></i> Chỉnh sửa thông tin lớp học
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form asp-action="EditClass" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ClassId" value="@Model.ClassId" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Mã lớp học</label>
+                            <input type="text" class="form-control" value="@Model.Code" readonly disabled />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tên lớp học</label>
+                            <input type="text" class="form-control" value="@Model.Name" readonly disabled />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Khóa học</label>
+                            <input type="text" class="form-control" value="@Model.Course?.Code - @Model.Course?.Name" readonly disabled />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Khoa</label>
+                                <input type="text" class="form-control" value="@Model.Course?.Faculty?.Name" readonly disabled />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Giảng viên</label>
+                                <input type="text" class="form-control" value="@Model.Instructor?.FullName" readonly disabled />
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Mô tả lớp học <span class="text-danger">*</span></label>
+                            <textarea name="Description" id="descriptionEditor" class="form-control" rows="8" 
+                                      placeholder="Nhập mô tả chi tiết về lớp học, nội dung giảng dạy...">@Model.Description</textarea>
+                            <small class="text-muted">Nhập giới thiệu về lớp học này, nội dung sẽ học, yêu cầu đối với sinh viên...</small>
+                        </div>
+
+                        <!-- Thêm hoạt động/tài nguyên cho lớp học -->
+                        <div class="mt-3 mb-4 p-3 bg-light border rounded">
+                            <button type="button" class="btn btn-link text-primary text-decoration-none p-0 fw-bold" 
+                                    onclick="showMainActivityMenu()">
+                                <i class="fas fa-plus-circle me-2"></i>
+                                Thêm hoạt động hoặc tài nguyên
+                            </button>
+                            
+                            <div id="mainActivityMenu" class="mt-3" style="display: none;">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <a href="@Url.Action("CreateAssignment", "Teacher", new { classId = Model.ClassId })" 
+                                           class="btn btn-outline-primary w-100 text-start py-3">
+                                            <i class="fas fa-tasks fa-2x d-block mb-2"></i>
+                                            <strong>Bài tập</strong>
+                                            <small class="d-block text-muted">Tạo bài tập mới</small>
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="@Url.Action("CreateExam", "Teacher", new { classId = Model.ClassId })" 
+                                           class="btn btn-outline-danger w-100 text-start py-3">
+                                            <i class="fas fa-file-alt fa-2x d-block mb-2"></i>
+                                            <strong>Kiểm tra</strong>
+                                            <small class="d-block text-muted">Tạo bài kiểm tra</small>
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="@Url.Action("CreateAttendance", "Teacher", new { classId = Model.ClassId })" 
+                                           class="btn btn-outline-success w-100 text-start py-3">
+                                            <i class="fas fa-clipboard-check fa-2x d-block mb-2"></i>
+                                            <strong>Điểm danh</strong>
+                                            <small class="d-block text-muted">Tạo phiên điểm danh</small>
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" class="btn btn-outline-info w-100 text-start py-3" 
+                                                onclick="alert('Chức năng tải tài liệu đang phát triển')">
+                                            <i class="fas fa-file-upload fa-2x d-block mb-2"></i>
+                                            <strong>Tài liệu</strong>
+                                            <small class="d-block text-muted">Upload file</small>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <!-- Danh sách các chương hiện có -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <label class="form-label fw-bold mb-0">Nội dung các chương</label>
+                            </div>
+                            
+                            <div id="chaptersContainer">
+                                @if (Model.Lessons != null && Model.Lessons.Any())
+                                {
+                                    var orderedLessons = Model.Lessons.Where(l => l.OrderNumber != 0).OrderBy(l => l.OrderNumber).ToList();
+                                    for (int i = 0; i < orderedLessons.Count; i++)
+                                    {
+                                        var lesson = orderedLessons[i];
+                                        <div class="mb-3 existing-chapter card" data-lesson-id="@lesson.LessonId" data-index="@i">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <h6 class="mb-0 text-primary">
+                                                        <i class="fas fa-file-alt"></i> 
+                                                        @if (!string.IsNullOrEmpty(lesson.Title))
+                                                        {
+                                                            @lesson.Title
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>Nội dung @(i + 1)</text>
+                                                        }
+                                                    </h6>
+                                                    <div class="btn-group">
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary move-up-btn" 
+                                                                title="Di chuyển lên" @(i == 0 ? "disabled" : "")>
+                                                            <i class="fas fa-arrow-up"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary move-down-btn" 
+                                                                title="Di chuyển xuống" @(i == orderedLessons.Count - 1 ? "disabled" : "")>
+                                                            <i class="fas fa-arrow-down"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-danger btn-sm delete-existing-chapter-btn" 
+                                                                data-lesson-id="@lesson.LessonId" 
+                                                                title="Xóa nội dung này">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <input type="hidden" name="ExistingLessons[@i].LessonId" value="@lesson.LessonId" class="lesson-id-field" />
+                                                <input type="hidden" name="ExistingLessons[@i].OrderNumber" value="@lesson.OrderNumber" />
+                                                <input type="hidden" name="ExistingLessons[@i].VideoUrl" value="@lesson.VideoUrl" class="video-url-field" />
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">Tiêu đề chương</label>
+                                                    <input type="text" name="ExistingLessons[@i].Title" class="form-control" 
+                                                           value="@lesson.Title" placeholder="VD: Chương 1 - Giới thiệu về PHP" required />
+                                                    <small class="text-muted">Tên hiển thị của chương này</small>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">Nội dung chi tiết</label>
+                                                    <textarea name="ExistingLessons[@i].Content" 
+                                                              class="form-control existing-lesson-editor existing-editor-@i" 
+                                                              rows="10">@lesson.Content</textarea>
+                                                    <small class="text-muted mt-2 d-block">Bạn có thể chỉnh sửa nội dung trực tiếp tại đây</small>
+                                                </div>
+                                                
+                                                @* Hiển thị video nếu có *@
+                                                @if (!string.IsNullOrEmpty(lesson.VideoUrl))
+                                                {
+                                                    <div class="mt-3 mb-3">
+                                                        <h6 class="text-danger"><i class="fas fa-video"></i> Video Bài Giảng</h6>
+                                                        <div class="p-2 mb-2 border rounded bg-light">
+                                                            <div class="d-flex align-items-center justify-content-between">
+                                                                <div>
+                                                                    <i class="fab fa-youtube text-danger"></i>
+                                                                    <a href="@lesson.VideoUrl" target="_blank">Xem video</a>
+                                                                </div>
+                                                                <button type="button" class="btn btn-sm btn-warning" 
+                                                                        onclick="openEditVideoModal(@lesson.LessonId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lesson.VideoUrl ?? ""))')">
+                                                                    <i class="fas fa-edit"></i> Sửa
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                
+                                                @* Hiển thị bài tập của chương này *@
+                                                @{
+                                                    var lessonAssignments = Model.Assignments?.Where(a => a.LessonId == lesson.LessonId && a.DeletedAt == null).OrderBy(a => a.DueDate).ToList();
+                                                }
+                                                @if (lessonAssignments != null && lessonAssignments.Any())
+                                                {
+                                                    <div class="mt-3 mb-3">
+                                                        <h6 class="text-primary"><i class="fas fa-tasks"></i> Bài tập trong chương này</h6>
+                                                        @foreach (var assignment in lessonAssignments)
+                                                        {
+                                                            <div class="p-2 mb-2 border rounded bg-light">
+                                                                <div class="d-flex align-items-center justify-content-between">
+                                                                    <div>
+                                                                        <i class="fas fa-file-alt text-danger"></i>
+                                                                        <a href="@Url.Action("EditAssignment", "Teacher", new { id = assignment.AssignmentId })" target="_blank">@assignment.Title</a>
+                                                                        @if (assignment.IsPublished != true)
+                                                                        {
+                                                                            <span class="badge bg-warning text-dark">Nháp</span>
+                                                                        }
+                                                                    </div>
+                                                                    <small class="text-muted">@assignment.DueDate.ToString("dd/MM/yyyy HH:mm")</small>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                
+                                                @* Hiển thị kiểm tra của chương này *@
+                                                @{
+                                                    var lessonExams = Model.Exams?.Where(e => e.LessonId == lesson.LessonId && e.DeletedAt == null).OrderBy(e => e.StartTime).ToList();
+                                                }
+                                                @if (lessonExams != null && lessonExams.Any())
+                                                {
+                                                    <div class="mt-3 mb-3">
+                                                        <h6 class="text-info"><i class="fas fa-clipboard-list"></i> Kiểm tra trong chương này</h6>
+                                                        @foreach (var exam in lessonExams)
+                                                        {
+                                                            <div class="p-2 mb-2 border rounded bg-light">
+                                                                <div class="d-flex align-items-center justify-content-between">
+                                                                    <div>
+                                                                        <i class="fas fa-file-alt text-success"></i>
+                                                                        <a href="@Url.Action("EditExam", "Teacher", new { id = exam.ExamId })" target="_blank">@exam.Title</a>
+                                                                    </div>
+                                                                    <small class="text-muted">@exam.StartTime.ToString("dd/MM/yyyy HH:mm")</small>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                
+                                                @* Hiển thị điểm danh của chương này *@
+                                                @{
+                                                    var lessonAttendances = Model.Attendances?.Where(a => a.LessonId == lesson.LessonId).OrderByDescending(a => a.StartTime).ToList();
+                                                }
+                                                @if (lessonAttendances != null && lessonAttendances.Any())
+                                                {
+                                                    <div class="mt-3 mb-3">
+                                                        <h6 class="text-warning"><i class="fas fa-user-check"></i> Điểm danh trong chương này</h6>
+                                                        @foreach (var attendance in lessonAttendances)
+                                                        {
+                                                            var totalStudents = Model.ClassStudents?.Count() ?? 0;
+                                                            var presentCount = attendance.AttendanceRecords?.Count(ar => ar.Status == "Present") ?? 0;
+                                                            var isClosed = attendance.Status == "Closed";
+                                                            <div class="p-2 mb-2 border rounded bg-light">
+                                                                <div class="d-flex align-items-center justify-content-between">
+                                                                    <div>
+                                                                        <i class="fas fa-clipboard-check @(isClosed ? "text-secondary" : "text-success")"></i>
+                                                                        <a href="@Url.Action("TakeAttendance", "Teacher", new { id = attendance.AttendanceId })" target="_blank">@attendance.Title</a>
+                                                                        <span class="badge @(isClosed ? "bg-secondary" : "bg-success")">@(isClosed ? "Đã đóng" : "Đang mở")</span>
+                                                                    </div>
+                                                                    <small class="text-muted">@presentCount/@totalStudents (@((totalStudents > 0 ? (presentCount * 100.0 / totalStudents) : 0).ToString("F0"))%)</small>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                
+                                                <!-- Thêm hoạt động/tài nguyên -->
+                                                <div class="mt-3 mb-3 p-3 bg-light border-start border-3 border-primary">
+                                                    <button type="button" class="btn btn-link text-primary text-decoration-none p-0" 
+                                                            onclick="showActivityMenu(@lesson.LessonId)">
+                                                        <i class="fas fa-plus-circle me-2"></i>
+                                                        <strong>Thêm hoạt động hoặc tài nguyên</strong>
+                                                    </button>
+                                                    
+                                                    <!-- Menu hoạt động -->
+                                                    <div id="activityMenu-@lesson.LessonId" class="mt-3" style="display: none;">
+                                                        <div class="row g-2">
+                                                            <div class="col-md-3">
+                                                                <a href="@Url.Action("CreateAssignment", "Teacher", new { classId = Model.ClassId, lessonId = lesson.LessonId })" 
+                                                                   class="btn btn-outline-primary w-100 text-start">
+                                                                    <i class="fas fa-tasks me-2"></i>Bài tập
+                                                                </a>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <a href="@Url.Action("CreateExam", "Teacher", new { classId = Model.ClassId, lessonId = lesson.LessonId })" 
+                                                                   class="btn btn-outline-danger w-100 text-start">
+                                                                    <i class="fas fa-file-alt me-2"></i>Kiểm tra
+                                                                </a>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <a href="@Url.Action("CreateAttendance", "Teacher", new { classId = Model.ClassId, lessonId = lesson.LessonId })" 
+                                                                   class="btn btn-outline-success w-100 text-start">
+                                                                    <i class="fas fa-clipboard-check me-2"></i>Điểm danh
+                                                                </a>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <button type="button" class="btn btn-outline-danger w-100 text-start" 
+                                                                        onclick="openEditVideoModal(@lesson.LessonId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(lesson.VideoUrl ?? ""))')">
+                                                                    <i class="fas fa-video me-2"></i>Video
+                                                                </button>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <button type="button" class="btn btn-outline-info w-100 text-start" 
+                                                                        onclick="alert('Chức năng tải tài liệu đang phát triển')">
+                                                                    <i class="fas fa-file-upload me-2"></i>Tài liệu
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                <!-- Các chương mới sẽ được thêm vào đây -->
+                            </div>
+                            
+                            <div class="d-flex justify-content-center mt-3">
+                                <button type="button" class="btn btn-success" id="addChapterBtn">
+                                    <i class="fas fa-plus"></i> Thêm chương mới
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Lưu ý:</strong> Bạn có thể tự do chỉnh sửa mô tả và mục tiêu cho lớp học của mình. 
+                            Nội dung này sẽ được hiển thị cho sinh viên khi họ truy cập vào lớp học.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="@Url.Action("ClassDetails", new { id = Model.ClassId })" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Lưu tất cả
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal thêm/sửa video -->
+<div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videoModalTitle">Thêm Video Bài Giảng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="videoLessonId" />
+                <div class="mb-3">
+                    <label for="videoUrl" class="form-label fw-bold">
+                        <i class="fas fa-video text-danger"></i> Link Video
+                    </label>
+                    <input type="url" class="form-control" id="videoUrl" 
+                           placeholder="https://www.youtube.com/watch?v=..." required />
+                    <small class="text-muted">Hỗ trợ: YouTube, Vimeo, Dailymotion...</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveVideo()">
+                    <i class="fas fa-save"></i> Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <!-- CKEditor 5 -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js"></script>
+    <script>
+        // Đảm bảo CKEditor đã load xong
+        if (typeof ClassicEditor === 'undefined') {
+            console.error('CKEditor chưa load xong!');
+        }
+
+        // Cấu hình CKEditor với indent/outdent
+        const editorConfig = {
+            toolbar: [
+                'heading', '|',
+                'bold', 'italic', '|',
+                'bulletedList', 'numberedList', '|',
+                'outdent', 'indent', '|',
+                'link', '|',
+                'undo', 'redo'
+            ]
+        };
+
+        // Khởi tạo CKEditor cho Mô tả lớp học
+        ClassicEditor
+            .create(document.querySelector('#descriptionEditor'), editorConfig)
+            .then(editor => {
+                window.descriptionEditor = editor;
+                console.log('Description editor initialized');
+                
+                // Bắt Tab key để thêm khoảng trắng hoặc indent
+                const editorElement = editor.ui.view.editable.element;
+                editorElement.addEventListener('keydown', function(e) {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const selection = editor.model.document.selection;
+                        const hasSelection = !selection.isCollapsed;
+                        
+                        if (e.shiftKey) {
+                            editor.execute('outdent');
+                        } else {
+                            if (hasSelection) {
+                                editor.execute('indent');
+                            } else {
+                                const viewFragment = editor.data.processor.toView('&nbsp;&nbsp;&nbsp;&nbsp;');
+                                const modelFragment = editor.data.toModel(viewFragment);
+                                editor.model.insertContent(modelFragment);
+                            }
+                        }
+                    }
+                }, true);
+            })
+            .catch(error => {
+                console.error('Error initializing description editor:', error);
+            });
+
+        // Khởi tạo CKEditor cho các chương hiện có
+        document.querySelectorAll('.existing-lesson-editor').forEach((textarea, index) => {
+            textarea.setAttribute('data-editor-index', index);
+            ClassicEditor
+                .create(textarea, editorConfig)
+                .then(editor => {
+                    window['existingEditor_' + index] = editor;
+                    // Lưu reference vào textarea để dễ tìm sau này
+                    textarea._ckEditor = editor;
+                    textarea._editorIndex = index;
+                    console.log('Existing lesson editor ' + index + ' initialized');
+                    
+                    // Bắt Tab key
+                    const editorElement = editor.ui.view.editable.element;
+                    editorElement.addEventListener('keydown', function(e) {
+                        if (e.key === 'Tab') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const selection = editor.model.document.selection;
+                            const hasSelection = !selection.isCollapsed;
+                            
+                            if (e.shiftKey) {
+                                editor.execute('outdent');
+                            } else {
+                                if (hasSelection) {
+                                    editor.execute('indent');
+                                } else {
+                                    const viewFragment = editor.data.processor.toView('&nbsp;&nbsp;&nbsp;&nbsp;');
+                                    const modelFragment = editor.data.toModel(viewFragment);
+                                    editor.model.insertContent(modelFragment);
+                                }
+                            }
+                        }
+                    }, true);
+                })
+                .catch(error => {
+                    console.error('Error initializing existing lesson editor ' + index + ':', error);
+                });
+        });
+
+        // Xử lý submit form
+        const formElement = document.querySelector('form');
+        formElement.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            console.log('=== FORM SUBMIT STARTED ===');
+            
+            // 1. Sync mô tả
+            const descriptionValue = window.descriptionEditor ? window.descriptionEditor.getData() : '';
+            document.querySelector('[name="Description"]').value = descriptionValue;
+            console.log('✓ Description synced');
+            
+            // 2. Đảm bảo tất cả các chương hiện có có index đúng trước khi sync
+            const existingChapters = document.querySelectorAll('.existing-chapter:not([style*="display: none"])');
+            console.log('Found ' + existingChapters.length + ' existing chapters');
+            
+            // Cập nhật lại index cho tất cả các chương theo thứ tự hiện tại
+            existingChapters.forEach(function(chapter, correctIndex) {
+                console.log('Processing existing chapter at position:', correctIndex);
+                
+                // Lấy tất cả các inputs và textarea
+                const lessonIdInput = chapter.querySelector('input[name*="LessonId"]');
+                const orderInput = chapter.querySelector('input[name*="OrderNumber"]');
+                const titleInput = chapter.querySelector('input[name*="Title"]');
+                const textarea = chapter.querySelector('textarea');
+                
+                // Cập nhật name với index đúng
+                if (lessonIdInput) {
+                    lessonIdInput.name = `ExistingLessons[${correctIndex}].LessonId`;
+                    console.log('  - LessonId:', lessonIdInput.value);
+                }
+                if (orderInput) {
+                    orderInput.name = `ExistingLessons[${correctIndex}].OrderNumber`;
+                    orderInput.value = correctIndex + 1;
+                }
+                if (titleInput) {
+                    titleInput.name = `ExistingLessons[${correctIndex}].Title`;
+                    console.log('  - Title:', titleInput.value);
+                }
+                if (textarea) {
+                    textarea.name = `ExistingLessons[${correctIndex}].Content`;
+                    
+                    // Tìm editor qua data-editor-index hoặc _editorIndex
+                    const editorIndex = textarea.getAttribute('data-editor-index') || textarea._editorIndex;
+                    let editor = null;
+                    
+                    if (editorIndex !== null && editorIndex !== undefined) {
+                        editor = window['existingEditor_' + editorIndex];
+                    }
+                    
+                    // Fallback: tìm qua _ckEditor
+                    if (!editor) {
+                        editor = textarea._ckEditor;
+                    }
+                    
+                    if (editor) {
+                        try {
+                            const content = editor.getData();
+                            textarea.value = content;
+                            console.log('  ✓ Content synced (editor index: ' + editorIndex + '), length:', content.length);
+                        } catch(e) {
+                            console.error('  ✗ Error getting data from editor:', e.message);
+                        }
+                    } else {
+                        console.log('  ⚠ No editor found (index: ' + editorIndex + '), textarea will use existing value');
+                    }
+                }
+            });
+            
+            // 3. Sync các chương mới
+            const chapterItems = document.querySelectorAll('.chapter-item');
+            console.log('Found ' + chapterItems.length + ' new chapters');
+            
+            chapterItems.forEach(function(item) {
+                const itemIndex = item.dataset.index;
+                const chapterEditor = window['chapterEditor_' + itemIndex];
+                const contentTextarea = item.querySelector('textarea[name^="NewChapters"][name$=".Content"]');
+                
+                if (chapterEditor && contentTextarea) {
+                    const content = chapterEditor.getData();
+                    contentTextarea.value = content;
+                    console.log('✓ New chapter ' + itemIndex + ' synced, length:', content.length);
+                }
+            });
+            
+            console.log('=== SUBMITTING FORM ===');
+            
+            // Log summary để debug
+            let summary = '=== FORM SUMMARY ===\n';
+            existingChapters.forEach(function(chapter, idx) {
+                const lessonId = chapter.querySelector('input[name*="LessonId"]')?.value;
+                const title = chapter.querySelector('input[name*="Title"]')?.value;
+                summary += `Position ${idx}: LessonId=${lessonId}, Title=${title}\n`;
+            });
+            console.log(summary);
+            
+            // Uncomment dòng này để xem log trước khi submit
+            // alert('Check console log! Press OK to submit');
+            
+            this.submit();
+        });
+
+        // Biến đếm số chương mới (bắt đầu từ 0 cho NewChapters)
+        let newChapterCount = 0;
+        let totalChapterNumber = document.querySelectorAll('.existing-chapter').length + 1;
+
+        // Hàm thêm chương mới
+        document.getElementById('addChapterBtn').addEventListener('click', function() {
+            const newChapterIndex = newChapterCount++;
+            const chapterNumber = totalChapterNumber++;
+            
+            const chapterHtml = `
+                <div class="mb-3 chapter-item card" data-index="${newChapterIndex}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0 text-success">
+                                <i class="fas fa-file-alt"></i> Nội dung mới ${chapterNumber}
+                            </h6>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-secondary move-up-btn" title="Di chuyển lên">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary move-down-btn" title="Di chuyển xuống">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm remove-chapter-btn">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="NewChapters[${newChapterIndex}].OrderNumber" value="${chapterNumber}" />
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tiêu đề chương</label>
+                            <input type="text" name="NewChapters[${newChapterIndex}].Title" class="form-control" 
+                                   value="Chương ${chapterNumber}" placeholder="VD: Chương 1 - Giới thiệu về PHP" required />
+                            <small class="text-muted">Tên hiển thị của chương này</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nội dung</label>
+                            <textarea name="NewChapters[${newChapterIndex}].Content" 
+                                      class="form-control chapter-content-input chapter-editor-${newChapterIndex}" 
+                                      rows="8"></textarea>
+                            <small class="text-muted">Nhập nội dung chương mới...</small>
+                        </div>
+                        
+                        <!-- Thêm hoạt động/tài nguyên -->
+                        <div class="mt-3 mb-3 p-3 bg-light border-start border-3 border-warning">
+                            <button type="button" class="btn btn-link text-warning text-decoration-none p-0" 
+                                    onclick="alertSaveFirst()">
+                                <i class="fas fa-plus-circle me-2"></i>
+                                <strong>Thêm hoạt động hoặc tài nguyên</strong>
+                            </button>
+                            <small class="d-block mt-2 text-muted">
+                                <i class="fas fa-info-circle"></i> Vui lòng lưu chương này trước khi thêm hoạt động
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('chaptersContainer').insertAdjacentHTML('beforeend', chapterHtml);
+            
+            // Khởi tạo CKEditor cho chương mới
+            const newTextarea = document.querySelector('.chapter-editor-' + newChapterIndex);
+            ClassicEditor
+                .create(newTextarea, editorConfig)
+                .then(editor => {
+                    window['chapterEditor_' + newChapterIndex] = editor;
+                    // Lưu reference vào textarea
+                    newTextarea._ckEditor = editor;
+                    
+                    // Bắt Tab key
+                    const editorElement = editor.ui.view.editable.element;
+                    editorElement.addEventListener('keydown', function(e) {
+                        if (e.key === 'Tab') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const selection = editor.model.document.selection;
+                            const hasSelection = !selection.isCollapsed;
+                            
+                            if (e.shiftKey) {
+                                editor.execute('outdent');
+                            } else {
+                                if (hasSelection) {
+                                    editor.execute('indent');
+                                } else {
+                                    const viewFragment = editor.data.processor.toView('&nbsp;&nbsp;&nbsp;&nbsp;');
+                                    const modelFragment = editor.data.toModel(viewFragment);
+                                    editor.model.insertContent(modelFragment);
+                                }
+                            }
+                        }
+                    }, true);
+                })
+                .catch(error => {
+                    console.error('Error initializing chapter editor:', error);
+                });
+        });
+
+// Hàm đánh số lại tất cả các chapter mới
+        function renumberChapters() {
+            const existingChapterCount = document.querySelectorAll('.existing-chapter').length;
+            const chapterItems = document.querySelectorAll('.chapter-item');
+            
+            chapterItems.forEach((item, index) => {
+                const newChapterNumber = existingChapterCount + index + 1;
+                
+                // Cập nhật data-index
+                item.dataset.index = index;
+                
+                // Cập nhật tiêu đề hiển thị
+                const header = item.querySelector('h6');
+                if (header) {
+                    header.innerHTML = `<i class="fas fa-file-alt"></i> Nội dung mới ${newChapterNumber}`;
+                }
+                
+                // Cập nhật các hidden inputs
+                const orderInput = item.querySelector('input[name^="NewChapters"][name$=".OrderNumber"]');
+                if (orderInput) {
+                    orderInput.name = `NewChapters[${index}].OrderNumber`;
+                    orderInput.value = newChapterNumber;
+                }
+                
+                const titleInput = item.querySelector('input[name^="NewChapters"][name$=".Title"]');
+                if (titleInput) {
+                    titleInput.name = `NewChapters[${index}].Title`;
+                    titleInput.value = `Chương ${newChapterNumber}`;
+                }
+                
+                // Cập nhật textarea name và class
+                const textarea = item.querySelector('textarea');
+                if (textarea) {
+                    const oldClass = textarea.className.match(/chapter-editor-\d+/);
+                    if (oldClass) {
+                        textarea.classList.remove(oldClass[0]);
+                    }
+                    textarea.classList.add(`chapter-editor-${index}`);
+                    textarea.classList.add('chapter-content-input');
+                    textarea.name = `NewChapters[${index}].Content`;
+                }
+                
+                // Cập nhật editor reference trong window object
+                const oldEditorKey = Object.keys(window).find(key => 
+                    key.startsWith('chapterEditor_') && 
+                    window[key] && 
+                    window[key].sourceElement === textarea
+                );
+                
+                if (oldEditorKey && oldEditorKey !== `chapterEditor_${index}`) {
+                    window[`chapterEditor_${index}`] = window[oldEditorKey];
+                    delete window[oldEditorKey];
+                }
+            });
+            
+            // Cập nhật counter
+            newChapterCount = chapterItems.length;
+        }
+
+// Xóa chương mới (chưa lưu)
+        document.getElementById('chaptersContainer').addEventListener('click', function(e) {
+            if (e.target.closest('.remove-chapter-btn')) {
+                const chapterItem = e.target.closest('.chapter-item');
+                const chapterIndex = chapterItem.dataset.index;
+                
+                // Destroy CKEditor instance
+                if (window['chapterEditor_' + chapterIndex]) {
+                    window['chapterEditor_' + chapterIndex].destroy()
+                        .then(() => {
+                            delete window['chapterEditor_' + chapterIndex];
+                            chapterItem.remove();
+                            // Đánh số lại tất cả các chapter còn lại
+                            renumberChapters();
+                        })
+                        .catch(error => console.error(error));
+                } else {
+                    chapterItem.remove();
+                    // Đánh số lại tất cả các chapter còn lại
+                    renumberChapters();
+                }
+            }
+            
+            // Xóa chương hiện có (đã lưu)
+            if (e.target.closest('.delete-existing-chapter-btn')) {
+                const btn = e.target.closest('.delete-existing-chapter-btn');
+                const lessonId = btn.dataset.lessonId;
+                const chapterCard = e.target.closest('.existing-chapter');
+                const chapterIndex = chapterCard.dataset.index;
+                
+                if (confirm('Bạn có chắc chắn muốn xóa chương này không?')) {
+                    // Destroy CKEditor instance nếu có
+                    if (window['existingEditor_' + chapterIndex]) {
+                        window['existingEditor_' + chapterIndex].destroy()
+                            .then(() => {
+                                delete window['existingEditor_' + chapterIndex];
+                            })
+                            .catch(error => console.error(error));
+                    }
+                    
+                    // Set LessonId về -lessonId để đánh dấu xóa
+                    const lessonIdField = chapterCard.querySelector('.lesson-id-field');
+                    if (lessonIdField) {
+                        lessonIdField.value = '-' + lessonId;
+                    }
+                    
+                    // Ẩn card
+                    chapterCard.style.display = 'none';
+                }
+            }
+            
+            // Di chuyển lên
+            if (e.target.closest('.move-up-btn')) {
+                const btn = e.target.closest('.move-up-btn');
+                if (!btn.disabled) {
+                    const chapterCard = btn.closest('.existing-chapter');
+                    const prevChapter = chapterCard.previousElementSibling;
+                    if (prevChapter && prevChapter.classList.contains('existing-chapter')) {
+                        // Swap nội dung giữa 2 chapters (bao gồm cả video và assignments)
+                        swapEditorContent(chapterCard, prevChapter);
+                        
+                        // Cập nhật lại order và index
+                        updateChapterOrder();
+                        
+                        console.log('✓ Moved chapter up');
+                    }
+                }
+            }
+            
+            // Di chuyển xuống
+            if (e.target.closest('.move-down-btn')) {
+                const btn = e.target.closest('.move-down-btn');
+                if (!btn.disabled) {
+                    const chapterCard = btn.closest('.existing-chapter');
+                    const nextChapter = chapterCard.nextElementSibling;
+                    if (nextChapter && nextChapter.classList.contains('existing-chapter')) {
+                        // Swap nội dung giữa 2 chapters (bao gồm cả video và assignments)
+                        swapEditorContent(chapterCard, nextChapter);
+                        
+                        // Cập nhật lại order và index
+                        updateChapterOrder();
+                        
+                        console.log('✓ Moved chapter down');
+                    }
+                }
+            }
+        });
+
+        // Toggle activity menu
+        function showActivityMenu(lessonId) {
+            const menu = document.getElementById('activityMenu-' + lessonId);
+            if (menu) {
+                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        // Toggle main activity menu
+        function showMainActivityMenu() {
+            const menu = document.getElementById('mainActivityMenu');
+            if (menu) {
+                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        // Swap editor content between two chapters
+        function swapEditorContent(chapter1, chapter2) {
+            const textarea1 = chapter1.querySelector('textarea[name*="Content"]');
+            const textarea2 = chapter2.querySelector('textarea[name*="Content"]');
+            
+            if (!textarea1 || !textarea2) {
+                console.error('Could not find textareas to swap');
+                return;
+            }
+            
+            // Lấy editor từ data-editor-index
+            const editorIndex1 = textarea1.getAttribute('data-editor-index') || textarea1._editorIndex;
+            const editorIndex2 = textarea2.getAttribute('data-editor-index') || textarea2._editorIndex;
+            
+            const editor1 = window['existingEditor_' + editorIndex1] || textarea1._ckEditor;
+            const editor2 = window['existingEditor_' + editorIndex2] || textarea2._ckEditor;
+            
+            if (!editor1 || !editor2) {
+                console.error('Could not find editors to swap');
+                return;
+            }
+            
+            // Lấy content từ cả 2 editors
+            const content1 = editor1.getData();
+            const content2 = editor2.getData();
+            
+            // Swap content trong editor
+            editor1.setData(content2);
+            editor2.setData(content1);
+            
+            // Swap toàn bộ các input fields (LessonId, OrderNumber, VideoUrl, Title)
+            const allInputs1 = chapter1.querySelectorAll('input[type="hidden"], input[type="text"]');
+            const allInputs2 = chapter2.querySelectorAll('input[type="hidden"], input[type="text"]');
+            
+            allInputs1.forEach((input1, index) => {
+                const input2 = allInputs2[index];
+                if (input1 && input2) {
+                    // Swap value
+                    const temp = input1.value;
+                    input1.value = input2.value;
+                    input2.value = temp;
+                }
+            });
+            
+            // Swap phần hiển thị video - tìm div chứa "Video Bài Giảng"
+            const videoSection1 = Array.from(chapter1.querySelectorAll('.mt-3.mb-3')).find(el => 
+                el.textContent.includes('Video Bài Giảng')
+            );
+            const videoSection2 = Array.from(chapter2.querySelectorAll('.mt-3.mb-3')).find(el => 
+                el.textContent.includes('Video Bài Giảng')
+            );
+            
+            console.log('Video sections found:', {
+                chapter1HasVideo: !!videoSection1,
+                chapter2HasVideo: !!videoSection2
+            });
+            
+            // Lưu HTML của 2 video sections (hoặc null nếu không có)
+            const videoHtml1 = videoSection1 ? videoSection1.outerHTML : null;
+            const videoHtml2 = videoSection2 ? videoSection2.outerHTML : null;
+            
+            // Xóa video sections cũ
+            if (videoSection1) {
+                videoSection1.remove();
+                console.log('Removed video from chapter1');
+            }
+            if (videoSection2) {
+                videoSection2.remove();
+                console.log('Removed video from chapter2');
+            }
+            
+            // Tìm vị trí để insert video (sau textarea container)
+            const textarea1Container = chapter1.querySelector('textarea[name*="Content"]')?.closest('.mb-3');
+            const textarea2Container = chapter2.querySelector('textarea[name*="Content"]')?.closest('.mb-3');
+            
+            // Insert video vào vị trí mới
+            if (videoHtml2 && textarea1Container) {
+                textarea1Container.insertAdjacentHTML('afterend', videoHtml2);
+                console.log('✓ Inserted video into chapter1');
+            }
+            if (videoHtml1 && textarea2Container) {
+                textarea2Container.insertAdjacentHTML('afterend', videoHtml1);
+                console.log('✓ Inserted video into chapter2');
+            }
+            
+            // Swap title trong header
+            const title1Input = chapter1.querySelector('input[name*="Title"]');
+            const title2Input = chapter2.querySelector('input[name*="Title"]');
+            if (title1Input && title2Input) {
+                const header1 = chapter1.querySelector('h6.text-primary');
+                const header2 = chapter2.querySelector('h6.text-primary');
+                if (header1 && header2) {
+                    const icon = '<i class="fas fa-file-alt"></i>';
+                    header1.innerHTML = icon + ' ' + title1Input.value;
+                    header2.innerHTML = icon + ' ' + title2Input.value;
+                }
+            }
+            
+            // Swap assignments sections
+            const assignmentsSection1 = Array.from(chapter1.querySelectorAll('.mt-3.mb-3')).find(el => 
+                el.querySelector('h6.text-primary')?.textContent.includes('Bài tập')
+            );
+            const assignmentsSection2 = Array.from(chapter2.querySelectorAll('.mt-3.mb-3')).find(el => 
+                el.querySelector('h6.text-primary')?.textContent.includes('Bài tập')
+            );
+            
+            const assignmentsHtml1 = assignmentsSection1 ? assignmentsSection1.outerHTML : null;
+            const assignmentsHtml2 = assignmentsSection2 ? assignmentsSection2.outerHTML : null;
+            
+            if (assignmentsSection1) assignmentsSection1.remove();
+            if (assignmentsSection2) assignmentsSection2.remove();
+            
+            // Insert assignments vào vị trí mới (sau video hoặc sau textarea)
+            const insertPoint1 = chapter1.querySelector('.mt-3.mb-3.p-3.bg-light.border-start') || 
+                                chapter1.querySelector('.card-body');
+            const insertPoint2 = chapter2.querySelector('.mt-3.mb-3.p-3.bg-light.border-start') || 
+                                chapter2.querySelector('.card-body');
+            
+            if (assignmentsHtml2 && insertPoint1) {
+                if (insertPoint1.classList?.contains('card-body')) {
+                    insertPoint1.insertAdjacentHTML('beforeend', assignmentsHtml2);
+                } else {
+                    insertPoint1.insertAdjacentHTML('beforebegin', assignmentsHtml2);
+                }
+            }
+            if (assignmentsHtml1 && insertPoint2) {
+                if (insertPoint2.classList?.contains('card-body')) {
+                    insertPoint2.insertAdjacentHTML('beforeend', assignmentsHtml1);
+                } else {
+                    insertPoint2.insertAdjacentHTML('beforebegin', assignmentsHtml1);
+                }
+            }
+            
+            console.log('✓ Swapped content, video, and assignments successfully');
+        }
+        
+        // Khởi tạo lại CKEditor sau khi swap innerHTML
+        function initializeEditorsAfterSwap() {
+            const existingChapters = document.querySelectorAll('.existing-chapter:not([style*="display: none"])');
+            existingChapters.forEach((chapter, index) => {
+                const textarea = chapter.querySelector('textarea[name*="Content"]');
+                if (textarea && !textarea._ckEditor) {
+                    const editorIndex = index;
+                    textarea.setAttribute('data-editor-index', editorIndex);
+                    textarea._editorIndex = editorIndex;
+                    
+                    ClassicEditor
+                        .create(textarea, {
+                            toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'insertTable', 'undo', 'redo']
+                        })
+                        .then(editor => {
+                            window['existingEditor_' + editorIndex] = editor;
+                            textarea._ckEditor = editor;
+                            console.log('✓ Initialized editor after swap:', editorIndex);
+                        })
+                        .catch(error => {
+                            console.error('Error initializing editor after swap:', error);
+                        });
+                }
+            });
+        }
+        
+        // Sync editor content to textarea before move
+        function syncEditorsBeforeMove(chapters) {
+            chapters.forEach(chapter => {
+                const textarea = chapter.querySelector('textarea[name*="Content"]');
+                if (textarea) {
+                    const editorIndex = textarea.getAttribute('data-editor-index') || textarea._editorIndex;
+                    const editor = window['existingEditor_' + editorIndex] || textarea._ckEditor;
+                    if (editor) {
+                        textarea.value = editor.getData();
+                    }
+                }
+            });
+        }
+        
+        // Sync textarea content back to editor after move
+        function syncEditorsAfterMove(chapters) {
+            // Sau khi di chuyển, cập nhật lại tất cả editor references theo vị trí mới
+            const allChapters = document.querySelectorAll('.existing-chapter:not([style*="display: none"])');
+            
+            allChapters.forEach((chapter, newPosition) => {
+                const textarea = chapter.querySelector('textarea[name*="Content"]');
+                if (textarea) {
+                    // Tìm editor hiện tại của textarea này
+                    let currentEditor = null;
+                    let oldEditorKey = null;
+                    
+                    for (let key in window) {
+                        if (key.startsWith('existingEditor_') && window[key]) {
+                            try {
+                                if (window[key].sourceElement === textarea || window[key]._sourceElement === textarea) {
+                                    currentEditor = window[key];
+                                    oldEditorKey = key;
+                                    break;
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                    
+                    if (!currentEditor && textarea._ckEditor) {
+                        currentEditor = textarea._ckEditor;
+                    }
+                    
+                    if (currentEditor) {
+                        // Cập nhật lại key của editor theo vị trí mới
+                        const newEditorKey = 'existingEditor_' + newPosition;
+                        if (oldEditorKey !== newEditorKey) {
+                            window[newEditorKey] = currentEditor;
+                            if (oldEditorKey && oldEditorKey !== newEditorKey) {
+                                delete window[oldEditorKey];
+                            }
+                            console.log('✓ Updated editor reference:', oldEditorKey, '→', newEditorKey);
+                        }
+                        
+                        // Cập nhật data attributes
+                        textarea.setAttribute('data-editor-index', newPosition);
+                        textarea._editorIndex = newPosition;
+                        textarea._ckEditor = currentEditor;
+                    }
+                }
+            });
+        }
+
+        // Alert save first
+        function alertSaveFirst() {
+            alert('Vui lòng lưu chương này trước. Sau khi lưu, bạn có thể quay lại để thêm bài tập, kiểm tra, video và các tài nguyên khác.');
+        }
+
+        // Update chapter order after move
+        function updateChapterOrder() {
+            // Chỉ cập nhật các chương hiện có (không bao gồm chương mới)
+            const existingChapters = document.querySelectorAll('.existing-chapter:not([style*="display: none"])');
+            
+            // Lưu lại mapping giữa vị trí và LessonId
+            const lessonIdByPosition = new Map();
+            existingChapters.forEach((chapter, index) => {
+                const lessonIdInput = chapter.querySelector('input[name*="LessonId"]');
+                if (lessonIdInput) {
+                    lessonIdByPosition.set(index, lessonIdInput.value);
+                }
+            });
+            
+            existingChapters.forEach((chapter, newIndex) => {
+                const newOrder = newIndex + 1;
+                
+                // Cập nhật data-index
+                chapter.dataset.index = newIndex;
+                
+                // Cập nhật TẤT CẢ các input name với index mới
+                const lessonIdInput = chapter.querySelector('input[name*="LessonId"]');
+                if (lessonIdInput) {
+                    lessonIdInput.name = `ExistingLessons[${newIndex}].LessonId`;
+                    // GIỮ NGUYÊN giá trị LessonId - không thay đổi
+                }
+                
+                const orderInput = chapter.querySelector('input[name*="OrderNumber"]');
+                if (orderInput) {
+                    orderInput.name = `ExistingLessons[${newIndex}].OrderNumber`;
+                    orderInput.value = newOrder;
+                }
+                
+                const titleInput = chapter.querySelector('input[name*="Title"]');
+                if (titleInput) {
+                    titleInput.name = `ExistingLessons[${newIndex}].Title`;
+                }
+                
+                const contentTextarea = chapter.querySelector('textarea[name*="Content"]');
+                if (contentTextarea) {
+                    contentTextarea.name = `ExistingLessons[${newIndex}].Content`;
+                    
+                    // Giữ nguyên data-editor-index và _editorIndex - không thay đổi
+                    // Vì editor reference trong window không thay đổi vị trí
+                    
+                    // Cập nhật class của textarea
+                    const oldClass = contentTextarea.className.match(/existing-editor-\d+/);
+                    if (oldClass) {
+                        contentTextarea.classList.remove(oldClass[0]);
+                    }
+                    contentTextarea.classList.add(`existing-editor-${newIndex}`);
+                }
+                
+                // Update title header
+                const titleHeader = chapter.querySelector('h6');
+                if (titleHeader && titleInput) {
+                    const icon = titleHeader.querySelector('i');
+                    const currentTitle = titleInput.value;
+                    titleHeader.innerHTML = (icon ? icon.outerHTML : '<i class="fas fa-file-alt"></i>') + ' ' + currentTitle;
+                }
+                
+                // Update move buttons state
+                const moveUpBtn = chapter.querySelector('.move-up-btn');
+                const moveDownBtn = chapter.querySelector('.move-down-btn');
+                
+                if (moveUpBtn) {
+                    moveUpBtn.disabled = (newIndex === 0);
+                }
+                if (moveDownBtn) {
+                    moveDownBtn.disabled = (newIndex === existingChapters.length - 1);
+                }
+            });
+            
+            console.log('✓ Chapter order updated - total:', existingChapters.length);
+        }
+
+        // Open video modal
+        let currentEditingLessonId = null;
+        function openEditVideoModal(lessonId, currentVideoUrl) {
+            currentEditingLessonId = lessonId;
+            document.getElementById('videoLessonId').value = lessonId;
+            document.getElementById('videoUrl').value = currentVideoUrl || '';
+            document.getElementById('videoModalTitle').textContent = currentVideoUrl ? 'Chỉnh sửa Video Bài Giảng' : 'Thêm Video Bài Giảng';
+            const modal = new bootstrap.Modal(document.getElementById('videoModal'));
+            modal.show();
+        }
+
+        // Save video
+        async function saveVideo() {
+            const lessonId = document.getElementById('videoLessonId').value;
+            const videoUrl = document.getElementById('videoUrl').value.trim();
+            
+            if (!videoUrl) {
+                alert('Vui lòng nhập link video!');
+                return;
+            }
+
+            try {
+                const response = await fetch('@Url.Action("UpdateLessonVideo", "Teacher")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        lessonId: parseInt(lessonId),
+                        videoUrl: videoUrl
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Cập nhật input hidden VideoUrl để giữ lại khi submit form
+                    const lessonCards = document.querySelectorAll('.card.mb-3.existing-lesson-card');
+                    lessonCards.forEach(card => {
+                        const cardLessonId = card.querySelector('input.lesson-id-field');
+                        if (cardLessonId && cardLessonId.value == lessonId) {
+                            const videoUrlInput = card.querySelector('input.video-url-field');
+                            if (videoUrlInput) {
+                                videoUrlInput.value = videoUrl;
+                                console.log('✓ Updated VideoUrl in hidden input');
+                            }
+                        }
+                    });
+                    
+                    alert('Cập nhật video thành công!');
+                    location.reload();
+                } else {
+                    alert('Lỗi: ' + (result.message || 'Không thể cập nhật video'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi cập nhật video!');
+            }
+        }
+    </script>
+}

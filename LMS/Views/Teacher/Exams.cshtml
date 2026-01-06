@@ -1,0 +1,401 @@
+@model IEnumerable<LMS.Models.Exam>
+@{
+    ViewData["Title"] = "Quản Lý Đề Thi";
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-1"><i class="fas fa-file-alt text-primary me-2"></i>Quản Lý Đề Thi</h4>
+                            <p class="text-muted mb-0">Tạo, chỉnh sửa và quản lý các đề thi trắc nghiệm</p>
+                        </div>
+                        <div>
+                            <a asp-action="QuestionBank" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-question-circle me-1"></i>Ngân hàng câu hỏi
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-gradient text-white rounded p-3">
+                                <i class="fas fa-file-alt fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Tổng đề thi</h6>
+                            <h3 class="mb-0">@Model.Count()</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-gradient text-white rounded p-3">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Đã xuất bản</h6>
+                            <h3 class="mb-0">@Model.Count(e => e.IsPublished == true)</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-gradient text-white rounded p-3">
+                                <i class="fas fa-clock fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Đang diễn ra</h6>
+                            <h3 class="mb-0">@Model.Count(e => e.StartTime <= DateTime.Now && e.EndTime >= DateTime.Now && e.IsPublished == true)</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-info bg-gradient text-white rounded p-3">
+                                <i class="fas fa-draft2digital fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Bản nháp</h6>
+                            <h3 class="mb-0">@Model.Count(e => e.IsPublished == false || e.IsPublished == null)</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exams List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-0">Danh Sách Đề Thi</h5>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="input-group" style="max-width: 300px; float: right;">
+                                <input type="text" id="searchExam" class="form-control" placeholder="Tìm kiếm đề thi...">
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Chưa có đề thi nào</h5>
+                            <p class="text-muted">Bắt đầu tạo đề thi đầu tiên từ lớp học của bạn</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 25%">Tiêu đề</th>
+                                        <th style="width: 15%">Lớp học</th>
+                                        <th style="width: 12%" class="text-center">Số câu</th>
+                                        <th style="width: 10%" class="text-center">Thời gian</th>
+                                        <th style="width: 15%" class="text-center">Thời hạn</th>
+                                        <th style="width: 10%" class="text-center">Trạng thái</th>
+                                        <th style="width: 8%" class="text-center">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        int stt = 1;
+                                    }
+                                    @foreach (var exam in Model)
+                                    {
+                                        var isActive = exam.StartTime <= DateTime.Now && exam.EndTime >= DateTime.Now && exam.IsPublished == true;
+                                        var isUpcoming = exam.StartTime > DateTime.Now;
+                                        var isExpired = exam.EndTime < DateTime.Now;
+                                        
+                                        <tr>
+                                            <td>@stt</td>
+                                            <td>
+                                                <div>
+                                                    <strong>@exam.Title</strong>
+                                                    @if (!string.IsNullOrEmpty(exam.Description))
+                                                    {
+                                                        <br />
+                                                        <small class="text-muted">@exam.Description</small>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <span class="badge bg-secondary">@exam.Class?.Name</span>
+                                                    <br />
+                                                    <small class="text-muted">@exam.Class?.Course?.Name</small>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-primary">@exam.TotalQuestions câu</span>
+                                                <br />
+                                                <small class="text-muted">@exam.MaxScore điểm</small>
+                                            </td>
+                                            <td class="text-center">
+                                                <i class="fas fa-clock text-primary me-1"></i>@exam.Duration phút
+                                            </td>
+                                            <td class="text-center">
+                                                <small>
+                                                    <div><i class="fas fa-calendar-alt text-success me-1"></i>@exam.StartTime.ToString("dd/MM/yyyy HH:mm")</div>
+                                                    <div><i class="fas fa-calendar-times text-danger me-1"></i>@exam.EndTime.ToString("dd/MM/yyyy HH:mm")</div>
+                                                </small>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (exam.IsPublished == true)
+                                                {
+                                                    @if (isActive)
+                                                    {
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-play-circle me-1"></i>Đang diễn ra
+                                                        </span>
+                                                    }
+                                                    else if (isUpcoming)
+                                                    {
+                                                        <span class="badge bg-info">
+                                                            <i class="fas fa-clock me-1"></i>Sắp tới
+                                                        </span>
+                                                    }
+                                                    else if (isExpired)
+                                                    {
+                                                        <span class="badge bg-secondary">
+                                                            <i class="fas fa-check me-1"></i>Đã kết thúc
+                                                        </span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="fas fa-draft2digital me-1"></i>Bản nháp
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                                                        <i class="fas fa-ellipsis-v"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li>
+                                                            <a class="dropdown-item" asp-action="GradingOverviewExam" asp-route-id="@exam.ExamId">
+                                                                <i class="fas fa-chart-line me-2"></i>Tổng quan chấm điểm
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item" asp-action="EditExam" asp-route-id="@exam.ExamId">
+                                                                <i class="fas fa-edit me-2"></i>Chỉnh sửa
+                                                            </a>
+                                                        </li>
+                                                        @if (exam.IsPublished != true)
+                                                        {
+                                                            <li><hr class="dropdown-divider"></li>
+                                                            <li>
+                                                                <a class="dropdown-item text-danger" href="#" onclick="deleteExam(@exam.ExamId, '@exam.Title'); return false;">
+                                                                    <i class="fas fa-trash me-2"></i>Xóa
+                                                                </a>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        stt++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quy trình quản lý đề thi -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Quy Trình Quản Lý Đề Thi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary text-white rounded-circle" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        <strong>1</strong>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Tạo Ngân Hàng Câu Hỏi</h6>
+                                    <p class="text-muted small mb-0">Tạo các câu hỏi trắc nghiệm/tự luận theo môn học với các mức độ khác nhau</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary text-white rounded-circle" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        <strong>2</strong>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Tạo Đề Thi</h6>
+                                    <p class="text-muted small mb-0">Chọn câu hỏi từ ngân hàng, thiết lập thời gian làm bài, thời hạn và điều kiện thi</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-success text-white rounded-circle" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        <strong>3</strong>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Xuất Bản Đề Thi</h6>
+                                    <p class="text-muted small mb-0">Cho phép sinh viên làm bài thi trong khoảng thời gian đã định</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-warning text-white rounded-circle" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        <strong>4</strong>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Sinh Viên Làm Bài</h6>
+                                    <p class="text-muted small mb-0">Hệ thống tự động chấm điểm câu trắc nghiệm khi sinh viên nộp bài</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-info text-white rounded-circle" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        <strong>5</strong>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Chấm Bài Tự Luận</h6>
+                                    <p class="text-muted small mb-0">Giáo viên chấm điểm các câu tự luận (nếu có) và ghi nhận xét</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-danger text-white rounded-circle" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        <strong>6</strong>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Xem Kết Quả & Thống Kê</h6>
+                                    <p class="text-muted small mb-0">Xem điểm số, phân tích kết quả, xuất báo cáo theo lớp/cá nhân</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="alert alert-light mb-0">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                        <strong>Lưu ý:</strong> Để tạo đề thi, bạn cần vào từng <strong>Lớp học</strong> → <strong>Tab "Đề thi"</strong> → <strong>Tạo đề thi mới</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteExamModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Xác nhận xóa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa đề thi <strong id="examTitleToDelete"></strong>?</p>
+                <p class="text-danger mb-0"><i class="fas fa-info-circle me-1"></i>Hành động này không thể hoàn tác!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <form id="deleteExamForm" method="post" asp-action="DeleteExam" style="display: inline;">
+                    <input type="hidden" id="examIdToDelete" name="id" />
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Xóa
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Search functionality
+        document.getElementById('searchExam').addEventListener('keyup', function() {
+            const searchText = this.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchText) ? '' : 'none';
+            });
+        });
+
+        // Delete exam
+        function deleteExam(examId, examTitle) {
+            document.getElementById('examIdToDelete').value = examId;
+            document.getElementById('examTitleToDelete').textContent = examTitle;
+            new bootstrap.Modal(document.getElementById('deleteExamModal')).show();
+        }
+    </script>
+}

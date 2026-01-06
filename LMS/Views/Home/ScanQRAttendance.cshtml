@@ -1,0 +1,289 @@
+@model LMS.Models.Attendance
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Điểm Danh - @Model.Title</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .attendance-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .icon-large {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .icon-success {
+            color: #28a745;
+        }
+
+        .icon-error {
+            color: #dc3545;
+        }
+
+        .icon-warning {
+            color: #ffc107;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .info-value {
+            color: #212529;
+        }
+
+        .btn-attend {
+            background: #28a745;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .btn-attend:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-attend:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .message-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="attendance-container">
+        <div id="initialView">
+            <i class="fas fa-clipboard-check icon-large icon-success"></i>
+            <h1>@Model.Title</h1>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="info-label"><i class="fas fa-book"></i> Môn học:</span>
+                    <span class="info-value">@Model.Class?.Course?.Name</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label"><i class="fas fa-chalkboard"></i> Lớp:</span>
+                    <span class="info-value">@Model.Class?.Name</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label"><i class="fas fa-user"></i> Giảng viên:</span>
+                    <span class="info-value">@Model.Class?.Instructor?.FullName</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label"><i class="fas fa-clock"></i> Thời gian:</span>
+                    <span class="info-value">@Model.StartTime.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+            </div>
+
+            @if (Model.Status == "Open" && DateTime.Now >= Model.StartTime && DateTime.Now <= Model.EndTime)
+            {
+                <button class="btn-attend" onclick="submitAttendance()">
+                    <i class="fas fa-check-circle"></i> Xác nhận điểm danh
+                </button>
+            }
+            else if (Model.Status == "Closed")
+            {
+                <div class="message message-error">
+                    <i class="fas fa-lock"></i> Phiên điểm danh đã đóng
+                </div>
+            }
+            else if (DateTime.Now < Model.StartTime)
+            {
+                <div class="message message-warning">
+                    <i class="fas fa-clock"></i> Phiên điểm danh chưa bắt đầu
+                </div>
+            }
+            else if (DateTime.Now > Model.EndTime)
+            {
+                <div class="message message-warning">
+                    <i class="fas fa-hourglass-end"></i> Phiên điểm danh đã kết thúc
+                </div>
+            }
+        </div>
+
+        <div id="loadingView" class="hidden">
+            <div class="spinner"></div>
+            <p>Đang xử lý điểm danh...</p>
+        </div>
+
+        <div id="resultView" class="hidden">
+            <i id="resultIcon" class="fas icon-large"></i>
+            <h1 id="resultTitle"></h1>
+            <div id="resultMessage" class="message"></div>
+            <button class="btn-attend" onclick="location.href='@Url.Action("MyCourses", "Home")'">
+                <i class="fas fa-home"></i> Về trang chủ
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function submitAttendance() {
+            // Show loading
+            document.getElementById('initialView').classList.add('hidden');
+            document.getElementById('loadingView').classList.remove('hidden');
+
+            // Submit attendance
+            fetch('@Url.Action("SubmitQRAttendance", "Home")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'attendanceId=@Model.AttendanceId'
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading
+                document.getElementById('loadingView').classList.add('hidden');
+                
+                // Show result
+                const resultView = document.getElementById('resultView');
+                const resultIcon = document.getElementById('resultIcon');
+                const resultTitle = document.getElementById('resultTitle');
+                const resultMessage = document.getElementById('resultMessage');
+                
+                if (data.success) {
+                    resultIcon.className = 'fas fa-check-circle icon-large icon-success';
+                    resultTitle.textContent = 'Điểm danh thành công!';
+                    resultMessage.className = 'message message-success';
+                    resultMessage.innerHTML = '<i class="fas fa-check"></i> ' + data.message;
+                    
+                    if (data.checkInTime) {
+                        resultMessage.innerHTML += '<br><small>Thời gian: ' + data.checkInTime + '</small>';
+                    }
+                } else {
+                    resultIcon.className = 'fas fa-times-circle icon-large icon-error';
+                    resultTitle.textContent = 'Điểm danh thất bại';
+                    resultMessage.className = 'message message-error';
+                    resultMessage.innerHTML = '<i class="fas fa-times"></i> ' + data.message;
+                }
+                
+                resultView.classList.remove('hidden');
+            })
+            .catch(error => {
+                // Hide loading
+                document.getElementById('loadingView').classList.add('hidden');
+                
+                // Show error
+                const resultView = document.getElementById('resultView');
+                const resultIcon = document.getElementById('resultIcon');
+                const resultTitle = document.getElementById('resultTitle');
+                const resultMessage = document.getElementById('resultMessage');
+                
+                resultIcon.className = 'fas fa-exclamation-triangle icon-large icon-error';
+                resultTitle.textContent = 'Có lỗi xảy ra';
+                resultMessage.className = 'message message-error';
+                resultMessage.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Không thể kết nối đến máy chủ';
+                
+                resultView.classList.remove('hidden');
+            });
+        }
+    </script>
+</body>
+</html>

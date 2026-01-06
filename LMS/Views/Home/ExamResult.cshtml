@@ -1,0 +1,359 @@
+@model LMS.Models.ExamResult
+@{
+    bool isValidModel = Model != null && Model.Exam != null && Model.Exam.Class != null && Model.Exam.Class.Course != null;
+    decimal totalScore = Model?.TotalScore ?? 0;
+    decimal earnedScore = Model?.Score ?? 0;
+    decimal percentage = totalScore > 0 ? (earnedScore / totalScore) * 100 : 0;
+    
+    var firstAnswer = Model?.ExamAnswers?.OrderBy(ea => ea.AnswerTime).FirstOrDefault();
+    var lastAnswer = Model?.ExamAnswers?.OrderByDescending(ea => ea.AnswerTime).LastOrDefault();
+    var startTime = firstAnswer?.AnswerTime;
+    var endTime = lastAnswer?.AnswerTime;
+    var duration = startTime.HasValue && endTime.HasValue ? endTime.Value - startTime.Value : TimeSpan.Zero;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Exam Result - Kết quả bài thi</title>
+    <link rel="stylesheet" href="result-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style type="">
+        body {
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    color: #333;
+    padding: 20px;
+}
+
+.result-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* Phần bảng số câu hỏi */
+.question-nav-result {
+    margin-bottom: 30px;
+}
+
+.nav-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 15px;
+}
+
+.nav-item {
+    width: 35px;
+    height: 40px;
+    border: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    position: relative;
+    background: #f8f9fa;
+}
+
+/* Màu đỏ cho câu sai */
+.nav-item.wrong {
+    border-bottom: 8px solid #c02424; /* Thanh đỏ ở dưới */
+}
+
+/* Màu xanh cho câu đúng */
+.nav-item.correct {
+    border-bottom: 8px solid #28a745; /* Thanh xanh ở dưới */
+}
+
+.nav-item.correct i {
+    font-size: 10px;
+    color: white;
+    background: #28a745;
+    padding: 2px;
+    border-radius: 2px;
+    margin-top: 2px;
+}
+
+.nav-link {
+    color: #0056b3;
+    font-size: 14px;
+    margin: 5px 0;
+    cursor: pointer;
+}
+
+.btn-retry {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+/* Bảng thông tin chi tiết */
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.info-table td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.info-table td.label {
+    width: 200px;
+    font-weight: bold;
+    background-color: #f2f2f2;
+    text-align: right;
+    padding-right: 20px;
+}
+
+.info-table tr.highlight {
+    background-color: #fff;
+}
+
+.bottom-border {
+    height: 4px;
+    background-color: #ff0000; /* Đường kẻ đỏ dưới cùng trong ảnh */
+    margin-top: 20px;
+}
+/* Container chính cho mỗi câu hỏi */
+.question-review-container {
+    display: flex;
+    margin-top: 30px;
+    border: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+/* Cột thông tin bên trái (Câu hỏi 1, Sai, Điểm...) */
+.sidebar-info {
+    width: 200px;
+    padding: 15px;
+    border-right: 1px solid #dee2e6;
+    font-size: 13px;
+}
+
+.sidebar-info h3 { margin: 0 0 10px 0; font-size: 16px; }
+.status-text { font-weight: bold; margin-bottom: 5px; }
+.action-link { display: block; color: #0056b3; text-decoration: none; margin-top: 8px; }
+
+/* Nội dung câu hỏi bên phải */
+.question-content {
+    flex: 1;
+    padding: 20px;
+    background-color: #f0f2f5; /* Màu nền xám nhạt như ảnh */
+}
+
+.question-text { margin-bottom: 20px; line-height: 1.5; }
+
+.options-list { display: flex; flex-direction: column; gap: 10px; }
+
+.option-row { display: flex; align-items: center; gap: 10px; cursor: default; }
+
+.selected-wrong { color: #333; }
+.cross-mark { color: #dc3545; font-weight: bold; margin-left: 10px; }
+
+/* Phần Feedback màu đỏ/vàng phía dưới */
+.feedback-section {
+    margin-top: 25px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.user-feedback {
+    padding: 12px;
+    font-weight: bold;
+}
+
+.user-feedback.wrong {
+    background-color: #f8d7da; /* Đỏ nhạt */
+    color: #721c24;
+    border-left: 5px solid #c02424;
+}
+
+.correct-answer-box {
+    background-color: #fff3cd; /* Vàng nhạt */
+    color: #856404;
+    padding: 15px;
+    border-top: 1px solid #ffeeba;
+}
+
+.math-display {
+    margin-top: 10px;
+    font-weight: bold;
+    padding-left: 20px;
+}
+    </style>
+</head>
+<body>
+
+@if (!isValidModel)
+{
+    <div class="alert alert-danger">
+        <h4>Lỗi</h4>
+        <p>Không thể tải thông tin kết quả bài thi.</p>
+    </div>
+}
+else
+{
+<div class="result-container">
+    <div class="question-nav-result">
+        <div class="nav-grid">
+            @{ int questionNum = 0; }
+            @foreach (var examQuestion in Model.Exam.ExamQuestions.OrderBy(eq => eq.QuestionId))
+            {
+                questionNum++;
+                var answer = Model.ExamAnswers?.FirstOrDefault(ea => ea.QuestionId == examQuestion.QuestionId);
+                var isCorrect = answer?.IsCorrect == true;
+                <div class="nav-item @(isCorrect ? "correct" : "wrong")" onclick="scrollToQuestion(@questionNum)">
+                    @questionNum
+                    @if (isCorrect)
+                    {
+                        <text> <i class="fas fa-check"></i></text>
+                    }
+                </div>
+            }
+        </div>
+        <button class="btn-retry" onclick="window.location.href='/Home/ExamDetail/@Model.ExamId'">Bắt đầu lượt làm bài mới</button>
+    </div>
+
+    <table class="info-table">
+        <tr>
+            <td class="label">Bắt đầu vào lúc</td>
+            <td>@(startTime?.ToString("dddd, dd MMMM yyyy, hh:mm tt", new System.Globalization.CultureInfo("vi-VN")) ?? "N/A")</td>
+        </tr>
+        <tr>
+            <td class="label">Trạng thái</td>
+            <td>@(Model.Status ?? "Đã hoàn thành")</td>
+        </tr>
+        <tr>
+            <td class="label">Kết thúc lúc</td>
+            <td>@(endTime?.ToString("dddd, dd MMMM yyyy, hh:mm tt", new System.Globalization.CultureInfo("vi-VN")) ?? "N/A")</td>
+        </tr>
+        <tr>
+            <td class="label">Thời gian thực hiện</td>
+            <td>@(duration.Hours > 0 ? duration.Hours + " giờ " : "")@(duration.Minutes) phút @(duration.Seconds) giây</td>
+        </tr>
+        <tr class="highlight">
+            <td class="label">Điểm</td>
+            <td><strong>@string.Format("{0:0.00}", earnedScore)</strong>/@string.Format("{0:0.00}", totalScore)</td>
+        </tr>
+        <tr class="highlight">
+            <td class="label">Điểm</td>
+            <td><strong>@string.Format("{0:0.00}", earnedScore)</strong> trên @string.Format("{0:0.00}", totalScore) (<strong>@string.Format("{0:0}%", percentage)</strong>)</td>
+        </tr>
+    </table>
+    
+    <div class="bottom-border"></div>
+</div>
+}
+
+@if (isValidModel)
+{
+    int questionNum2 = 0;
+    foreach (var examQuestion in Model.Exam.ExamQuestions.OrderBy(eq => eq.QuestionId))
+    {
+        questionNum2++;
+        var question = examQuestion.Question;
+        var answer = Model.ExamAnswers?.FirstOrDefault(ea => ea.QuestionId == question.QuestionId);
+        var isCorrect = answer?.IsCorrect == true;
+
+<div class="question-review-container" id="question-@questionNum2">
+            <div class="sidebar-info">
+                <h3>CÂU HỎI @questionNum2</h3>
+                <p class="status-text">@(isCorrect ? "Đúng" : "Sai")</p>
+                <p>Đạt điểm @(isCorrect ? string.Format("{0:0.00}", examQuestion.QuestionScore ?? 0) : "0,00") trên @string.Format("{0:0.00}", examQuestion.QuestionScore ?? 0)</p>
+            </div>
+
+            <div class="question-content">
+                <div class="question-text">
+                    @Html.Raw(question.Content)
+                </div>
+
+                    @if (question.Type == "TracNghiem")
+                    {
+                        <div class="options-list">
+                            @if (!string.IsNullOrEmpty(question.Options))
+                            {
+                                var options = question.Options.Split('\n');
+                                var correctAnswer = question.Answer;
+                                var studentAnswer = answer?.StudentAnswer;
+                                
+                                foreach (var option in options)
+                                {
+                                    var optionText = option.Trim();
+                                    if (!string.IsNullOrEmpty(optionText))
+                                    {
+                                        bool isStudentAnswer = optionText == studentAnswer;
+                                        bool isCorrectOption = optionText == correctAnswer;
+                                        
+                                        <label class="option-row @(isStudentAnswer && !isCorrect ? "selected-wrong" : "")">
+                                            <input type="radio" name="q@(questionNum2)" @(isStudentAnswer ? "checked" : "") disabled> 
+                                            <span>@optionText</span>
+                                            @if (isStudentAnswer && !isCorrect)
+                                            {
+                                                <span class="cross-mark">❌</span>
+                                            }
+                                        </label>
+                                    }
+                                }
+                            }
+                        </div>
+
+                        @if (!isCorrect)
+                        {
+                            <div class="feedback-section">
+                                <div class="user-feedback wrong">
+                                    Câu trả lời của bạn sai.
+                                </div>
+                                <div class="correct-answer-box">
+                                    <p>Phương án đúng:</p>
+                                    <div class="math-display">
+                                       @question.Answer
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else if (question.Type == "TuLuan")
+                    {
+                        <div class="essay-answer">
+                            <p><strong>Câu trả lời của bạn:</strong></p>
+                            <div style="padding: 10px; background: white; border: 1px solid #dee2e6; border-radius: 4px;">
+                                @(answer?.StudentAnswer ?? "Không có câu trả lời")
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(question.Answer))
+                        {
+                            <div class="feedback-section" style="margin-top: 20px;">
+                                <div class="correct-answer-box">
+                                    <p>Đáp án tham khảo:</p>
+                                    <div class="math-display">
+                                        @Html.Raw(question.Answer)
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+            </div>
+</div>
+}
+}
+
+<script>
+    function scrollToQuestion(num) {
+        var element = document.getElementById('question-' + num);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
+</html>

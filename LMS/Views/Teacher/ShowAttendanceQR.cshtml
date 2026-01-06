@@ -1,0 +1,388 @@
+@model LMS.Models.Attendance
+@{
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    var qrCodeUrl = Url.Action("ScanQRAttendance", "Home", new { id = Model.AttendanceId }, protocol: Context.Request.Scheme);
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Điểm Danh - @Model.Title</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .qr-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+        }
+
+        .qr-header {
+            margin-bottom: 30px;
+        }
+
+        .qr-header h1 {
+            color: #667eea;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .qr-header p {
+            color: #666;
+            font-size: 1.2rem;
+            margin: 5px 0;
+        }
+
+        .qr-code-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            display: inline-block;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+
+        .qr-code-box img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .info-value {
+            color: #212529;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .status-open {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-closed {
+            background: #dc3545;
+            color: white;
+        }
+
+        .attendance-count {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+        }
+
+        .attendance-label {
+            color: #666;
+            font-size: 1.2rem;
+        }
+
+        .action-buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-custom {
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-close-attendance {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-close-attendance:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-refresh {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-refresh:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        .btn-back {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-back:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .instructions {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #ffeaa7;
+        }
+
+        .instructions h5 {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .instructions ol {
+            text-align: left;
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        @@media print {
+            body {
+                background: white;
+            }
+            .action-buttons, .instructions {
+                display: none;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .qr-header h1 {
+                font-size: 1.8rem;
+            }
+            .qr-header p {
+                font-size: 1rem;
+            }
+            .attendance-count {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="qr-container">
+        <div class="qr-header">
+            <h1><i class="fas fa-qrcode"></i> Điểm Danh QR Code</h1>
+            <p><strong>@Model.Title</strong></p>
+            <p>@Model.Class?.Course?.Name - Lớp @Model.Class?.Name</p>
+            <p class="timer" id="timer"></p>
+        </div>
+
+        <div class="qr-code-box">
+            <img src="@Url.Action("GenerateQRCode", "Teacher", new { attendanceId = Model.AttendanceId })" 
+                 alt="QR Code Điểm Danh" 
+                 id="qrCodeImage">
+        </div>
+
+        <div class="info-section">
+            <div class="info-item">
+                <span class="info-label"><i class="fas fa-clock"></i> Thời gian:</span>
+                <span class="info-value">@Model.StartTime.ToString("HH:mm") - @Model.EndTime.ToString("HH:mm")</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label"><i class="fas fa-calendar"></i> Ngày:</span>
+                <span class="info-value">@Model.StartTime.ToString("dd/MM/yyyy")</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label"><i class="fas fa-info-circle"></i> Trạng thái:</span>
+                <span class="status-badge @(Model.Status == "Open" ? "status-open" : "status-closed")" id="statusBadge">
+                    <i class="fas @(Model.Status == "Open" ? "fa-unlock" : "fa-lock")"></i>
+                    @(Model.Status == "Open" ? "Đang mở" : "Đã đóng")
+                </span>
+            </div>
+        </div>
+
+        <div class="attendance-count" id="attendanceCount">
+            @Model.AttendanceRecords.Count(r => r.Status == "Present")/@Model.AttendanceRecords.Count
+        </div>
+        <div class="attendance-label">Sinh viên đã điểm danh</div>
+
+        <div class="instructions">
+            <h5><i class="fas fa-mobile-alt"></i> Hướng dẫn sinh viên:</h5>
+            <ol>
+                <li>Mở camera điện thoại hoặc ứng dụng quét QR</li>
+                <li>Quét mã QR code trên màn hình</li>
+                <li>Nhấn xác nhận điểm danh trên điện thoại</li>
+                <li>Chờ thông báo điểm danh thành công</li>
+            </ol>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-custom btn-refresh" onclick="refreshData()">
+                <i class="fas fa-sync-alt"></i> Làm mới
+            </button>
+            @if (Model.Status == "Open")
+            {
+                <button class="btn-custom btn-close-attendance" onclick="closeAttendance()">
+                    <i class="fas fa-lock"></i> Đóng điểm danh
+                </button>
+            }
+            <a href="@Url.Action("TakeAttendance", "Teacher", new { id = Model.AttendanceId })" class="btn-custom btn-back">
+                <i class="fas fa-list"></i> Xem danh sách
+            </a>
+            <a href="@Url.Action("ClassDetails", "Teacher", new { id = Model.ClassId })" class="btn-custom btn-back">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Auto refresh every 5 seconds
+        let refreshInterval;
+
+        function startAutoRefresh() {
+            refreshInterval = setInterval(refreshData, 5000);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        }
+
+        function refreshData() {
+            fetch('@Url.Action("GetAttendanceStats", "Teacher")?attendanceId=@Model.AttendanceId')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('attendanceCount').textContent = 
+                            data.presentCount + '/' + data.totalCount;
+                        
+                        const statusBadge = document.getElementById('statusBadge');
+                        if (data.status === 'Closed') {
+                            statusBadge.className = 'status-badge status-closed';
+                            statusBadge.innerHTML = '<i class="fas fa-lock"></i> Đã đóng';
+                            stopAutoRefresh();
+                            
+                            // Hide close button
+                            const closeBtn = document.querySelector('.btn-close-attendance');
+                            if (closeBtn) {
+                                closeBtn.style.display = 'none';
+                            }
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function closeAttendance() {
+            if (!confirm('Bạn có chắc muốn đóng phiên điểm danh?\nSau khi đóng, sinh viên không thể quét QR nữa.')) {
+                return;
+            }
+
+            fetch('@Url.Action("CloseAttendance", "Teacher")?id=@Model.AttendanceId', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Có lỗi xảy ra: ' + error);
+            });
+        }
+
+        // Update timer
+        function updateTimer() {
+            const endTime = new Date('@Model.EndTime.ToString("yyyy-MM-ddTHH:mm:ss")');
+            const now = new Date();
+            const diff = endTime - now;
+
+            if (diff <= 0) {
+                document.getElementById('timer').innerHTML = '<i class="fas fa-hourglass-end"></i> Hết thời gian';
+                stopAutoRefresh();
+                return;
+            }
+
+            const minutes = Math.floor(diff / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            
+            document.getElementById('timer').innerHTML = 
+                `<i class="fas fa-hourglass-half"></i> Còn lại: ${minutes} phút ${seconds} giây`;
+        }
+
+        // Start auto refresh and timer
+        startAutoRefresh();
+        updateTimer();
+        setInterval(updateTimer, 1000);
+
+        // Stop refresh when page is hidden
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+            }
+        });
+    </script>
+</body>
+</html>

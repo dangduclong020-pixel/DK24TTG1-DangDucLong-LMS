@@ -136,8 +136,11 @@
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="@Url.Action("EditCourse", "FacultyAdmin", new { id = course.CourseId })" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="openEditModal(@course.CourseId, '@course.Name', '@course.Code')" title="Chỉnh sửa tên">
                                                 <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="@Url.Action("EditCourse", "FacultyAdmin", new { id = course.CourseId })" class="btn btn-sm btn-outline-info" title="Chỉnh sửa chi tiết">
+                                                <i class="fas fa-cog"></i>
                                             </a>
                                             <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteCourse(@course.CourseId, '@course.Name')" title="Xóa">
                                                 <i class="fas fa-trash"></i>
@@ -161,6 +164,49 @@
                         }
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Course Name Modal -->
+<div class="modal fade" id="editCourseModal" tabindex="-1" aria-labelledby="editCourseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editCourseModalLabel">
+                    <i class="fas fa-edit"></i> Tùy chỉnh tên khóa học
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCourseForm">
+                    <input type="hidden" id="editCourseId" />
+                    
+                    <div class="mb-3">
+                        <label for="editCourseCode" class="form-label fw-bold">Mã khóa học</label>
+                        <input type="text" class="form-control" id="editCourseCode" readonly />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editCourseName" class="form-label fw-bold">Tên khóa học <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editCourseName" required />
+                        <div class="invalid-feedback">Vui lòng nhập tên khóa học</div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        <small>Tên này sẽ hiển thị ở tiêu đề lớp học cho tất cả mọi người (giảng viên, sinh viên)</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="updateCourseName()">
+                    <i class="fas fa-save"></i> Lưu thay đổi
+                </button>
             </div>
         </div>
     </div>
@@ -197,6 +243,81 @@
                 }
             });
         });
+
+        // Open edit modal
+        function openEditModal(courseId, courseName, courseCode) {
+            document.getElementById('editCourseId').value = courseId;
+            document.getElementById('editCourseCode').value = courseCode;
+            document.getElementById('editCourseName').value = courseName;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editCourseModal'));
+            modal.show();
+        }
+
+        // Update course name
+        function updateCourseName() {
+            const courseId = document.getElementById('editCourseId').value;
+            const courseName = document.getElementById('editCourseName').value.trim();
+            
+            if (!courseName) {
+                document.getElementById('editCourseName').classList.add('is-invalid');
+                return;
+            }
+            
+            document.getElementById('editCourseName').classList.remove('is-invalid');
+            
+            // Disable button to prevent double submission
+            const saveButton = event.target;
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+            
+            fetch('@Url.Action("UpdateCourseName", "FacultyAdmin")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    courseId: courseId,
+                    name: courseName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('editCourseModal')).hide();
+                    
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.innerHTML = `
+                        <i class="fas fa-check-circle"></i> ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.querySelector('.container-fluid > .row').after(alertDiv);
+                    
+                    // Update the course name in the table
+                    const row = document.querySelector(`button[onclick*="openEditModal(${courseId},"]`).closest('tr');
+                    const nameCell = row.querySelector('td:nth-child(2) .fw-bold');
+                    nameCell.textContent = courseName;
+                    
+                    // Auto dismiss after 3 seconds
+                    setTimeout(() => {
+                        alertDiv.remove();
+                    }, 3000);
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Đã xảy ra lỗi khi cập nhật tên khóa học!');
+            })
+            .finally(() => {
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="fas fa-save"></i> Lưu thay đổi';
+            });
+        }
 
         // Delete course function
         function deleteCourse(courseId, courseName) {

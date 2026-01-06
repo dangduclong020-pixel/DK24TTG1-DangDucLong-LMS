@@ -1,0 +1,367 @@
+@{
+    ViewData["Title"] = "Thời Khóa Biểu";
+    Layout = "~/Views/Shared/_LayoutWithSidebar.cshtml";
+    var scheduleByDay = ViewBag.ScheduleByDay as Dictionary<string, List<dynamic>>;
+    var daysOfWeek = ViewBag.DaysOfWeek as string[];
+    var semesters = ViewBag.Semesters as List<LMS.Models.SemesterConfig>;
+    var currentSemester = ViewBag.CurrentSemester as LMS.Models.SemesterConfig;
+    var weeks = ViewBag.Weeks as List<dynamic>;
+    var currentWeek = ViewBag.CurrentWeek as dynamic;
+    var weekDates = ViewBag.WeekDates as List<DateTime>;
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    :root {
+        --blue-lms: #0061f2;
+        --blue-dark: #0056b3;
+        --blue-light: #d1e7ff;
+        --gray-bg: #f2f5f9;
+    }
+
+    body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background-color: var(--gray-bg); 
+    }
+    
+    .container { 
+        max-width: 1400px; 
+        margin: 0 auto; 
+        padding: 20px;
+    }
+
+    /* --- THỜI KHÓA BIỂU (Giống ảnh image_200b9f) --- */
+    .tkb-wrapper { 
+        border: 1px solid var(--blue-dark); 
+        border-radius: 5px; 
+        background: white; 
+        padding-bottom: 1px; 
+        margin-bottom: 20px;
+    }
+    
+    .tkb-header { 
+        padding: 15px; 
+        border-bottom: 1px solid #eee; 
+    }
+    
+    .tkb-title { 
+        color: var(--blue-dark); 
+        font-weight: bold; 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+        margin-bottom: 15px; 
+        text-transform: uppercase; 
+    }
+    
+    .filter-row { 
+        display: flex; 
+        gap: 10px; 
+        margin-bottom: 10px; 
+        flex-wrap: wrap;
+    }
+    
+    .filter-row select { 
+        flex: 1; 
+        padding: 8px; 
+        border: 1px solid #ccc; 
+        border-radius: 4px; 
+        min-width: 200px;
+    }
+    
+    .btn-print { 
+        background: #007bff; 
+        color: white; 
+        border: none; 
+        padding: 8px 15px; 
+        border-radius: 4px; 
+        cursor: pointer; 
+    }
+    
+    .btn-print:hover {
+        background: #0056b3;
+    }
+
+    table.tkb-table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        table-layout: fixed; 
+    }
+    
+    .tkb-table th { 
+        border: 1px solid #dee2e6; 
+        padding: 10px; 
+        color: var(--blue-dark); 
+        font-size: 13px; 
+        background: #fff; 
+    }
+    
+    .tkb-table td { 
+        border: 1px solid #dee2e6; 
+        height: 45px; 
+        position: relative; 
+    }
+    
+    .col-blue { 
+        background: var(--blue-dark); 
+        color: white; 
+        width: 60px; 
+        text-align: center; 
+        font-weight: bold; 
+    }
+    
+    .col-time { 
+        background: var(--blue-dark); 
+        color: white; 
+        width: 65px; 
+        text-align: center; 
+        font-size: 11px; 
+    }
+
+    .course-item {
+        position: absolute; 
+        top: 2px; 
+        left: 2px; 
+        right: 2px; 
+        bottom: 2px;
+        background: var(--blue-light); 
+        border: 1px solid var(--blue-dark);
+        border-left: 5px solid var(--blue-dark); 
+        padding: 8px; 
+        font-size: 11px;
+        text-align: left; 
+        z-index: 10;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .course-item:hover {
+        background: #b8d7ff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .course-item strong { 
+        color: var(--blue-dark); 
+        display: block; 
+        margin-bottom: 4px; 
+    }
+
+    @@media (max-width: 768px) {
+        .tkb-table {
+            font-size: 10px;
+        }
+        
+        .course-item {
+            font-size: 9px;
+            padding: 4px;
+        }
+    }
+</style>
+
+<div class="container">
+    <div class="tkb-wrapper">
+        <div class="tkb-header">
+            <div class="tkb-title">
+                <i class="fa-solid fa-gear"></i> 
+                Thời khóa biểu dạng tuần
+            </div>
+            <div class="filter-row">
+                <select id="semesterSelect" onchange="changeSemester()">
+                    @if (semesters != null && semesters.Any())
+                    {
+                        foreach (var semester in semesters)
+                        {
+                            if (currentSemester != null && semester.SemesterConfigId == currentSemester.SemesterConfigId)
+                            {
+                                <option value="@semester.SemesterConfigId" selected>
+                                    Học kỳ @semester.SemesterNumber - Năm học @semester.AcademicYear
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="@semester.SemesterConfigId">
+                                    Học kỳ @semester.SemesterNumber - Năm học @semester.AcademicYear
+                                </option>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <option>Chưa có học kỳ</option>
+                    }
+                </select>
+                <select>
+                    <option>Lịch giảng dạy</option>
+                </select>
+                <button class="btn-print" onclick="window.print()">
+                    <i class="fa-solid fa-print"></i> In
+                </button>
+            </div>
+            <select id="weekSelect" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" onchange="changeWeek()">
+                @if (weeks != null && weeks.Any())
+                {
+                    foreach (var week in weeks)
+                    {
+                        if (currentWeek != null && week.WeekNumber == currentWeek.WeekNumber)
+                        {
+                            <option value="@week.WeekNumber" selected>@week.DisplayText</option>
+                        }
+                        else
+                        {
+                            <option value="@week.WeekNumber">@week.DisplayText</option>
+                        }
+                    }
+                }
+                else
+                {
+                    <option>Chưa có tuần</option>
+                }
+            </select>
+        </div>
+        
+        <table class="tkb-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">←</th>
+                    @if (weekDates != null && weekDates.Any())
+                    {
+                        for (int i = 0; i < daysOfWeek.Length && i < weekDates.Count; i++)
+                        {
+                            <th>@daysOfWeek[i] <br><small>(@weekDates[i].ToString("dd/MM/yyyy"))</small></th>
+                        }
+                    }
+                    else
+                    {
+                        foreach (var day in daysOfWeek)
+                        {
+                            <th>@day <br><small>(--/--/----)</small></th>
+                        }
+                    }
+                    <th style="width: 65px;">→</th>
+                </tr>
+            </thead>
+            <tbody id="tkb-content">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function changeSemester() {
+        const semesterId = document.getElementById('semesterSelect').value;
+        window.location.href = `/Teacher/MySchedule?semesterId=${semesterId}`;
+    }
+
+    function changeWeek() {
+        const semesterId = document.getElementById('semesterSelect').value;
+        const weekNumber = document.getElementById('weekSelect').value;
+        window.location.href = `/Teacher/MySchedule?semesterId=${semesterId}&weekNumber=${weekNumber}`;
+    }
+
+    const times = ["7:00", "7:51", "9:00", "9:51", "10:41", "12:30", "13:21", "14:30", "15:21", "16:11", "17:30", "18:21", "19:11", "20:01"];
+    const container = document.getElementById('tkb-content');
+
+    // Dữ liệu từ server
+    const scheduleData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(scheduleByDay));
+    const daysOfWeek = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(daysOfWeek));
+
+    // Map thời gian với tiết học
+    function getSessionFromTime(time) {
+        const hour = parseInt(time.split(':')[0]);
+        const minute = parseInt(time.split(':')[1]);
+        const totalMinutes = hour * 60 + minute;
+        
+        // 7:00 - Tiết 1, 7:51 - Tiết 2, ...
+        if (totalMinutes >= 420 && totalMinutes < 471) return 1;  // 7:00-7:50
+        if (totalMinutes >= 471 && totalMinutes < 540) return 2;  // 7:51-8:59
+        if (totalMinutes >= 540 && totalMinutes < 591) return 3;  // 9:00-9:50
+        if (totalMinutes >= 591 && totalMinutes < 641) return 4;  // 9:51-10:40
+        if (totalMinutes >= 641 && totalMinutes < 750) return 5;  // 10:41-12:29
+        if (totalMinutes >= 750 && totalMinutes < 801) return 6;  // 12:30-13:20
+        if (totalMinutes >= 801 && totalMinutes < 870) return 7;  // 13:21-14:29
+        if (totalMinutes >= 870 && totalMinutes < 921) return 8;  // 14:30-15:20
+        if (totalMinutes >= 921 && totalMinutes < 971) return 9;  // 15:21-16:10
+        if (totalMinutes >= 971 && totalMinutes < 1050) return 10; // 16:11-17:29
+        if (totalMinutes >= 1050 && totalMinutes < 1101) return 11; // 17:30-18:20
+        if (totalMinutes >= 1101 && totalMinutes < 1151) return 12; // 18:21-19:10
+        if (totalMinutes >= 1151 && totalMinutes < 1201) return 13; // 19:11-20:00
+        return 14; // 20:01 trở đi
+    }
+
+    function calculateRowSpan(startTime, endTime) {
+        const startSession = getSessionFromTime(startTime);
+        const endSession = getSessionFromTime(endTime);
+        return endSession - startSession + 1;
+    }
+
+    // Tạo ma trận để tracking các ô đã được sử dụng
+    const usedCells = {};
+    for (let i = 1; i <= 14; i++) {
+        usedCells[i] = {};
+        for (let j = 0; j < 7; j++) {
+            usedCells[i][j] = false;
+        }
+    }
+
+    // Xử lý dữ liệu schedule
+    const scheduleMatrix = {};
+    for (let j = 0; j < 7; j++) {
+        const dayName = daysOfWeek[j];
+        const daySchedules = scheduleData[dayName] || [];
+        
+        daySchedules.forEach(schedule => {
+            const startSession = getSessionFromTime(schedule.StartTime);
+            const rowSpan = calculateRowSpan(schedule.StartTime, schedule.EndTime);
+            
+            if (!scheduleMatrix[startSession]) {
+                scheduleMatrix[startSession] = {};
+            }
+            
+            scheduleMatrix[startSession][j] = {
+                rowSpan: rowSpan,
+                data: schedule
+            };
+            
+            // Đánh dấu các ô bị chiếm
+            for (let k = 0; k < rowSpan; k++) {
+                usedCells[startSession + k][j] = true;
+            }
+        });
+    }
+
+    // Vẽ bảng
+    for (let i = 1; i <= 14; i++) {
+        let row = document.createElement('tr');
+        row.innerHTML = `<td class="col-blue">Tiết ${i}</td>`;
+        
+        for (let j = 0; j < 7; j++) {
+            // Nếu ô này đã bị chiếm bởi rowspan từ trên, bỏ qua
+            if (usedCells[i][j] && (!scheduleMatrix[i] || !scheduleMatrix[i][j])) {
+                continue;
+            }
+            
+            // Nếu có môn học ở ô này
+            if (scheduleMatrix[i] && scheduleMatrix[i][j]) {
+                const schedule = scheduleMatrix[i][j];
+                const data = schedule.data;
+                
+                row.innerHTML += `<td rowspan="${schedule.rowSpan}">
+                    <div class="course-item" onclick="location.href='/Teacher/ClassDetails/${data.ClassId}'">
+                        <strong>${data.CourseName}</strong>
+                        Lớp: ${data.ClassCode}<br>
+                        Phòng: ${data.Room}<br>
+                        🕒 ${data.StartTime} - ${data.EndTime}
+                        ${data.LessonTitle ? '<br><i>📚 ' + data.LessonTitle + '</i>' : ''}
+                    </div>
+                </td>`;
+            } else {
+                row.innerHTML += `<td></td>`;
+            }
+        }
+        
+        row.innerHTML += `<td class="col-time">${times[i-1]}</td>`;
+        container.appendChild(row);
+    }
+</script>

@@ -27,7 +27,11 @@ public partial class Lesson
 
     public DateTime? DeletedAt { get; set; }
 
+    public string? VideoUrl { get; set; }
+
     public virtual Class Class { get; set; } = null!;
+
+    public virtual ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
 
     public virtual ICollection<LessonFile> LessonFiles { get; set; } = new List<LessonFile>();
 

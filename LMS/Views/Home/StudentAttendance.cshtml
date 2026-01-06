@@ -1,0 +1,671 @@
+@model List<LMS.Models.Attendance>
+
+@{
+    ViewData["Title"] = "Điểm danh";
+    var classInfo = ViewBag.ClassInfo as LMS.Models.Class;
+    var takenSessions = (int)ViewBag.TakenSessions;
+    var totalPoints = (int)ViewBag.TotalPoints;
+    var totalSessions = (int)ViewBag.TotalSessions;
+    var percentage = (double)ViewBag.Percentage;
+    var currentMonth = (string)ViewBag.CurrentMonth;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>LMS - Điểm danh sinh viên</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .attendance-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: transparent;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        /* Tabs */
+        .tabs-container {
+            display: flex;
+            border-bottom: 2px solid #0056b3;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            background: #e9ecef;
+            border: none;
+            padding: 10px 20px;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+            .tab.active {
+                background: #0056b3;
+                color: white;
+            }
+
+        /* Filter Section */
+        .filter-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .month-nav {
+            display: flex;
+            align-items: center;
+            background: #6c757d;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .current-month {
+            margin: 0 15px;
+            font-weight: bold;
+        }
+
+        .nav-arrow {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .view-options .btn-view {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 5px 12px;
+            margin-left: -1px; /* Tạo hiệu ứng dính nhau */
+            cursor: pointer;
+            font-size: 13px;
+            color: #0056b3;
+        }
+
+            .view-options .btn-view.active {
+                background: #e9ecef;
+                color: #333;
+            }
+
+        /* Table */
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+            .attendance-table th {
+                text-align: left;
+                background-color: #f2f2f2;
+                padding: 12px;
+                border-bottom: 2px solid #dee2e6;
+                font-size: 14px;
+            }
+
+            .attendance-table td {
+                padding: 15px 12px;
+                border-bottom: 1px solid #eee;
+                font-size: 14px;
+            }
+
+        .date-cell {
+            line-height: 1.4;
+        }
+
+        .time {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .submit-link {
+            color: #0056b3;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            .submit-link:hover {
+                text-decoration: underline;
+            }
+
+        .status-present {
+            color: #28a745;
+            font-weight: 500;
+        }
+
+        .status-absent {
+            color: #dc3545;
+            font-weight: 500;
+        }
+
+        .status-late {
+            color: #ffc107;
+            font-weight: 500;
+        }
+
+        /* Stats */
+        .attendance-stats {
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        /* Modal */
+        .modal-attendance {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content-attendance {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 90%;
+            max-width: 650px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .modal-header-attendance {
+            background-color: #f5f5f5;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+            .modal-header-attendance h2 {
+                margin: 0;
+                font-size: 24px;
+                font-weight: 500;
+                color: #333;
+            }
+
+            .modal-header-attendance .subtitle {
+                margin: 5px 0 0 0;
+                font-size: 13px;
+                color: #666;
+                font-weight: normal;
+            }
+
+        .close-modal {
+            display: none;
+        }
+
+        .modal-body-attendance {
+            padding: 20px;
+        }
+
+        .attendance-date-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+            .attendance-date-selector i {
+                margin-right: 10px;
+                color: #666;
+            }
+
+            .attendance-date-selector span {
+                font-size: 14px;
+                color: #333;
+            }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #333;
+            }
+
+            .form-group .required {
+                color: #d93025;
+                margin-left: 3px;
+            }
+
+            .form-group input[type="text"],
+            .form-group input[type="password"] {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                font-size: 14px;
+                box-sizing: border-box;
+            }
+
+                .form-group input[type="text"]:focus,
+                .form-group input[type="password"]:focus {
+                    outline: none;
+                    border-color: #4285f4;
+                    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.1);
+                }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+            .radio-group label {
+                display: flex;
+                align-items: center;
+                font-weight: normal;
+                cursor: pointer;
+                font-size: 14px;
+            }
+
+            .radio-group input[type="radio"] {
+                margin-right: 6px;
+                cursor: pointer;
+            }
+
+        .modal-footer-attendance {
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9f9f9;
+        }
+
+        .form-note {
+            font-size: 12px;
+            color: #666;
+        }
+
+            .form-note .required {
+                color: #d93025;
+            }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-submit-attendance {
+            background: #1a73e8;
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+            .btn-submit-attendance:hover {
+                background: #1557b0;
+            }
+
+        .btn-cancel-attendance {
+            background: #fff;
+            color: #5f6368;
+            padding: 10px 24px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+            .btn-cancel-attendance:hover {
+                background: #f8f9fa;
+            }
+
+        .alert {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="attendance-container">
+        <h1>Điểm danh</h1>
+        <p class="subtitle">
+            @if (classInfo != null)
+            {
+                <span>Lớp: @classInfo.Name (@classInfo.Code) - Sinh viên điểm danh bằng cách nhập mật khẩu giảng viên cung cấp trong cuộc họp.</span>
+            }
+            else
+            {
+                <span>Sinh viên điểm danh và nhập mật khẩu giảng viên cung cấp trong cuộc họp meet.</span>
+            }
+        </p>
+
+        <div class="tabs-container">
+            <button class="tab active">This course</button>
+            <button class="tab">All courses</button>
+            <button class="tab">All sessions</button>
+        </div>
+
+        <div class="filter-section">
+            <div class="month-nav">
+                <button class="nav-arrow"><i class="fas fa-caret-left"></i></button>
+                <span class="current-month">@currentMonth</span>
+                <button class="nav-arrow"><i class="fas fa-caret-right"></i></button>
+            </div>
+
+            <div class="view-options">
+                <button class="btn-view active">All</button>
+                <button class="btn-view">All past</button>
+                <button class="btn-view">Months</button>
+                <button class="btn-view">Weeks</button>
+                <button class="btn-view">Days</button>
+            </div>
+        </div>
+
+        <table class="attendance-table">
+            <thead>
+                <tr>
+                    <th>Ngày</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Points</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var attendance in Model)
+                    {
+                        var record = attendance.AttendanceRecords.FirstOrDefault();
+                        var isPresent = record != null && record.Status == "Present";
+                        var isPast = attendance.EndTime < DateTime.Now;
+                        var canAttend = attendance.Status == "Open" 
+                                     && attendance.StartTime <= DateTime.Now 
+                                     && attendance.EndTime >= DateTime.Now
+                                     && attendance.AllowCodeAttendance;
+
+                        <tr>
+                            <td class="date-cell">
+                                @attendance.StartTime.ToString("ddd dd MMM yyyy", new System.Globalization.CultureInfo("vi-VN"))
+                                <br>
+                                <span class="time">
+                                    @attendance.StartTime.ToString("hh:mm tt") - @attendance.EndTime.ToString("hh:mm tt")
+                                </span>
+                            </td>
+                            <td>
+                                <strong>@attendance.Title</strong>
+                                @if (!string.IsNullOrEmpty(attendance.Description))
+                                {
+                                    <br />
+                                    <span class="time">@attendance.Description</span>
+                                }
+                                @if (attendance.Lesson != null)
+                                {
+                                    <br />
+                                    <span class="time">Phần: @attendance.Lesson.Title</span>
+                                }
+                            </td>
+                            <td>
+                                @if (isPresent)
+                                {
+                                    <span class="status-present">
+                                        <i class="fas fa-check-circle"></i> Đã điểm danh
+                                    </span>
+                                }
+                                else if (isPast)
+                                {
+                                    <span class="status-absent">
+                                        <i class="fas fa-times-circle"></i> Vắng
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="time">Chưa điểm danh</span>
+                                }
+                            </td>
+                            <td>
+                                @if (canAttend && !isPresent)
+                                {
+                                    <a href="javascript:void(0);" 
+                                       class="submit-link" 
+                                       onclick="openAttendanceModal(@attendance.AttendanceId, '@attendance.Title')">
+                                        <i class="fas fa-hand-point-up"></i> Submit attendance
+                                    </a>
+                                }
+                                else if (isPresent)
+                                {
+                                    <span class="status-present">1 / 1</span>
+                                }
+                                else if (isPast)
+                                {
+                                    <span class="status-absent">0 / 1</span>
+                                }
+                            </td>
+                            <td>
+                                @if (record != null && !string.IsNullOrEmpty(record.Note))
+                                {
+                                    <span>@record.Note</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 30px; color: #999;">
+                            Chưa có phiên điểm danh nào
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="attendance-stats">
+            <p>Taken sessions: @takenSessions</p>
+            <p>Points over taken sessions: @totalPoints / @totalSessions</p>
+            <p>Percentage over taken sessions: @percentage.ToString("0.0")%</p>
+        </div>
+    </div>
+
+    <!-- Modal điểm danh -->
+    <div id="attendanceModal" class="modal-attendance">
+        <div class="modal-content-attendance">
+            <div class="modal-header-attendance">
+                <h2>Điểm danh</h2>
+                <p class="subtitle">Sinh viên điểm danh và nhập mật khẩu giảng viên cung cấp trong cuộc họp meet.</p>
+            </div>
+            
+            <div class="modal-body-attendance">
+                <div id="attendanceMessage"></div>
+                
+                <form id="attendanceForm" onsubmit="submitAttendance(event)">
+                    <input type="hidden" id="attendanceId" />
+                    
+                    <!-- Date selector -->
+                    <div class="attendance-date-selector">
+                        <i class="fas fa-chevron-down"></i>
+                        <span id="attendanceDateTime"></span>
+                    </div>
+                    
+                    <!-- Password field -->
+                    <div class="form-group">
+                        <label>
+                            Password
+                            <span class="required">*</span>
+                        </label>
+                        <input type="password" 
+                               id="attendanceCode" 
+                               placeholder="" 
+                               required 
+                               autocomplete="off" />
+                    </div>
+                    
+                    <!-- Student name and status -->
+                    <div class="form-group">
+                        <label>
+                            @ViewBag.UserName:
+                            <span class="required">*</span>
+                        </label>
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="status" value="Present" checked />
+                                Present
+                            </label>
+                            <label>
+                                <input type="radio" name="status" value="Late" />
+                                Late
+                            </label>
+                            <label>
+                                <input type="radio" name="status" value="Excused" />
+                                Excused
+                            </label>
+                            <label>
+                                <input type="radio" name="status" value="Absent" />
+                                Absent
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer-attendance">
+                <div class="form-note">
+                    Có các mục bắt buộc trong biểu mẫu này được đánh dấu <span class="required">*</span>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel-attendance" onclick="closeAttendanceModal()">
+                        Huỷ bỏ
+                    </button>
+                    <button type="submit" form="attendanceForm" class="btn-submit-attendance">
+                        Lưu những thay đổi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openAttendanceModal(attendanceId, title) {
+            document.getElementById('attendanceId').value = attendanceId;
+            
+            // Lấy thông tin attendance từ bảng để hiển thị ngày giờ
+            const rows = document.querySelectorAll('.attendance-table tbody tr');
+            let dateTimeText = '';
+            
+            rows.forEach(row => {
+                const submitLink = row.querySelector('a[onclick*="' + attendanceId + '"]');
+                if (submitLink) {
+                    const dateCell = row.querySelector('.date-cell');
+                    if (dateCell) {
+                        dateTimeText = dateCell.textContent.trim().replace(/\s+/g, ' ');
+                    }
+                }
+            });
+            
+            document.getElementById('attendanceDateTime').textContent = dateTimeText || title;
+            document.getElementById('attendanceCode').value = '';
+            document.querySelector('input[name="status"][value="Present"]').checked = true;
+            document.getElementById('attendanceMessage').innerHTML = '';
+            document.getElementById('attendanceModal').style.display = 'block';
+        }
+
+        function closeAttendanceModal() {
+            document.getElementById('attendanceModal').style.display = 'none';
+        }
+
+        // Đóng modal khi click bên ngoài
+        window.onclick = function (event) {
+            const modal = document.getElementById('attendanceModal');
+            if (event.target == modal) {
+                closeAttendanceModal();
+            }
+        }
+
+        async function submitAttendance(event) {
+            event.preventDefault();
+
+            const attendanceId = document.getElementById('attendanceId').value;
+            const code = document.getElementById('attendanceCode').value.trim();
+            const status = document.querySelector('input[name="status"]:checked').value;
+            const messageDiv = document.getElementById('attendanceMessage');
+
+            if (!code) {
+                messageDiv.innerHTML = '<div class="alert alert-danger">Vui lòng nhập mã điểm danh!</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch('@Url.Action("SubmitStudentAttendance", "Home")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `attendanceId=${attendanceId}&code=${encodeURIComponent(code)}`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    messageDiv.innerHTML = '<div class="alert alert-success">' + result.message + '</div>';
+                    setTimeout(() => {
+                        closeAttendanceModal();
+                        location.reload();
+                    }, 1500);
+                } else {
+                    messageDiv.innerHTML = '<div class="alert alert-danger">' + result.message + '</div>';
+                }
+            } catch (error) {
+                messageDiv.innerHTML = '<div class="alert alert-danger">Có lỗi xảy ra. Vui lòng thử lại!</div>';
+                console.error('Error:', error);
+            }
+        }
+    </script>
+
+</body>
+</html>

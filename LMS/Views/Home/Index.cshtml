@@ -2,6 +2,9 @@
 @{
     ViewData["Title"] = "E-Learning - Trường Đại học Thủ Dầu Một";
     Layout = null;
+    var isLoggedIn = ViewBag.IsLoggedIn ?? false;
+    var userName = ViewBag.UserName ?? "";
+    var userRole = ViewBag.UserRole ?? "";
 }
 
 <!DOCTYPE html>
@@ -643,14 +646,261 @@
             text-decoration: underline;
             color: #0056b3;
         }
+        
+        /* Sidebar Styles */
+        .sidebar-menu {
+            position: fixed;
+            left: -280px;
+            top: 60px;
+            width: 280px;
+            height: calc(100vh - 60px);
+            background: #0051a8;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            transition: left 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        .sidebar-menu.active {
+            left: 0;
+        }
+        
+        .sidebar-overlay {
+            display: none;
+        }
+        
+        /* Push content when sidebar is active */
+        body.sidebar-open {
+            overflow-x: hidden;
+        }
+        
+        body.sidebar-open .main-content {
+            margin-left: 280px;
+            width: calc(100% - 280px);
+            transition: all 0.3s ease;
+        }
+        
+        .main-content {
+            margin-left: 0;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar {
+            position: relative;
+            z-index: 1050;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-header h5 {
+            color: white;
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .btn-close-sidebar {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-close-sidebar:hover {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        
+        .sidebar-content {
+            padding: 10px 0;
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            text-decoration: none;
+            border-left-color: white;
+        }
+        
+        .sidebar-item.active {
+            background: rgba(255,255,255,0.15);
+            border-left-color: #ffc107;
+        }
+        
+        .sidebar-item i {
+            width: 24px;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+        
+        .sidebar-item span {
+            font-size: 15px;
+        }
     </style>
 </head>
 <body>
+    <!-- Sidebar -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="sidebar-menu" id="sidebarMenu">
+        <div class="sidebar-header">
+            <h5>Menu</h5>
+            <button class="btn-close-sidebar" id="closeSidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-content">
+            <a href="@Url.Action("Index", "Home")" class="sidebar-item active">
+                <i class="fas fa-home"></i>
+                <span>Trang chủ</span>
+            </a>
+            @if (isLoggedIn)
+            {
+                var userRoleLower = userRole.ToString().ToLower();
+                if (userRoleLower == "admin")
+                {
+                <a href="@Url.Action("Index", "Admin")" class="sidebar-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Bảng Điều khiển</span>
+                </a>
+                <a href="@Url.Action("UserManagement", "Admin")" class="sidebar-item">
+                    <i class="fas fa-users"></i>
+                    <span>Quản lý người dùng</span>
+                </a>
+                <a href="@Url.Action("FacultyManagement", "Admin")" class="sidebar-item">
+                    <i class="fas fa-university"></i>
+                    <span>Quản lý khoa</span>
+                </a>
+                <a href="@Url.Action("SystemReports", "Admin")" class="sidebar-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Báo cáo thống kê</span>
+                </a>
+                }
+                else if (userRoleLower == "teacher" || userRoleLower == "giảng viên" || userRoleLower == "giang vien")
+                {
+                <a href="@Url.Action("Index", "Teacher")" class="sidebar-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Bảng Điều khiển</span>
+                </a>
+                <a href="@Url.Action("MyClasses", "Teacher")" class="sidebar-item">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>Lớp học của tôi</span>
+                </a>
+                <a href="@Url.Action("Assignments", "Teacher")" class="sidebar-item">
+                    <i class="fas fa-tasks"></i>
+                    <span>Quản lý bài tập</span>
+                </a>
+                <a href="@Url.Action("Exams", "Teacher")" class="sidebar-item">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Quản lý đề thi</span>
+                </a>
+                <a href="@Url.Action("QuestionBank", "Teacher")" class="sidebar-item">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Ngân hàng câu hỏi</span>
+                </a>
+                }
+                else if (userRoleLower == "quản trị khoa" || userRoleLower == "faculty admin")
+                {
+                <a href="@Url.Action("Index", "FacultyAdmin")" class="sidebar-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Bảng Điều khiển</span>
+                </a>
+                <a href="@Url.Action("CourseManagement", "FacultyAdmin")" class="sidebar-item">
+                    <i class="fas fa-book"></i>
+                    <span>Quản lý môn học</span>
+                </a>
+                <a href="@Url.Action("ClassManagement", "FacultyAdmin")" class="sidebar-item">
+                    <i class="fas fa-users"></i>
+                    <span>Quản lý lớp học</span>
+                </a>
+                <a href="@Url.Action("TeacherManagement", "FacultyAdmin")" class="sidebar-item">
+                    <i class="fas fa-user-tie"></i>
+                    <span>Quản lý giảng viên</span>
+                </a>
+                <a href="@Url.Action("StudentManagement", "FacultyAdmin")" class="sidebar-item">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Quản lý sinh viên</span>
+                </a>
+                }
+                else if (userRoleLower == "sinh viên" || userRoleLower == "student" || userRoleLower == "sinh vien")
+                {
+                <a href="@Url.Action("Index", "Home")" class="sidebar-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Bảng Điều khiển</span>
+                </a>
+                <a href="@Url.Action("MyCourses", "Home")" class="sidebar-item">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Khóa học của tôi</span>
+                </a>
+                <a href="@Url.Action("MySchedule", "Home")" class="sidebar-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Thời khóa biểu</span>
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Bài tập</span>
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-file-signature"></i>
+                    <span>Bài kiểm tra</span>
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Điểm số</span>
+                </a>
+                }
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Lịch</span>
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-folder"></i>
+                    <span>Tập tin cá nhân</span>
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-bell"></i>
+                    <span>Thông báo</span>
+                </a>
+                <a href="@Url.Action("Logout", "Home")" class="sidebar-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Đăng xuất</span>
+                </a>
+            }
+            else
+            {
+                <a href="@Url.Action("Login", "Home")" class="sidebar-item">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Đăng nhập</span>
+                </a>
+            }
+        </div>
+    </div>
+
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <div class="d-flex align-items-center">
-                <button class="btn btn-link text-dark me-3">
+                <button class="btn btn-link text-dark me-3" id="toggleSidebar">
                     <i class="fas fa-bars"></i>
                 </button>
                 <a class="navbar-brand" href="#">E-Learning - Trường Đại học Trà Vinh </a>
@@ -670,11 +920,6 @@
                 </div>
                 
                 <!-- User Menu / Login Status -->
-                @{
-                    var isLoggedIn = ViewBag.IsLoggedIn ?? false;
-                    var userName = ViewBag.UserName ?? "";
-                }
-                
                 @if (isLoggedIn)
                 {
                     <div class="user-menu">
@@ -934,6 +1179,49 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar functionality
+            const toggleSidebar = document.getElementById('toggleSidebar');
+            const closeSidebar = document.getElementById('closeSidebar');
+            const sidebarMenu = document.getElementById('sidebarMenu');
+            let sidebarOpen = false;
+            
+            function openSidebar() {
+                sidebarMenu.classList.add('active');
+                document.body.classList.add('sidebar-open');
+                sidebarOpen = true;
+            }
+            
+            function closeSidebarFunc() {
+                sidebarMenu.classList.remove('active');
+                document.body.classList.remove('sidebar-open');
+                sidebarOpen = false;
+            }
+            
+            function toggleSidebarFunc() {
+                if (sidebarOpen) {
+                    closeSidebarFunc();
+                } else {
+                    openSidebar();
+                }
+            }
+            
+            toggleSidebar.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleSidebarFunc();
+            });
+            
+            closeSidebar.addEventListener('click', function(e) {
+                e.preventDefault();
+                closeSidebarFunc();
+            });
+            
+            // Close sidebar on ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && sidebarOpen) {
+                    closeSidebarFunc();
+                }
+            });
+            
             // Course card hover effects
             const courseCards = document.querySelectorAll('.course-card');
             courseCards.forEach(card => {

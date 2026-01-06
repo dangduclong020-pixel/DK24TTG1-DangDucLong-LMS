@@ -21,6 +21,10 @@ public partial class LmsSystemContext : DbContext
 
     public virtual DbSet<Assignment> Assignments { get; set; }
 
+    public virtual DbSet<Attendance> Attendances { get; set; }
+
+    public virtual DbSet<AttendanceRecord> AttendanceRecords { get; set; }
+
     public virtual DbSet<Class> Classes { get; set; }
 
     public virtual DbSet<ClassStudent> ClassStudents { get; set; }
@@ -58,6 +62,8 @@ public partial class LmsSystemContext : DbContext
     public virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<Schedule> Schedules { get; set; }
+
+    public virtual DbSet<SemesterConfig> SemesterConfigs { get; set; }
 
     public virtual DbSet<StudentGrade> StudentGrades { get; set; }
 
@@ -140,10 +146,12 @@ public partial class LmsSystemContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.CurrentStudents).HasDefaultValue(0);
             entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.Description);
             entity.Property(e => e.InstructorId).HasColumnName("InstructorID");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.MaxStudents).HasDefaultValue(100);
             entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Objectives);
 
             entity.HasOne(d => d.Course).WithMany(p => p.Classes)
                 .HasForeignKey(d => d.CourseId)
@@ -671,9 +679,29 @@ public partial class LmsSystemContext : DbContext
                 .HasColumnType("datetime");
         });
 
+        modelBuilder.Entity<SemesterConfig>(entity =>
+        {
+            entity.HasKey(e => e.SemesterConfigId);
+
+            entity.ToTable("SemesterConfigs");
+
+            entity.Property(e => e.AcademicYear).HasMaxLength(20);
+            entity.Property(e => e.SemesterName).HasMaxLength(50);
+            entity.Property(e => e.StartDate).HasColumnType("date");
+            entity.Property(e => e.EndDate).HasColumnType("date");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime");
+        });
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("PK__Users__1788CCAC14867206");
+
+            // Disable OUTPUT clause for tables with triggers
+            entity.ToTable(tb => tb.HasTrigger("TR_Users_Activity"));
 
             entity.HasIndex(e => e.Email, "UQ__Users__A9D105345CA2C531").IsUnique();
 
@@ -761,6 +789,58 @@ public partial class LmsSystemContext : DbContext
                 .HasForeignKey(p => p.AdministrativeClassId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Users__AdmClass");
+        });
+
+        modelBuilder.Entity<Attendance>(entity =>
+        {
+            entity.HasKey(e => e.AttendanceId).HasName("PK__Attendan__8B69263C");
+
+            entity.Property(e => e.Title).HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.StartTime).HasColumnType("datetime");
+            entity.Property(e => e.EndTime).HasColumnType("datetime");
+            entity.Property(e => e.AttendanceCode).HasMaxLength(6);
+            entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("Open");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.ClosedAt).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Class).WithMany(p => p.Attendances)
+                .HasForeignKey(d => d.ClassId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Attendance__ClassId");
+
+            entity.HasOne(d => d.Lesson).WithMany(p => p.Attendances)
+                .HasForeignKey(d => d.LessonId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK__Attendance__LessonId");
+
+            entity.HasOne(d => d.Creator).WithMany(p => p.CreatedAttendances)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Attendance__CreatedBy");
+        });
+
+        modelBuilder.Entity<AttendanceRecord>(entity =>
+        {
+            entity.HasKey(e => e.RecordId).HasName("PK__Attendan__FBDF78C9");
+
+            entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("Absent");
+            entity.Property(e => e.CheckInTime).HasColumnType("datetime");
+            entity.Property(e => e.CheckInMethod).HasMaxLength(20);
+            entity.Property(e => e.Note).HasMaxLength(500);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Attendance).WithMany(p => p.AttendanceRecords)
+                .HasForeignKey(d => d.AttendanceId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__AttendanceRecord__AttendanceId");
+
+            entity.HasOne(d => d.Student).WithMany(p => p.AttendanceRecords)
+                .HasForeignKey(d => d.StudentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__AttendanceRecord__StudentId");
         });
 
         OnModelCreatingPartial(modelBuilder);

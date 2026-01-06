@@ -1,0 +1,286 @@
+@model LMS.Models.Assignment
+@{
+    Layout = "~/Views/Shared/_SharedLayout.cshtml";
+    ViewBag.Title = Model.Title;
+    var currentUserId = Context.Session.GetInt32("UserId") ?? 0;
+    var userSubmission = Model.Submissions?.FirstOrDefault(s => s.StudentId == currentUserId);
+    var hasSubmitted = userSubmission != null;
+    var isOverdue = DateTime.Now > Model.DueDate;
+}
+
+@section Styles {
+<style>
+    .assignment-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .info-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .info-table tr {
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .info-table td {
+        padding: 12px;
+    }
+
+    .info-table td:first-child {
+        font-weight: 600;
+        width: 200px;
+        background: #f8f9fa;
+    }
+
+    .submission-area {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 30px;
+        text-align: center;
+        background: #f8f9fa;
+        margin: 20px 0;
+    }
+
+    .file-preview {
+        background: white;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+</style>
+}
+
+<div class="container mt-4">
+    <a href="@Url.Action("CourseDetail", "Home", new { id = Model.ClassId })" class="btn btn-link mb-3">
+        <i class="fas fa-arrow-left"></i> Quay lại khóa học
+    </a>
+
+    <div class="assignment-header">
+        <h2><i class="fas fa-file-alt"></i> @Model.Title</h2>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <p style="white-space: pre-wrap;">@Model.Description</p>
+            </div>
+        </div>
+    }
+
+    @* Hiển thị file đính kèm của bài tập (do giảng viên tải lên) *@
+    @if (!string.IsNullOrEmpty(Model.AttachmentPath))
+    {
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-paperclip"></i> Tài liệu đính kèm</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-file-pdf text-danger" style="font-size: 2rem;"></i>
+                    <div>
+                        <strong>@Model.AttachmentName</strong>
+                        <br/>
+                        <a href="@Model.AttachmentPath" target="_blank" class="btn btn-sm btn-primary mt-2">
+                            <i class="fas fa-download"></i> Tải xuống
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Trạng thái bài gửi</h5>
+        </div>
+        <div class="card-body">
+            <table class="info-table">
+                <tr>
+                    <td>Trạng thái bài gửi</td>
+                    <td>
+                        @if (hasSubmitted)
+                        {
+                            <span class="badge bg-success">Đã nộp</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning">Không có bài tập được nộp</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td>Trạng thái chấm điểm</td>
+                    <td>
+                        @if (hasSubmitted)
+                        {
+                            if (userSubmission.Score.HasValue)
+                            {
+                                <span class="badge bg-info">Đã cho điểm</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Chưa chấm điểm</span>
+                            }
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td>Hạn chót</td>
+                    <td>
+                        @Model.DueDate.ToString("HH:mm, dddd, d 'tháng' M 'năm' yyyy")
+                        @if (isOverdue && !hasSubmitted)
+                        {
+                            <br/><span class="text-danger">Bài tập quá hạn: @((int)(DateTime.Now - Model.DueDate).TotalDays) ngày @((int)(DateTime.Now - Model.DueDate).Hours) giờ</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td>Thời gian còn lại</td>
+                    <td>
+                        @if (!isOverdue)
+                        {
+                            var timeLeft = Model.DueDate - DateTime.Now;
+                            <span>Bài nộp sớm @((int)timeLeft.TotalDays) ngày @timeLeft.Hours giờ</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger">Bài tập quá hạn</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td>Sửa lần cuối</td>
+                    <td>
+                        @if (hasSubmitted && userSubmission.SubmittedAt.HasValue)
+                        {
+                            @userSubmission.SubmittedAt.Value.ToString("HH:mm, dddd, d 'tháng' M 'năm' yyyy")
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </td>
+                </tr>
+                @if (hasSubmitted && userSubmission.Score.HasValue)
+                {
+                    <tr>
+                        <td>Điểm</td>
+                        <td><strong>@userSubmission.Score / @Model.MaxScore</strong></td>
+                    </tr>
+                }
+                @if (hasSubmitted && !string.IsNullOrEmpty(userSubmission.FilePath))
+                {
+                    <tr>
+                        <td>File submissions</td>
+                        <td>
+                            <a href="@userSubmission.FilePath" target="_blank">
+                                <i class="fas fa-file-pdf"></i> @(userSubmission.FileName ?? "Tập tin đã nộp")
+                            </a>
+                            <br/>
+                            <a href="#" class="text-primary">Xuất ra hồ sơ học tập</a>
+                        </td>
+                    </tr>
+                }
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">File submissions</h5>
+        </div>
+        <div class="card-body">
+            @if (hasSubmitted)
+            {
+                @* Hiển thị file đã nộp khi đã submit *@
+                <div class="submitted-file-item mb-3" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-file-archive text-primary" style="font-size: 2rem; margin-right: 15px;"></i>
+                        <div style="flex: 1;">
+                            <h6 class="mb-1">
+                                <a href="@userSubmission.FilePath" target="_blank" class="text-decoration-none" style="color: #667eea; font-weight: 600;">
+                                    @(userSubmission.FileName ?? "Tập tin đã nộp") 
+                                    <i class="fas fa-plus-circle" style="font-size: 0.9rem;"></i>
+                                </a>
+                            </h6>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">
+                                @userSubmission.SubmittedAt?.ToString("d MMMM yyyy, h:mm tt")
+                            </p>
+                            <a href="#" class="text-primary" style="font-size: 0.9rem; text-decoration: none;">
+                                Xuất ra hồ sơ học tập
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                @* Cho phép nộp lại *@
+                <details>
+                    <summary style="cursor: pointer; color: #667eea; font-weight: 600;">
+                        <i class="fas fa-edit"></i> Nộp lại bài tập
+                    </summary>
+                    <form method="post" action="@Url.Action("SubmitAssignment", "Home")" enctype="multipart/form-data" class="mt-3">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="assignmentId" value="@Model.AssignmentId" />
+                        
+                        <div class="submission-area">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                            <p>Kích thước tối đa với một tập tin 10MB, số lượng tập tin đính kèm tối đa:10</p>
+                            <input type="file" name="file" id="fileInput" class="form-control mt-3" accept=".pdf,.doc,.docx,.zip" required />
+                            <small class="text-muted mt-2 d-block">Có thể thêm các tập tin bằng cách kéo thả.</small>
+                        </div>
+
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Lưu các thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </details>
+            }
+            else
+            {
+                @* Form upload cho lần đầu nộp *@
+                <form method="post" action="@Url.Action("SubmitAssignment", "Home")" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="assignmentId" value="@Model.AssignmentId" />
+                    
+                    <div class="submission-area">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                        <p>Kích thước tối đa với một tập tin 10MB, số lượng tập tin đính kèm tối đa:10</p>
+                        <input type="file" name="file" id="fileInput" class="form-control mt-3" accept=".pdf,.doc,.docx,.zip" required />
+                        <small class="text-muted mt-2 d-block">Có thể thêm các tập tin bằng cách kéo thả.</small>
+                    </div>
+
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Lưu các thay đổi
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="history.back()">
+                            Hủy bỏ
+                        </button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">Submission comments</h5>
+        </div>
+        <div class="card-body">
+            <p><i class="fas fa-comment-alt"></i> <strong>Bình luận (0)</strong></p>
+        </div>
+    </div>
+</div>
